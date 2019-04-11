@@ -7,7 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D46BDC542253B2AB00B34C05 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D46BDC532253B2AB00B34C05 /* main.cpp */; };
+		D46BDC542253B2AB00B34C05 /* Dsuite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D46BDC532253B2AB00B34C05 /* Dsuite.cpp */; };
+		D46BDC5C2253B3D800B34C05 /* Dsuite_utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D46BDC5A2253B3D800B34C05 /* Dsuite_utils.cpp */; };
+		D46BDC5F2253B55B00B34C05 /* Dmin.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D46BDC5D2253B55B00B34C05 /* Dmin.cpp */; };
+		D46BDC622253BE4E00B34C05 /* gzstream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D46BDC602253BE4E00B34C05 /* gzstream.cpp */; };
+		D46BDC65225F5F3700B34C05 /* D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D46BDC63225F5F3700B34C05 /* D.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,7 +28,15 @@
 
 /* Begin PBXFileReference section */
 		D46BDC502253B2AB00B34C05 /* Dsuite */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Dsuite; sourceTree = BUILT_PRODUCTS_DIR; };
-		D46BDC532253B2AB00B34C05 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		D46BDC532253B2AB00B34C05 /* Dsuite.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Dsuite.cpp; sourceTree = "<group>"; };
+		D46BDC5A2253B3D800B34C05 /* Dsuite_utils.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Dsuite_utils.cpp; sourceTree = "<group>"; };
+		D46BDC5B2253B3D800B34C05 /* Dsuite_utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Dsuite_utils.h; sourceTree = "<group>"; };
+		D46BDC5D2253B55B00B34C05 /* Dmin.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Dmin.cpp; sourceTree = "<group>"; };
+		D46BDC5E2253B55B00B34C05 /* Dmin.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Dmin.h; sourceTree = "<group>"; };
+		D46BDC602253BE4E00B34C05 /* gzstream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = gzstream.cpp; sourceTree = "<group>"; };
+		D46BDC612253BE4E00B34C05 /* gzstream.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gzstream.h; sourceTree = "<group>"; };
+		D46BDC63225F5F3700B34C05 /* D.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = D.cpp; sourceTree = "<group>"; };
+		D46BDC64225F5F3700B34C05 /* D.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = D.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,7 +69,15 @@
 		D46BDC522253B2AB00B34C05 /* Dsuite */ = {
 			isa = PBXGroup;
 			children = (
-				D46BDC532253B2AB00B34C05 /* main.cpp */,
+				D46BDC532253B2AB00B34C05 /* Dsuite.cpp */,
+				D46BDC63225F5F3700B34C05 /* D.cpp */,
+				D46BDC64225F5F3700B34C05 /* D.h */,
+				D46BDC5D2253B55B00B34C05 /* Dmin.cpp */,
+				D46BDC5E2253B55B00B34C05 /* Dmin.h */,
+				D46BDC5A2253B3D800B34C05 /* Dsuite_utils.cpp */,
+				D46BDC5B2253B3D800B34C05 /* Dsuite_utils.h */,
+				D46BDC602253BE4E00B34C05 /* gzstream.cpp */,
+				D46BDC612253BE4E00B34C05 /* gzstream.h */,
 			);
 			path = Dsuite;
 			sourceTree = "<group>";
@@ -118,7 +138,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D46BDC542253B2AB00B34C05 /* main.cpp in Sources */,
+				D46BDC5F2253B55B00B34C05 /* Dmin.cpp in Sources */,
+				D46BDC542253B2AB00B34C05 /* Dsuite.cpp in Sources */,
+				D46BDC622253BE4E00B34C05 /* gzstream.cpp in Sources */,
+				D46BDC5C2253B3D800B34C05 /* Dsuite_utils.cpp in Sources */,
+				D46BDC65225F5F3700B34C05 /* D.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
