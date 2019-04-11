@@ -9,6 +9,8 @@
 #include <iostream>
 #include "Dsuite_utils.h"
 #include "Dmin.h"
+#include "D.h"
+#include "Dmin_combine.h"
 
 #define AUTHOR "Milan Malinsky"
 #define PACKAGE_VERSION "0.1 r1"

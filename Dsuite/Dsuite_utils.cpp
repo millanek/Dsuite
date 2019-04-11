@@ -8,6 +8,14 @@
 
 #include "Dsuite_utils.h"
 
+double stringToDouble(std::string s) {
+    double d;
+    std::stringstream ss(s); //turn the string into a stream
+    ss >> d; //convert
+    return d;
+}
+
+
 // Remove a single file extension from the filename
 std::string stripExtension(const std::string& filename)
 {
@@ -135,3 +143,7 @@ std::ostream* createWriter(const std::string& filename,
     }
 }
 
+bool file_exists(const std::string& name) {
+    std::ifstream f(name.c_str());
+    return f.good();
+}

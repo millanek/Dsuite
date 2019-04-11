@@ -7,7 +7,6 @@
 //
 
 #include "Dmin.h"
-#include "Dsuite_utils.h"
 
 #define SUBPROGRAM "Dmin"
 
