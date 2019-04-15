@@ -10,5 +10,6 @@
 #define D_h
 
 #include "Dsuite_utils.h"
-
+void parseAbbaBabaOptions(int argc, char** argv);
+int abbaBabaMain(int argc, char** argv);
 #endif /* D_h */

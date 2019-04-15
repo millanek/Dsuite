@@ -8,7 +8,7 @@
 
 #include "Dmin_combine.h"
 
-#define SUBPROGRAM "DminCombine"
+#define SUBPROGRAM "DtriosCombine"
 
 #define DEBUG 1
 
@@ -47,7 +47,6 @@ namespace opt
 int DminCombineMain(int argc, char** argv) {
     parseDminCombineOptions(argc, argv);
     string line; // for reading the input files
-    
     
     std::vector<std::istream*> dminstdErrFiles; std::vector<std::istream*> dminBBAAscoreFiles;
     for (int i = 0; i < opt::dminFiles.size(); i++) {
@@ -137,16 +136,16 @@ int DminCombineMain(int argc, char** argv) {
                     for (int j = 0; j < BBAA_D_strings.size(); j++) {
                         //std::cerr << "BBAA_D_strings[j] = " << BBAA_D_strings[j] << std::endl;
                         double thisBBAA_localD = stringToDouble(BBAA_D_strings[j]);
-                        if (!std::isnan(thisBBAA_localD)) BBAA_local_Ds.push_back(thisBBAA_localD);
+                        if (!isnan(thisBBAA_localD)) BBAA_local_Ds.push_back(thisBBAA_localD);
                         // std::cerr << "BABA_D_strings[j] = " << BABA_D_strings[j] << std::endl;
                         double thisBABA_localD = stringToDouble(BABA_D_strings[j]);
-                        if (!std::isnan(thisBABA_localD)) BABA_local_Ds.push_back(thisBABA_localD);
+                        if (!isnan(thisBABA_localD)) BABA_local_Ds.push_back(thisBABA_localD);
                         //std::cerr << "ABBA_D_strings[j] = " << ABBA_D_strings[j] << std::endl;
                         double thisABBA_localD = stringToDouble(ABBA_D_strings[j]);
-                        if (!std::isnan(thisABBA_localD)) ABBA_local_Ds.push_back(thisABBA_localD);
+                        if (!isnan(thisABBA_localD)) ABBA_local_Ds.push_back(thisABBA_localD);
                     }
                 } else {
-                    print_vector_stream(localDs,std::cerr);
+                    print_vector(localDs,std::cerr);
                 }
             }
         }
@@ -154,29 +153,17 @@ int DminCombineMain(int argc, char** argv) {
             allDone = true; break;
         }
         // std::cerr << "D1 = " << D1 << std::endl;
-        //print_vector_stream(BBAA_local_Ds, std::cerr);
+        //print_vector(BBAA_local_Ds, std::cerr);
         double BBAAstdErr = jackknive_std_err(BBAA_local_Ds);
-        //print_vector_stream(BABA_local_Ds, std::cerr);
+        //print_vector(BABA_local_Ds, std::cerr);
         double BABAstdErr = jackknive_std_err(BABA_local_Ds);
-        //print_vector_stream(ABBA_local_Ds, std::cerr);
+        //print_vectorABBA_local_Ds, std::cerr);
         //std::cerr << "D1 = " << D1 << std::endl;
         double ABBAstdErr = jackknive_std_err(ABBA_local_Ds);
         //std::cerr << "D1 = " << D1 << std::endl;
         //std::cerr << "BBAAstdErr" << BBAAstdErr << std::endl;
         double D1_Z = fabs(D1)/BBAAstdErr; double D2_Z = fabs(D2)/BABAstdErr;
         double D3_Z = fabs(D3)/ABBAstdErr;
-        //std::cerr << "D1_Z = " << D1_Z << std::endl;
-        if (s1 == "Altcal" && s2 == "Altshe" && s3 == "Asplep") {
-            std::cerr << "D1_Z = " << D1_Z << std::endl;
-            std::cerr << "BBAAstdErr = " << BBAAstdErr << std::endl;
-            print_vector_stream(BBAA_local_Ds, std::cerr);
-            std::cerr << "ABBAstdErr = " << ABBAstdErr << std::endl;
-            std::cerr << "BABAstdErr = " << BABAstdErr << std::endl;
-            std::cerr << "ABBAtotal = " << ABBAtotal << std::endl;
-            std::cerr << "BABAtotal = " << BABAtotal << std::endl;
-            std::cerr << "BBAAtotal = " << BBAAtotal << std::endl;
-        }
-        
         
         // Find which topology is in agreement with the counts of the BBAA, BABA, and ABBA patterns
         if (BBAAtotal >= BABAtotal && BBAAtotal >= ABBAtotal) {

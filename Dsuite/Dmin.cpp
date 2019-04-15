@@ -8,7 +8,7 @@
 
 #include "Dmin.h"
 
-#define SUBPROGRAM "Dmin"
+#define SUBPROGRAM "Dtrios"
 
 #define DEBUG 0
 
@@ -20,27 +20,18 @@ static const char *DMIN_USAGE_MESSAGE =
 "The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
-"       --AAeqO                                 ancestral allele info in the VCF is from the outgroup (e.g. Pnyererei for Malawi)\n"
-"                                               the Outgroup setting in the SETS.txt file will be ignored\n"
-"       --fixP3=SPECIES                         NOT IMPLEMENTED!! (optional) fix the P3 individual and only claculate the stats for cominations of P1 and P2\n"
 "       -r , --region=start,length              (optional) only process a subset of the VCF file\n"
-"       -w SIZE, --window=SIZE                  (optional) output D statistics for nonoverlapping windows containing SIZE SNPs with nonzero D (default: 50)\n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
-enum { OPT_AA_EQ_O };
-
-static const char* shortopts = "hfw:r:n:";
+static const char* shortopts = "hr:n:";
 
 static const int JK_WINDOW = 20000;
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
-    { "window",   required_argument, NULL, 'w' },
-    { "AAeqO",   no_argument, NULL, OPT_AA_EQ_O },
-    { "frequency",   no_argument, NULL, 'f' },
     { "region",   no_argument, NULL, 'r' },
     { "help",   no_argument, NULL, 'h' },
     { NULL, 0, NULL, 0 }
@@ -52,8 +43,6 @@ namespace opt
     static string setsFile;
     static string sampleNameFile;
     static string runName = "";
-    static bool bAaEqO = false;
-    static int minScLength = 0;
     static int windowSize = 50;
     int jkWindowSize = JK_WINDOW;
     int regionStart = -1;
@@ -142,10 +131,6 @@ int DminMain(int argc, char** argv) {
     // And need to prepare the vectors to hold the D values:
     std::vector<double> init(3,0.0); // Vector of initial values
     std::vector<std::vector<double>> initDs(3); // vector with three empty (double) vectors
-    //  std::vector<std::vector<double>> Dnums; Dnums.assign(nCombinations,init);
-    //  std::vector<std::vector<double>> Ddenoms; Ddenoms.assign(nCombinations,init);
-    // std::vector<std::vector<double>> localDnums; localDnums.assign(nCombinations,init);
-    //std::vector<std::vector<double>> localDdenoms; localDdenoms.assign(nCombinations,init);
     std::vector<std::vector<std::vector<double>>> regionDs; regionDs.assign(nCombinations, initDs);
     std::vector<double> allPs(species.size(),0.0);
     std::vector<double> ABBAtotals(nCombinations,0); std::vector<double> BABAtotals(nCombinations,0);
@@ -189,7 +174,6 @@ int DminMain(int argc, char** argv) {
             start = std::clock();
             //  std::cerr << " " << std::endl;
             //  std::cerr << "Outgroup at pos: "; print_vector_stream(speciesToPosMap["Outgroup"], std::cerr);
-            //  std::cerr << "telvit at pos: "; print_vector_stream(speciesToPosMap["telvit"], std::cerr);
         } else {
             totalVariantNumber++;
             if (opt::regionStart != -1) {
@@ -206,7 +190,7 @@ int DminMain(int argc, char** argv) {
             }
             fields = split(line, '\t');
             std::vector<std::string> genotypes(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
-            //std::vector<std::string> info = split(fields[7], ';');
+
             // Only consider biallelic SNPs
             string refAllele = fields[3]; string altAllele = fields[4];
             if (refAllele.length() > 1 || altAllele.length() > 1) {
@@ -219,52 +203,39 @@ int DminMain(int argc, char** argv) {
             c->getSetVariantCounts(genotypes, posToSpeciesMap);
             genotypes.clear(); genotypes.shrink_to_fit();
             durationGettingCounts = ( std::clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
-            // std::cerr << "Here:" << totalVariantNumber << std::endl;
             
             startCalculation = std::clock();
             double p_O = c->setDAFs.at("Outgroup");
             if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
             
-            
-            //std::vector<double> allPs;
             for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
                 allPs[i] = c->setDAFs.at(species[i]);
             }
-            // durationFirstLoop = ( std::clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
             
             // Now calculate the D stats:
             double p_S1; double p_S2; double p_S3; double ABBA; double BABA; double BBAA;
             for (int i = 0; i != trios.size(); i++) {
-                p_S1 = allPs[triosInt[i][0]];  // double pS1test = c->setDAFs.at(trios[i][0]); assert(p_S1 == pS1test);
+                p_S1 = allPs[triosInt[i][0]];
                 if (p_S1 == -1) continue;  // If any member of the trio has entirely missing data, just move on to the next trio
-                p_S2 = allPs[triosInt[i][1]];  // double pS2test = c->setDAFs.at(trios[i][1]); assert(p_S2 == pS2test);
+                p_S2 = allPs[triosInt[i][1]];
                 if (p_S2 == -1) continue;
-                p_S3 = allPs[triosInt[i][2]];  // double pS3test = c->setDAFs.at(trios[i][2]); assert(p_S3 == pS3test);
+                p_S3 = allPs[triosInt[i][2]];
                 if (p_S3 == -1) continue;
                 usedVars[i]++;
                 
                 ABBA = ((1-p_S1)*p_S2*p_S3*(1-p_O)); ABBAtotals[i] += ABBA; localABBAtotals[i] += ABBA;
                 BABA = (p_S1*(1-p_S2)*p_S3*(1-p_O)); BABAtotals[i] += BABA; localBABAtotals[i] += BABA;
                 BBAA = ((1-p_S3)*p_S2*p_S1*(1-p_O)); BBAAtotals[i] += BBAA; localBBAAtotals[i] += BBAA;
-                //   if (p_O == 0.0) {
-                //Dnums[i][0] += ABBA - BABA;
-                // Dnums[i][1] += ABBA - BBAA;  // Dnums[i][1] += ((1-p_S1)*p_S3*p_S2*(1-p_O)) - (p_S1*(1-p_S3)*p_S2*(1-p_O));
-                // Dnums[i][2] += BBAA - BABA;  // Dnums[i][2] += ((1-p_S3)*p_S2*p_S1*(1-p_O)) - (p_S3*(1-p_S2)*p_S1*(1-p_O));
                 
-                //Ddenoms[i][0] += ABBA + BABA;
-                //Ddenoms[i][1] += ABBA + BBAA;   // ((1-p_S1)*p_S3*p_S2*(1-p_O)) + (p_S1*(1-p_S3)*p_S2*(1-p_O));
-                //Ddenoms[i][2] += BBAA + BABA; // ((1-p_S3)*p_S2*p_S1*(1-p_O)) + (p_S3*(1-p_S2)*p_S1*(1-p_O));
                 
-                // localDnums[i][0] += ABBA - BABA; localDnums[i][1] += ABBA - BBAA; localDnums[i][2] += BBAA - BABA;
-                // localDdenoms[i][0] += ABBA + BABA; localDdenoms[i][1] += ABBA + BBAA; localDdenoms[i][2] += BBAA + BABA;
+
+                
                 if (usedVars[i] % opt::jkWindowSize == 0) {
                     double localDnums1 = localABBAtotals[i] - localBABAtotals[i]; double localDnums2 = localABBAtotals[i] - localBBAAtotals[i]; double localDnums3 = localBBAAtotals[i] - localBABAtotals[i];
                     double localDdenoms1 = localABBAtotals[i] + localBABAtotals[i]; double localDdenoms2 = localABBAtotals[i] + localBBAAtotals[i]; double localDdenoms3 = localBBAAtotals[i] + localBABAtotals[i];
                     double regionD0 = localDnums1/localDdenoms1; double regionD1 = localDnums2/localDdenoms2;
                     double regionD2 = localDnums3/localDdenoms3;
                     regionDs[i][0].push_back(regionD0); regionDs[i][1].push_back(regionD1); regionDs[i][2].push_back(regionD2);
-                    //localDnums[i][0] = 0; localDnums[i][1] = 0; localDnums[i][2] = 0;
-                    //localDdenoms[i][0] = 0; localDdenoms[i][1] = 0; localDdenoms[i][2] = 0;
                     localABBAtotals[i] = 0; localBABAtotals[i] = 0; localBBAAtotals[i] = 0;
                 }
                 // }
@@ -280,14 +251,13 @@ int DminMain(int argc, char** argv) {
         double D1stdErr = jackknive_std_err(regionDs[i][0]); double D2stdErr = jackknive_std_err(regionDs[i][1]);
         double D3stdErr = jackknive_std_err(regionDs[i][2]);
         // Get the D values
-        //Dnums[i][0] = ABBAtotals[i] - BABAtotals[i]; Dnums[i][1] = ABBAtotals[i] - BBAAtotals[i]; Dnums[i][2] = BBAAtotals[i] - BABAtotals[i];
-        double Dnum1 = ABBAtotals[i] - BABAtotals[i]; // assert(Dnum1 == Dnums[i][0]);
-        double Dnum2 = ABBAtotals[i] - BBAAtotals[i]; // assert(Dnum2 == Dnums[i][1]);
-        double Dnum3 = BBAAtotals[i] - BABAtotals[i]; // assert(Dnum3 == Dnums[i][2]);
-        // Ddenoms[i][0] = ABBAtotals[i] + BABAtotals[i]; Ddenoms[i][1] = ABBAtotals[i] + BBAAtotals[i]; Ddenoms[i][2] = BBAAtotals[i] + BABAtotals[i];
-        double Ddenom1 = ABBAtotals[i] + BABAtotals[i]; // assert(Ddenom1 == Ddenoms[i][0]);
-        double Ddenom2 = ABBAtotals[i] + BBAAtotals[i]; // assert(Ddenom2 == Ddenoms[i][1]);
-        double Ddenom3 = BBAAtotals[i] + BABAtotals[i]; // assert(Ddenom3 == Ddenoms[i][2]);
+        double Dnum1 = ABBAtotals[i] - BABAtotals[i];
+        double Dnum2 = ABBAtotals[i] - BBAAtotals[i];
+        double Dnum3 = BBAAtotals[i] - BABAtotals[i];
+        
+        double Ddenom1 = ABBAtotals[i] + BABAtotals[i];
+        double Ddenom2 = ABBAtotals[i] + BBAAtotals[i];
+        double Ddenom3 = BBAAtotals[i] + BABAtotals[i];
         double D1 = Dnum1/Ddenom1; double D2 = Dnum2/Ddenom2; double D3 = Dnum3/Ddenom3;
         // Get the Z-scores
         double D1_Z = fabs(D1)/D1stdErr; double D2_Z = fabs(D2)/D2stdErr;
@@ -363,11 +333,9 @@ void parseDminOptions(int argc, char** argv) {
         switch (c)
         {
             case '?': die = true; break;
-            case 'w': arg >> opt::windowSize; break;
             case 'n': arg >> opt::runName; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
                 opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;
-            case OPT_AA_EQ_O: opt::bAaEqO = true; break;
             case 'h':
                 std::cout << DMIN_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);

@@ -13,7 +13,7 @@
 #include "Dmin_combine.h"
 
 #define AUTHOR "Milan Malinsky"
-#define PACKAGE_VERSION "0.1 r1"
+#define PACKAGE_VERSION "0.1 r2"
 
 
 static const char *VERSION_MESSAGE =
@@ -27,9 +27,10 @@ static const char *USAGE_MESSAGE =
 "Contact: " AUTHOR " [" PACKAGE_BUGREPORT "]\n"
 "Usage: " PROGRAM_BIN " <command> [options]\n\n"
 "Commands:\n"
-"           abba-baba           Various forms of the D and f4 statistics for specific set of populations, also in windows along the genome\n"
-"           Dmin                Calculate D statistics (ABBA-BABA) for all possible trios of samples\n"
-"           DminCombine         Combine results from different Dmin runs (e.g. per-chromosome)\n"
+"           Dtrios                  Calculate D statistics (ABBA-BABA) for all possible trios of populations/species\n"
+"           DtriosCombine           Combine results from Dtrios runs across genomic regions (e.g. per-chromosome)\n"
+"           Dinvestigate            Follow up analyses for trios with significantly elevated D:\n"
+"                                   calculates the f4 statistic, and also f_d and f_dM in windows along the genome\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 int main(int argc, char **argv) {
@@ -53,11 +54,11 @@ int main(int argc, char **argv) {
             return 0;
         }
         
-        if(command == "abba-baba")
+        if(command == "Dinvestigate")
             abbaBabaMain(argc - 1, argv + 1);
-        else if (command == "Dmin")
+        else if (command == "Dtrios")
             DminMain(argc - 1, argv + 1);
-        else if (command == "DminCombine")
+        else if (command == "DtriosCombine")
             DminCombineMain(argc - 1, argv + 1);
         else
         {

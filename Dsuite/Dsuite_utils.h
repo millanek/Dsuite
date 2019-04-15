@@ -17,8 +17,8 @@
 #include <math.h>
 #include "gzstream.h"
 
-#define PROGRAM_BIN "evo"
-#define PACKAGE_BUGREPORT "mm21@sanger.ac.uk"
+#define PROGRAM_BIN "Dsuite"
+#define PACKAGE_BUGREPORT "milan.malinsky@unibas.ch"
 #define GZIP_EXT ".gz"
 
 using std::string;
@@ -42,13 +42,14 @@ template <typename T> std::string numToString(T i) {
     return ret;
 }
 
-// Print an arbitrary vector to an output stream
-template <class T> void print_vector_stream(T vector, std::ostream& outStream, char delim = '\t') {
+// Print an arbitrary vector to a file
+template <class T> void print_vector(T vector, std::ostream& outFile, char delim = '\t', bool endLine = true) {
     for (int i = 0; i < vector.size(); i++) {
-        if (i == (vector.size()-1))
-            outStream << vector[i] << std::endl;
-        else
-            outStream << vector[i] << delim;
+        if (i == (vector.size()-1)) {
+            if (endLine) outFile << vector[i] << std::endl;
+        } else {
+            outFile << vector[i] << delim;
+        }
     }
 }
 
@@ -59,6 +60,21 @@ template <class T> double vector_average(T vector) {
     }
     double average = (double)sum / (double)vector.size();
     return average;
+}
+
+template <class T> double vector_sum(T vector) {
+    double sum = 0;
+    for (int i = 0; i < vector.size(); i++) {
+        sum += vector[i];
+    }
+    return sum;
+}
+
+inline void copy_except(int i, std::vector<double>& inVec, std::vector<double>& outVec) {
+    std::copy(inVec.begin(), inVec.begin() + i, outVec.begin());
+    std::copy(inVec.begin() + i + 1, inVec.end(), outVec.begin()+i);
+    //std::cerr << "copying:" << i << " "; print_vector_stream(inVec, std::cerr);
+    //std::cerr << "copied: " << i << " "; print_vector_stream(outVec, std::cerr);
 }
 
 // jackknive standard error
@@ -80,6 +96,58 @@ template <class T> double jackknive_std_err(T& vector) {
     double Dstd_err = sqrt(var);
     return Dstd_err;
 }
+
+class GeneralSetCounts {
+public:
+    GeneralSetCounts(const std::map<string, std::vector<size_t>>& setsToPosMap, const int nSamples) : overall(0) {
+        for(std::map<string, std::vector<size_t>>::const_iterator it = setsToPosMap.begin(); it != setsToPosMap.end(); ++it) {
+            setAltCounts[it->first] = 0; setAlleleCounts[it->first] = 0;
+            setAAFs[it->first] = -1.0; setDAFs[it->first] = -1.0;
+            setSizes.push_back(it->second.size());
+        }
+        individualsWithVariant.assign(nSamples, 0);
+    };
+    
+    void getSetVariantCountsSimple(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
+    void getSetVariantCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
+    
+    int overall;
+    std::map<string,int> setAltCounts;
+    std::map<string,int> setAlleleCounts; // The number of non-missing alleles for this set
+    std::vector<size_t> setSizes;
+    std::map<string,double> setAAFs; // Allele frequencies - alternative allele
+    std::map<string,double> setDAFs; // Allele frequencies - derived allele
+    std::vector<int> individualsWithVariant; // 0 homRef, 1 het, 2 homAlt
+    // std::vector<int> set1individualsWithVariant; std::vector<int> set2individualsWithVariant;
+    // std::vector<int> set3individualsWithVariant; std::vector<int> set4individualsWithVariant;
+    
+private:
+    void getBasicCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
+};
+
+// Split sets for the f_G statistic
+class GeneralSetCountsWithSplits : public GeneralSetCounts {
+public:
+    GeneralSetCountsWithSplits(const std::map<string, std::vector<size_t>>& setsToPosMap, const int nSamples) : GeneralSetCounts(setsToPosMap,nSamples) {
+        for(std::map<string, std::vector<size_t>>::const_iterator it = setsToPosMap.begin(); it != setsToPosMap.end(); ++it) {
+            setAAFsplit1[it->first] = -1.0; setAAFsplit2[it->first] = -1.0; setDAFsplit1[it->first] = -1.0; setDAFsplit2[it->first] = -1.0;
+            setAlleleCountsSplit1[it->first] = 0; setAlleleCountsSplit2[it->first] = 0; setAltCountsSplit1[it->first] = 0; setAltCountsSplit2[it->first] = 0;
+        }
+    }
+    std::map<string,int> setAltCountsSplit1;
+    std::map<string,int> setAltCountsSplit2;
+    std::map<string,double> setAAFsplit1; // Allele frequencies - alternative allele
+    std::map<string,double> setAAFsplit2; //
+    std::map<string,double> setDAFsplit1; // Allele frequencies - derived allele, in the complement of the set
+    std::map<string,double> setDAFsplit2;
+    std::map<string,int> setAlleleCountsSplit1; // The number of non-missing alleles for the complement of this set
+    std::map<string,int> setAlleleCountsSplit2;
+    
+    void getSplitCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
+
+private:
+    void getBasicCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
+};
 
 #endif /* Dsuite_utils_h */
 

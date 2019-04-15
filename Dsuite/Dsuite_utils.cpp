@@ -8,6 +8,153 @@
 
 #include "Dsuite_utils.h"
 
+// Works only on biallelic markers
+void GeneralSetCounts::getSetVariantCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
+    
+    getBasicCounts(genotypes, posToSpeciesMap);
+    
+    // If at least one of the outgroup individuals has non-missing data
+    // Find out what is the "ancestral allele" - i.e. the one more common in the outgroup
+    int AAint;
+    try {
+        if (setAlleleCounts.at("Outgroup") > 0) {
+            if ((double)setAltCounts.at("Outgroup")/setAlleleCounts.at("Outgroup") < 0.5) { AAint = 0; }
+            else { AAint = 1; }
+        }
+    } catch (std::out_of_range& e) { AAint = -1; }
+    
+    // Now fill in the allele frequencies
+    for(std::map<string,int>::iterator it = setAltCounts.begin(); it != setAltCounts.end(); ++it) {
+        if (setAlleleCounts.at(it->first) > 0) {
+            setAAFs[it->first] = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+            if (AAint == 0) { // Ancestral allele seems to be the ref, so derived is alt
+                setDAFs[it->first] = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+            } else if (AAint == 1) { // Ancestral allele seems to be alt, so derived is ref
+                setDAFs[it->first] = 1 - ((double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first));
+            }
+        }
+    }
+}
+
+// Works only on biallelic markers
+void GeneralSetCounts::getSetVariantCountsSimple(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
+    // std::cerr << fields[0] << "\t" << fields[1] << std::endl;
+    getBasicCounts(genotypes, posToSpeciesMap);
+    
+    // Now fill in the allele frequencies
+    for(std::map<string,int>::iterator it = setAltCounts.begin(); it != setAltCounts.end(); ++it) {
+        if (setAlleleCounts.at(it->first) > 0) {
+            setAAFs[it->first] = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+        }
+    }
+}
+
+void GeneralSetCounts::getBasicCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
+    // Go through the genotypes - only biallelic markers are allowed
+    for (std::vector<std::string>::size_type i = 0; i != genotypes.size(); i++) {
+        std::string species = posToSpeciesMap.at(i);
+        // The first allele in this individual
+        if (genotypes[i][0] == '1') {
+            overall++; individualsWithVariant[i]++;
+            setAltCounts[species]++; setAlleleCounts[species]++;
+        } else if (genotypes[i][0] == '0') {
+            setAlleleCounts[species]++; 
+        }
+        // The second allele in this individual
+        if (genotypes[i][2] == '1') {
+            overall++;
+            setAltCounts[species]++; setAlleleCounts[species]++;
+            individualsWithVariant[i]++;
+        } else if (genotypes[i][2] == '0') {
+            setAlleleCounts[species]++;
+        }
+    }
+}
+
+void GeneralSetCountsWithSplits::getBasicCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
+    // Go through the genotypes - only biallelic markers are allowed
+    for (std::vector<std::string>::size_type i = 0; i != genotypes.size(); i++) {
+        double r = ((double) rand() / (RAND_MAX));
+        std::string species = posToSpeciesMap.at(i);
+        // The first allele in this individual
+        if (genotypes[i][0] == '1') {
+            overall++; individualsWithVariant[i]++;
+            setAltCounts[species]++; setAlleleCounts[species]++;
+            if (r < 0.5) {
+                setAltCountsSplit1[species]++; setAlleleCountsSplit1[species]++;
+            } else {
+                setAltCountsSplit2[species]++; setAlleleCountsSplit2[species]++;
+            }
+        } else if (genotypes[i][0] == '0') {
+            setAlleleCounts[species]++;
+            if (r < 0.5) {
+                setAlleleCountsSplit1[species]++;
+            } else {
+                setAlleleCountsSplit2[species]++;
+            }
+        }
+        // The second allele in this individual
+        if (genotypes[i][2] == '1') {
+            overall++; individualsWithVariant[i]++;
+            setAltCounts[species]++; setAlleleCounts[species]++;
+            if (r < 0.5) {
+                setAltCountsSplit1[species]++; setAlleleCountsSplit1[species]++;
+            } else {
+                setAltCountsSplit2[species]++; setAlleleCountsSplit2[species]++;
+            }
+        } else if (genotypes[i][2] == '0') {
+            setAlleleCounts[species]++;
+            if (r < 0.5) {
+                setAlleleCountsSplit1[species]++;
+            } else {
+                setAlleleCountsSplit2[species]++;
+            }
+        }
+    }
+}
+
+void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
+    
+    getBasicCounts(genotypes, posToSpeciesMap);
+    
+    // If at least one of the outgroup individuals has non-missing data
+    // Find out what is the "ancestral allele" - i.e. the one more common in the outgroup
+    int AAint;
+    try {
+        if (setAlleleCounts.at("Outgroup") > 0) {
+            if ((double)setAltCounts.at("Outgroup")/setAlleleCounts.at("Outgroup") < 0.5) { AAint = 0; }
+            else { AAint = 1; }
+        }
+    } catch (std::out_of_range& e) { AAint = -1; }
+    
+    // Now fill in the allele frequencies
+    for(std::map<string,int>::iterator it = setAltCounts.begin(); it != setAltCounts.end(); ++it) {
+        if (setAlleleCounts.at(it->first) > 0) {
+            setAAFs[it->first] = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+            int nSplit1 = setAlleleCountsSplit1.at(it->first); int nSplit2 = setAlleleCountsSplit2.at(it->first);
+            if (nSplit1 > 0)
+                setAAFsplit1[it->first] = (double)setAltCountsSplit1.at(it->first)/nSplit1;
+            if (nSplit2 > 0)
+                setAAFsplit2[it->first] = (double)setAltCountsSplit2.at(it->first)/nSplit2;
+            if (AAint == 0) { // Ancestral allele seems to be the ref, so derived is alt
+                setDAFs[it->first] = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+                if (nSplit1 > 0)
+                    setDAFsplit1[it->first] = (double)setAltCountsSplit1.at(it->first)/nSplit1;
+                if (nSplit2 > 0)
+                    setDAFsplit2[it->first] = (double)setAltCountsSplit2.at(it->first)/nSplit2;
+            } else if (AAint == 1) { // Ancestral allele seems to be alt, so derived is ref
+                setDAFs[it->first] = 1 - ((double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first));
+                if (nSplit1 > 0)
+                    setDAFsplit1[it->first] = 1 - ((double)setAltCountsSplit1.at(it->first)/nSplit1);
+                if (nSplit2 > 0)
+                    setDAFsplit2[it->first] = 1 - ((double)setAltCountsSplit2.at(it->first)/nSplit2);
+            }
+        }
+    }
+}
+
+
+
 double stringToDouble(std::string s) {
     double d;
     std::stringstream ss(s); //turn the string into a stream
@@ -48,7 +195,7 @@ std::vector<size_t> locateSet(std::vector<std::string>& sample_names, const std:
         if (it == sample_names.end()) {
             std::cerr << "Did not find the sample: \"" << set[i] << "\"" << std::endl;
             std::cerr << "Did not find the sample: \"" << sample_names[43] << "\"" << std::endl;
-            print_vector_stream(sample_names, std::cerr,',');
+            print_vector(sample_names, std::cerr,',');
         } else {
             size_t loc = std::distance(sample_names.begin(), it);
             setLocs.push_back(loc);
