@@ -144,7 +144,7 @@ int DminMain(int argc, char** argv) {
     int reportProgressEvery; if (nCombinations < 1000) reportProgressEvery = 100000;
     else if (nCombinations < 100000) reportProgressEvery = 10000;
     else reportProgressEvery = 1000;
-    std::clock_t start; std::clock_t startGettingCounts; std::clock_t startCalculation;
+    clock_t start; clock_t startGettingCounts; clock_t startCalculation;
     double durationOverall; double durationGettingCounts; double durationCalculation;
     
     while (getline(*vcfFile, line)) {
@@ -171,7 +171,7 @@ int DminMain(int argc, char** argv) {
                 }
                 speciesToPosMap[sp] = spPos;
             }
-            start = std::clock();
+            start = clock();
             //  std::cerr << " " << std::endl;
             //  std::cerr << "Outgroup at pos: "; print_vector_stream(speciesToPosMap["Outgroup"], std::cerr);
         } else {
@@ -184,7 +184,7 @@ int DminMain(int argc, char** argv) {
                 }
             }
             if (totalVariantNumber % reportProgressEvery == 0) {
-                durationOverall = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+                durationOverall = ( clock() - start ) / (double) CLOCKS_PER_SEC;
                 std::cerr << "Processed " << totalVariantNumber << " variants in " << durationOverall << "secs" << std::endl;
                 std::cerr << "GettingCounts " << durationGettingCounts << " calculation " << durationCalculation << "secs" << std::endl;
             }
@@ -198,13 +198,13 @@ int DminMain(int argc, char** argv) {
                 genotypes.clear(); genotypes.shrink_to_fit(); continue;
             }
             
-            startGettingCounts = std::clock();
+            startGettingCounts = clock();
             GeneralSetCounts* c = new GeneralSetCounts(speciesToPosMap, (int)genotypes.size());
             c->getSetVariantCounts(genotypes, posToSpeciesMap);
             genotypes.clear(); genotypes.shrink_to_fit();
-            durationGettingCounts = ( std::clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
+            durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
             
-            startCalculation = std::clock();
+            startCalculation = clock();
             double p_O = c->setDAFs.at("Outgroup");
             if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
             
@@ -240,7 +240,7 @@ int DminMain(int argc, char** argv) {
                 }
                 // }
             }
-            durationCalculation = ( std::clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
+            durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
             delete c;
         }
     }

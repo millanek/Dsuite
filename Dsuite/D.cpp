@@ -121,7 +121,7 @@ void doAbbaBaba() {
    // int lastPrint = 0; int lastWindowVariant = 0;
    // std::vector<double> regionDs; std::vector<double> region_f_Gs; std::vector<double> region_f_Ds; std::vector<double> region_f_DMs;
     std::vector<string> sampleNames; std::vector<std::string> fields;
-    std::clock_t start; std::clock_t startGettingCounts; std::clock_t startCalculation;
+    clock_t start; clock_t startGettingCounts; clock_t startCalculation;
     double durationOverall; double durationGettingCounts; double durationCalculation;
     while (getline(*vcfFile, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
@@ -147,11 +147,11 @@ void doAbbaBaba() {
                 }
                 speciesToPosMap[sp] = spPos;
             }
-            start = std::clock();
+            start = clock();
         } else {
             totalVariantNumber++;
             if (totalVariantNumber % reportProgressEvery == 0) {
-                durationOverall = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+                durationOverall = ( clock() - start ) / (double) CLOCKS_PER_SEC;
                 std::cerr << "Processed " << totalVariantNumber << " variants in " << durationOverall << "secs" << std::endl;
                 std::cerr << "GettingCounts " << durationGettingCounts << " calculation " << durationCalculation << "secs" << std::endl;
             }
@@ -164,13 +164,13 @@ void doAbbaBaba() {
                 genotypes.clear(); genotypes.shrink_to_fit(); continue;
             }
             
-            startGettingCounts = std::clock();
+            startGettingCounts = clock();
             GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(speciesToPosMap, (int)genotypes.size());
             c->getSplitCounts(genotypes, posToSpeciesMap);
             genotypes.clear(); genotypes.shrink_to_fit();
-            durationGettingCounts = ( std::clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
+            durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
             
-            startCalculation = std::clock();
+            startCalculation = clock();
             double p_O = c->setDAFs.at("Outgroup");
             if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
             
@@ -230,7 +230,7 @@ void doAbbaBaba() {
                     *outFiles[i] << chr << "\t" << testTrioResults[i][4][0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/wF_d_denom << "\t" << wDnum/wF_dM_denom << std::endl;
                 }
             }
-            durationCalculation = ( std::clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
+            durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
             delete c;
 
         }
