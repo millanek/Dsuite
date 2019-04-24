@@ -17,6 +17,7 @@
 #include <math.h>
 #include <algorithm>
 #include <assert.h>
+#include <time.h>
 #include "gzstream.h"
 
 #define PROGRAM_BIN "Dsuite"
