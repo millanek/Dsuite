@@ -15,6 +15,8 @@
 #include <sstream>
 #include <fstream>
 #include <math.h>
+#include <algorithm>
+#include <assert.h>
 #include "gzstream.h"
 
 #define PROGRAM_BIN "Dsuite"
@@ -47,6 +49,7 @@ template <class T> void print_vector(T vector, std::ostream& outFile, char delim
     for (int i = 0; i < vector.size(); i++) {
         if (i == (vector.size()-1)) {
             if (endLine) outFile << vector[i] << std::endl;
+            else outFile << vector[i];
         } else {
             outFile << vector[i] << delim;
         }

@@ -176,11 +176,11 @@ void doAbbaBaba() {
             
             double p_S1; double p_S2; double p_S3; double ABBA; double BABA; double F_d_denom; double F_dM_denom;
             for (int i = 0; i != testTrios.size(); i++) {
-                p_S1 = c->setAAFs.at(testTrios[i][0]);
+                p_S1 = c->setDAFs.at(testTrios[i][0]);
                 if (p_S1 == -1) continue;  // If any member of the trio has entirely missing data, just move on to the next trio
-                p_S2 = c->setAAFs.at(testTrios[i][1]);
+                p_S2 = c->setDAFs.at(testTrios[i][1]);
                 if (p_S2 == -1) continue;
-                p_S3 = c->setAAFs.at(testTrios[i][2]);
+                p_S3 = c->setDAFs.at(testTrios[i][2]);
                 if (p_S3 == -1) continue;
                 usedVars[i]++;
                 
