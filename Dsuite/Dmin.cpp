@@ -107,7 +107,7 @@ int DminMain(int argc, char** argv) {
     // Get a vector of set names (usually species)
     std::vector<string> species;
     for(std::map<string,std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {
-        if ((it->first) != "Outgroup") {
+        if ((it->first) != "Outgroup" && it->first != "xxx") {
             species.push_back(it->first);
             // std::cerr << it->first << std::endl;
         }
