@@ -21,18 +21,21 @@ static const char *DMIN_USAGE_MESSAGE =
 "\n"
 "       -h, --help                              display this help and exit\n"
 "       -r , --region=start,length              (optional) only process a subset of the VCF file\n"
+"       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
+"                                               D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix\n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
-static const char* shortopts = "hr:n:";
+static const char* shortopts = "hr:n:t:";
 
 static const int JK_WINDOW = 20000;
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
     { "region",   no_argument, NULL, 'r' },
+    { "tree",   no_argument, NULL, 't' },
     { "help",   no_argument, NULL, 'h' },
     { NULL, 0, NULL, 0 }
 };
@@ -41,7 +44,7 @@ namespace opt
 {
     static string vcfFile;
     static string setsFile;
-    static string sampleNameFile;
+    static string treeFile = "";
     static string runName = "";
     static int windowSize = 50;
     int jkWindowSize = JK_WINDOW;
@@ -85,6 +88,30 @@ int DminMain(int argc, char** argv) {
         outFileDmin = new std::ofstream(fileNameString+"_Dmin.txt");
         outFileCombine = new std::ofstream(fileNameString+"_combine.txt");
         outFileCombineStdErr = new std::ofstream(fileNameString+"_combine_stderr.txt");
+    }
+    
+    std::istream* treeFile;
+    if (opt::treeFile != "") {
+        treeFile = new std::ifstream(opt::treeFile.c_str());
+        //std::regex branchLengths(":[0-9].[0-9]+");
+        getline(*treeFile, line);
+        std::vector<int> levels(line.length(),0); int currentLevel = 0;
+        std::vector<string> treeTaxonNames;
+        string currentTaxonName = "";
+        for (int i = 0; i < line.length(); ++i) {
+            if (line[i] == '(') {
+                currentLevel++; levels[i] = currentLevel;
+            } else if (line[i] == ')') {
+                currentLevel--; levels[i] = currentLevel;
+                treeTaxonNames.push_back(currentTaxonName); currentTaxonName = "";
+            } else if (line[i] == ',') {
+                levels[i] = currentLevel;
+                treeTaxonNames.push_back(currentTaxonName); currentTaxonName = "";
+            } else {
+                levels[i] = currentLevel;
+                currentTaxonName += line[i];
+            }
+        }
     }
     
     std::map<string, std::vector<string>> speciesToIDsMap;
@@ -334,6 +361,7 @@ void parseDminOptions(int argc, char** argv) {
         {
             case '?': die = true; break;
             case 'n': arg >> opt::runName; break;
+            case 't': arg >> opt::treeFile; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
                 opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;
             case 'h':
