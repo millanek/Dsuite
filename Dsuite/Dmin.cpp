@@ -35,7 +35,7 @@ static const int JK_WINDOW = 20000;
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
     { "region",   no_argument, NULL, 'r' },
-    { "tree",   no_argument, NULL, 't' },
+    { "tree",   required_argument, NULL, 't' },
     { "help",   no_argument, NULL, 'h' },
     { NULL, 0, NULL, 0 }
 };
@@ -70,8 +70,10 @@ int DminMain(int argc, char** argv) {
     parseDminOptions(argc, argv);
     string line; // for reading the input files
     std::istream* treeFile;
+    std::ofstream* outFileTree;
     std::map<string,std::vector<int>> treeTaxonNamesToLoc; std::vector<int> treeLevels;
     if (opt::treeFile != "") {
+        outFileTree = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_tree.txt");
         treeFile = new std::ifstream(opt::treeFile.c_str());
         //std::regex branchLengths(":[0-9].[0-9]+");
         getline(*treeFile, line);
@@ -160,6 +162,9 @@ int DminMain(int argc, char** argv) {
     } std::cerr << "There are " << species.size() << " sets (excluding the Outgroup)" << std::endl;
     int nCombinations = nChoosek((int)species.size(),3);
     std::cerr << "Going to calculate " << nCombinations << " Dmin values" << std::endl;
+    if (opt::treeFile != "") {
+        
+    }
     
     
     // first, get all combinations of three sets (species):
@@ -404,21 +409,21 @@ int DminMain(int argc, char** argv) {
             {
                 case 1:
                     if (D2 >= 0)
-                        *outFileDmin << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << D2_Z << "\t"<< std::endl;
+                        *outFileTree << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << D2_Z << "\t"<< std::endl;
                     else
-                        *outFileDmin << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << fabs(D2) << "\t" << D2_Z << "\t"<< std::endl;
+                        *outFileTree << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << fabs(D2) << "\t" << D2_Z << "\t"<< std::endl;
                     break;
                 case 2:
                     if (D1 >= 0)
-                        *outFileDmin << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D1_Z << "\t" << std::endl;
+                        *outFileTree << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D1_Z << "\t" << std::endl;
                     else
-                        *outFileDmin << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << fabs(D1) << "\t" << D1_Z << "\t"<< std::endl;
+                        *outFileTree << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << fabs(D1) << "\t" << D1_Z << "\t"<< std::endl;
                     break;
                 case 3:
                     if (D3 >= 0)
-                        *outFileDmin << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << D3_Z << "\t"<< std::endl;
+                        *outFileTree << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << D3_Z << "\t"<< std::endl;
                     else
-                        *outFileDmin << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << fabs(D3) << "\t" << D3_Z << "\t" << std::endl;
+                        *outFileTree << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << fabs(D3) << "\t" << D3_Z << "\t" << std::endl;
                     break;
             }
 
