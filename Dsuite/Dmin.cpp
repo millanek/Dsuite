@@ -169,6 +169,7 @@ int DminMain(int argc, char** argv) {
             } catch (const std::out_of_range& oor) {
                 std::cerr << "Out of Range error: " << oor.what() << '\n';
                 std::cerr << "species[i]: " << species[i] << '\n';
+                exit(1);
             }
         }
     }
