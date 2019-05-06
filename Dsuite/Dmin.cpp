@@ -69,6 +69,48 @@ inline unsigned nChoosek( unsigned n, unsigned k )
 int DminMain(int argc, char** argv) {
     parseDminOptions(argc, argv);
     string line; // for reading the input files
+    std::istream* treeFile;
+    std::map<string,std::vector<int>> treeTaxonNamesToLoc; std::vector<int> treeLevels;
+    if (opt::treeFile != "") {
+        treeFile = new std::ifstream(opt::treeFile.c_str());
+        //std::regex branchLengths(":[0-9].[0-9]+");
+        getline(*treeFile, line);
+        treeLevels.assign(line.length(),0); int currentLevel = 0;
+        std::vector<string> treeTaxonNames;
+        string currentTaxonName = "";
+        int lastBegin = 0;
+        for (int i = 0; i < line.length(); ++i) {
+            if (line[i] == '(') {
+                currentLevel++; treeLevels[i] = currentLevel;
+            } else if (line[i] == ')') {
+                currentLevel--; treeLevels[i] = currentLevel;
+                if (currentTaxonName != "") {
+                    treeTaxonNames.push_back(currentTaxonName);
+                    treeTaxonNamesToLoc[currentTaxonName].push_back(lastBegin);
+                    treeTaxonNamesToLoc[currentTaxonName].push_back(i-1);
+                    currentTaxonName = "";
+                }
+            } else if (line[i] == ',') {
+                treeLevels[i] = currentLevel;
+                if (currentTaxonName != "") {
+                    treeTaxonNames.push_back(currentTaxonName);
+                    treeTaxonNamesToLoc[currentTaxonName].push_back(lastBegin);
+                    treeTaxonNamesToLoc[currentTaxonName].push_back(i-1);
+                    currentTaxonName = "";
+                }
+            } else {
+                if (currentTaxonName == "")
+                    lastBegin = i;
+                treeLevels[i] = currentLevel;
+                currentTaxonName += line[i];
+            }
+        }
+        //print_vector(treeTaxonNames, std::cout,'\n');
+        //print_vector(treeLevels, std::cout,' ');
+        //for (std::map<string,std::vector<int>>::iterator i = treeTaxonNamesToLoc.begin(); i != treeTaxonNamesToLoc.end(); i++) {
+        //    std::cout << i->first << "\t" << i->second[0] << "\t" << i->second[1] << "\t" << treeLevels[i->second[0]] << "\t" << treeLevels[i->second[1]] << std::endl;
+        //}
+    }
     
     std::istream* vcfFile = createReader(opt::vcfFile.c_str());
     std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
@@ -89,30 +131,7 @@ int DminMain(int argc, char** argv) {
         outFileCombine = new std::ofstream(fileNameString+"_combine.txt");
         outFileCombineStdErr = new std::ofstream(fileNameString+"_combine_stderr.txt");
     }
-    
-    std::istream* treeFile;
-    if (opt::treeFile != "") {
-        treeFile = new std::ifstream(opt::treeFile.c_str());
-        //std::regex branchLengths(":[0-9].[0-9]+");
-        getline(*treeFile, line);
-        std::vector<int> levels(line.length(),0); int currentLevel = 0;
-        std::vector<string> treeTaxonNames;
-        string currentTaxonName = "";
-        for (int i = 0; i < line.length(); ++i) {
-            if (line[i] == '(') {
-                currentLevel++; levels[i] = currentLevel;
-            } else if (line[i] == ')') {
-                currentLevel--; levels[i] = currentLevel;
-                treeTaxonNames.push_back(currentTaxonName); currentTaxonName = "";
-            } else if (line[i] == ',') {
-                levels[i] = currentLevel;
-                treeTaxonNames.push_back(currentTaxonName); currentTaxonName = "";
-            } else {
-                levels[i] = currentLevel;
-                currentTaxonName += line[i];
-            }
-        }
-    }
+
     
     std::map<string, std::vector<string>> speciesToIDsMap;
     std::map<string, string> IDsToSpeciesMap;
@@ -334,9 +353,75 @@ int DminMain(int argc, char** argv) {
             if (D3 >= 0)
                 *outFileDmin << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << D3_Z << "\t"<< std::endl;
             else
-                *outFileDmin << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << fabs(D3) << "\t" << D3_Z << "\t" << std::endl;;
+                *outFileDmin << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << fabs(D3) << "\t" << D3_Z << "\t" << std::endl;
             // if (ABBAtotals[i] < BBAAtotals[i] || ABBAtotals[i] < BABAtotals[i])
             //     std::cerr << "\t" << "WARNING: Dmin tree different from DAF tree" << std::endl;
+        }
+        
+        // Find which arrangement of trios is consistent with the input tree (if provided):
+        if (opt::treeFile != "") {
+            int loc1 = treeTaxonNamesToLoc[trios[i][0]][0];
+            int loc2 = treeTaxonNamesToLoc[trios[i][1]][0];
+            int loc3 = treeTaxonNamesToLoc[trios[i][2]][0];
+            
+            int arrangement = 0;    // 1 - trios[i][0] and trios[i][2] are P1 and P2
+                                    // 2 - trios[i][0] and trios[i][1] are P1 and P2
+                                    // 3 - trios[i][1] and trios[i][2] are P1 and P2
+            int midLoc = std::max(std::min(loc1,loc2), std::min(std::max(loc1,loc2),loc3));
+            if (midLoc == loc1) {
+                if (loc2 < loc1) {
+                    int m1 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc1);
+                    int m2 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc3);
+                    if (m1 < m2) arrangement = 1; else arrangement = 2;
+                } else {
+                    int m1 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc1);
+                    int m2 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc2);
+                    if (m1 < m2) arrangement = 2; else arrangement = 1;
+                }
+            } else if (midLoc == loc2) {
+                if (loc1 < loc2) {
+                    int m1 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc2);
+                    int m2 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc3);
+                    if (m1 < m2) arrangement = 3; else arrangement = 2;
+                } else {
+                    int m1 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc2);
+                    int m2 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc1);
+                    if (m1 < m2) arrangement = 2; else arrangement = 3;
+                }
+            } else if (midLoc == loc3) {
+                if (loc1 < loc3) {
+                    int m1 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc3);
+                    int m2 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc2);
+                    if (m1 < m2) arrangement = 3; else arrangement = 1;
+                    
+                } else {
+                    int m1 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc3);
+                    int m2 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc1);
+                    if (m1 < m2) arrangement = 1; else arrangement = 3;
+                }
+            }
+            switch (arrangement)
+            {
+                case 1:
+                    if (D2 >= 0)
+                        *outFileDmin << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << D2_Z << "\t"<< std::endl;
+                    else
+                        *outFileDmin << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << fabs(D2) << "\t" << D2_Z << "\t"<< std::endl;
+                    break;
+                case 2:
+                    if (D1 >= 0)
+                        *outFileDmin << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D1_Z << "\t" << std::endl;
+                    else
+                        *outFileDmin << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << fabs(D1) << "\t" << D1_Z << "\t"<< std::endl;
+                    break;
+                case 3:
+                    if (D3 >= 0)
+                        *outFileDmin << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << D3_Z << "\t"<< std::endl;
+                    else
+                        *outFileDmin << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << fabs(D3) << "\t" << D3_Z << "\t" << std::endl;
+                    break;
+            }
+
         }
         
         // Output a simple file that can be used for combining multiple local runs:
