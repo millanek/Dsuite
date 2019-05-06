@@ -20,6 +20,7 @@ static const char *DMIN_USAGE_MESSAGE =
 "The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
+"       -j, --JKwindow                          (default=20000) Jackknife block size in SNPs\n"
 "       -r , --region=start,length              (optional) only process a subset of the VCF file\n"
 "       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix\n"
@@ -28,14 +29,13 @@ static const char *DMIN_USAGE_MESSAGE =
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
-static const char* shortopts = "hr:n:t:";
-
-static const int JK_WINDOW = 20000;
+static const char* shortopts = "hr:n:t:j:";
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
     { "region",   no_argument, NULL, 'r' },
     { "tree",   required_argument, NULL, 't' },
+    { "JKwindow",   required_argument, NULL, 'j' },
     { "help",   no_argument, NULL, 'h' },
     { NULL, 0, NULL, 0 }
 };
@@ -47,7 +47,7 @@ namespace opt
     static string treeFile = "";
     static string runName = "";
     static int windowSize = 50;
-    int jkWindowSize = JK_WINDOW;
+    int jkWindowSize = 20000;
     int regionStart = -1;
     int regionLength = -1;
 }
@@ -460,6 +460,7 @@ void parseDminOptions(int argc, char** argv) {
             case '?': die = true; break;
             case 'n': arg >> opt::runName; break;
             case 't': arg >> opt::treeFile; break;
+            case 'j': arg >> opt::jkWindowSize; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
                 opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;
             case 'h':
