@@ -303,7 +303,7 @@ int DminMain(int argc, char** argv) {
             delete c;
         }
     }
-    
+    std::cerr << "Done processing VCF. Preparing output files..." << '\n';
     
     for (int i = 0; i != trios.size(); i++) { //
         // Get the standard error values:
