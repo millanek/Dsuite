@@ -69,6 +69,7 @@ inline unsigned nChoosek( unsigned n, unsigned k )
 int DminMain(int argc, char** argv) {
     parseDminOptions(argc, argv);
     string line; // for reading the input files
+    string setsFileRoot = stripExtension(opt::setsFile);
     std::istream* treeFile;
     std::ofstream* outFileTree;
     std::map<string,std::vector<int>> treeTaxonNamesToLoc; std::vector<int> treeLevels;
@@ -116,7 +117,6 @@ int DminMain(int argc, char** argv) {
     
     std::istream* vcfFile = createReader(opt::vcfFile.c_str());
     std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
-    string setsFileRoot = stripExtension(opt::setsFile);
     std::ofstream* outFileBBAA;
     std::ofstream* outFileDmin;
     std::ofstream* outFileCombine;
@@ -162,8 +162,14 @@ int DminMain(int argc, char** argv) {
     } std::cerr << "There are " << species.size() << " sets (excluding the Outgroup)" << std::endl;
     int nCombinations = nChoosek((int)species.size(),3);
     std::cerr << "Going to calculate " << nCombinations << " Dmin values" << std::endl;
-    if (opt::treeFile != "") {
-        
+    if (opt::treeFile != "") { // Chack that the tree contains all the populations/species
+        for (int i = 0; i != species.size(); i++) {
+            try {
+                treeTaxonNamesToLoc.at(species[i]);
+            } catch (const std::out_of_range& oor) {
+                std::cerr << "Out of Range error: " << oor.what() << '\n';
+            }
+        }
     }
     
     
