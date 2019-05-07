@@ -9,7 +9,7 @@ To compile you must have a reasonably recent GCC or clang compiler (on mac OS th
 Then simply change directories into the Dsuite folder, and type:
 `make`
 
-The Dsuite executable will be in the Build folder.
+The Dsuite executable will be in the Build folder, so to run it type e.g. `./Build/Dsuite`; this will show the available commands. To execute e.g. the Dtrios command, type `./Build/Dsuite Dtrios`.
 
 ## Input files:
 ### Required files:
