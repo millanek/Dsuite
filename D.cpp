@@ -17,7 +17,7 @@ static const char *ABBA_USAGE_MESSAGE =
 "Calculate the admixture proportion estimates f_G, f_d (Martin et al. 2014 MBE), and f_dM (Malinsky et al., 2015)\n"
 "Also outputs f_d and f_dM in genomic windows\n"
 "The SETS.txt file should have two columns: SAMPLE_ID    POPULATION_ID\n"
-"The test_trios.txt should contain names of three populations for which the PBS will be calculated:\n"
+"The test_trios.txt should contain names of three populations for which the statistics will be calculated:\n"
 "POP1   POP2    POP3\n"
 "There can be multiple lines and then the program generates multiple ouput files, named like POP1_POP2_POP3_localFstats_SIZE_STEP.txt\n"
 "\n"

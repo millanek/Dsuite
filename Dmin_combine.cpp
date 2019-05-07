@@ -19,7 +19,7 @@ static const char *DMINCOMBINE_USAGE_MESSAGE =
 "\n"
 "       -h, --help                              display this help and exit\n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
-"       -s , --subset=start,length              (optional) only process a subset of the VCF file\n"
+"       -s , --subset=start,length              (optional) only process a subset of the trios\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
