@@ -6,8 +6,11 @@ Fast calculation of D-statistics and related admixture evidence directly from VC
 To compile you must have a reasonably recent GCC or clang compiler (on mac OS this comes with Command Line Tools) and the zlib compression library (https://www.zlib.net). Both should already be present on most systems. 
 
 
-Then simply change directories into the Dsuite folder, and type:
-`make`
+```
+git clone https://github.com/millanek/Dsuite.git
+cd Dsuite
+make
+```
 
 The Dsuite executable will be in the Build folder, so to run it type e.g. `./Build/Dsuite`; this will show the available commands. To execute e.g. the Dtrios command, type `./Build/Dsuite Dtrios`.
 
