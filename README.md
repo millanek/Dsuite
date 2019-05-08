@@ -53,9 +53,11 @@ The outgroup (can be multiple samples) should be specified by using the keywork 
 -n, --run-name                          run-name will be included in the output file name
 ```
 #### Output:
-The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: D-statistics and unadjusted p-values. Please read the manuscript for information about the differences between these files. 
+The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D-statistics and the unadjusted p-values. Please read the [manuscript](https://www.google.com) for more details about the differences between these files. 
 
-### DtriosCombine - Combine results from Dtrios runs across genomic regions (e.g. per-chromosome)
+The output files with suffixes  `combine.txt` and  `combine_stderr.txt` are used as input to DtriosCombine. If you don't need to use DtriosCombine, you can safely delete these files.
+
+### DtriosCombine - Combine results from Dtrios runs across genomic regions (e.g. per chromosome)
 ```
 Usage: Dsuite DtriosCombine [OPTIONS] DminFile1 DminFile2 DminFile3 ....
 Combine the BBAA, ABBA, and BABA counts from multiple files (e.g per-chromosome) and output the overall Dmin stats
