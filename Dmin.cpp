@@ -252,7 +252,7 @@ int DminMain(int argc, char** argv) {
 
             // Only consider biallelic SNPs
             string refAllele = fields[3]; string altAllele = fields[4];
-            if (refAllele.length() > 1 || altAllele.length() > 1) {
+            if (refAllele.length() > 1 || altAllele.length() > 1 || altAllele == "*") {
                 refAllele.clear(); refAllele.shrink_to_fit(); altAllele.clear(); altAllele.shrink_to_fit();
                 genotypes.clear(); genotypes.shrink_to_fit(); continue;
             }
