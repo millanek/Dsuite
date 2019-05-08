@@ -28,6 +28,7 @@ using std::string;
 // VCF format constant
 static const int NUM_NON_GENOTYPE_COLUMNS=9;  // 8 mendatory columns + 1 column with definition of the genotype columns
 
+double normalCDF(double x);
 double stringToDouble(std::string s);
 std::string stripExtension(const std::string& filename);
 std::vector<std::string> split(const std::string &s, char delim);

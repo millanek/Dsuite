@@ -8,6 +8,11 @@
 
 #include "Dsuite_utils.h"
 
+double normalCDF(double x) // Phi(-∞, x) aka N(x)
+{
+    return erfc(-x/sqrt(2))/2;
+}
+
 // Works only on biallelic markers
 void GeneralSetCounts::getSetVariantCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
     
