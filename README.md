@@ -6,7 +6,7 @@ Fast calculation of D-statistics and related admixture evidence directly from VC
 To compile you must have a reasonably recent GCC or clang compiler (on mac OS this comes with Command Line Tools) and the zlib compression library (https://www.zlib.net). Both should already be present on most systems. 
 
 
-```
+```console
 git clone https://github.com/millanek/Dsuite.git
 cd Dsuite
 make
