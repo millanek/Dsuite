@@ -16,7 +16,7 @@ The Dsuite executable will be in the Build folder, so to run it type e.g. `./Bui
 
 ## Input files:
 ### Required files:
-1. Bialllelic variants in a VCF file. The file can be gzipped.
+1. A VCF file, which can be gzipped. It can contain multiallelic loci and indels, but only biallelic loci will be used.
 http://www.internationalgenome.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-40/
 2. Population/species map `SETS.txt`: a text file with one individual per row and a tab separating the individual’s name from the name of the species/population it belongs to, as shown below:
 ```
