@@ -37,7 +37,7 @@ Species1    Species4    Species2
 ...         ...         ...
 ```
 ## Commands:
-### Dsuite Dtrios - Calculate D statistics (ABBA-BABA) for all possible trios of populations/species
+### Dsuite Dtrios - Calculate D-statistics (ABBA-BABA) for all possible trios of populations/species
 ```
 Usage: Dsuite Dtrios [OPTIONS] INPUT_FILE.vcf SETS.txt
 Calculate the Dmin-statistic - the ABBA/BABA stat for all trios of species in the dataset (the outgroup being fixed)
@@ -52,6 +52,8 @@ The outgroup (can be multiple samples) should be specified by using the keywork 
                                         D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix
 -n, --run-name                          run-name will be included in the output file name
 ```
+#### Output:
+The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: D-statistics and unadjusted p-values. Please read the manuscript for information about the differences between these files. 
 
 ### DtriosCombine - Combine results from Dtrios runs across genomic regions (e.g. per-chromosome)
 ```

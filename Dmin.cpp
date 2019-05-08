@@ -117,7 +117,6 @@ int DminMain(int argc, char** argv) {
     }
     
     std::istream* vcfFile = createReader(opt::vcfFile.c_str());
-    if (!vcfFile->good()) { std::cerr << "The file " << opt::vcfFile << " could not be opened. Exiting..." << std::endl; exit(1);}
     std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
     if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl; exit(1);}
     std::ofstream* outFileBBAA;
@@ -307,7 +306,11 @@ int DminMain(int argc, char** argv) {
         }
     }
     std::cerr << "Done processing VCF. Preparing output files..." << '\n';
-    
+    *outFileBBAA << "P1\tP2\tP3\tDstatistic\tp-value" << std::endl;
+    *outFileDmin << "P1\tP2\tP3\tDstatistic\tp-value" << std::endl;
+    if (opt::treeFile != "") {
+        *outFileTree << "P1\tP2\tP3\tDstatistic\tp-value" << std::endl;
+    }
     for (int i = 0; i != trios.size(); i++) { //
         // Get the standard error values:
         double D1stdErr = jackknive_std_err(regionDs[i][0]); double D2stdErr = jackknive_std_err(regionDs[i][1]);
@@ -336,21 +339,21 @@ int DminMain(int argc, char** argv) {
             else
                 *outFileBBAA << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2];
             *outFileBBAA << "\t" << fabs(D1) << "\t" << D1_p << "\t";
-            *outFileBBAA << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
+            //*outFileBBAA << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
         } else if (BABAtotals[i] >= BBAAtotals[i] && BABAtotals[i] >= ABBAtotals[i]) {
             if (D2 >= 0)
                 *outFileBBAA << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1];
             else
                 *outFileBBAA << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1];
             *outFileBBAA << "\t" << fabs(D2) << "\t" << D2_p << "\t";
-            *outFileBBAA << BABAtotals[i] << "\t" << BBAAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
+            //*outFileBBAA << BABAtotals[i] << "\t" << BBAAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
         } else if (ABBAtotals[i] >= BBAAtotals[i] && ABBAtotals[i] >= BABAtotals[i]) {
             if (D3 >= 0)
                 *outFileBBAA << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0];
             else
                 *outFileBBAA << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0];
             *outFileBBAA << "\t" << fabs(D3) << "\t" << D3_p << "\t";
-            *outFileBBAA << ABBAtotals[i] << "\t" << BABAtotals[i] << "\t" << BBAAtotals[i] << std::endl;
+            //*outFileBBAA << ABBAtotals[i] << "\t" << BABAtotals[i] << "\t" << BBAAtotals[i] << std::endl;
         }
         
         // Find Dmin:
