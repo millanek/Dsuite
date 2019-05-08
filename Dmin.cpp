@@ -74,8 +74,9 @@ int DminMain(int argc, char** argv) {
     std::ofstream* outFileTree;
     std::map<string,std::vector<int>> treeTaxonNamesToLoc; std::vector<int> treeLevels;
     if (opt::treeFile != "") {
-        outFileTree = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_tree.txt");
         treeFile = new std::ifstream(opt::treeFile.c_str());
+        if (!treeFile->good()) { std::cerr << "The file " << opt::treeFile << " could not be opened. Exiting..." << std::endl;}
+        outFileTree = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_tree.txt");
         //std::regex branchLengths(":[0-9].[0-9]+");
         getline(*treeFile, line);
         treeLevels.assign(line.length(),0); int currentLevel = 0;
@@ -116,7 +117,9 @@ int DminMain(int argc, char** argv) {
     }
     
     std::istream* vcfFile = createReader(opt::vcfFile.c_str());
+    if (!vcfFile->good()) { std::cerr << "The file " << opt::vcfFile << " could not be opened. Exiting..." << std::endl;}
     std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
+    if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl;}
     std::ofstream* outFileBBAA;
     std::ofstream* outFileDmin;
     std::ofstream* outFileCombine;
@@ -322,8 +325,8 @@ int DminMain(int argc, char** argv) {
         double D1_Z = fabs(D1)/D1stdErr; double D2_Z = fabs(D2)/D2stdErr;
         double D3_Z = fabs(D3)/D3stdErr;
         // And p-values
-        double D1_p = normalCDF(D1_Z); double D2_p = normalCDF(D2_Z);
-        double D3_p = normalCDF(D3_Z);
+        double D1_p = 1 - normalCDF(D1_Z); double D2_p = 1 - normalCDF(D2_Z);
+        double D3_p = 1 - normalCDF(D3_Z);
         
         
         // Find which topology is in agreement with the counts of the BBAA, BABA, and ABBA patterns
