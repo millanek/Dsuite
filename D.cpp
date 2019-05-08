@@ -159,7 +159,7 @@ void doAbbaBaba() {
             std::vector<std::string> genotypes(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
             // Only consider biallelic SNPs
             string refAllele = fields[3]; string altAllele = fields[4];
-            if (refAllele.length() > 1 || altAllele.length() > 1) {
+            if (refAllele.length() > 1 || altAllele.length() > 1 || altAllele == "*") {
                 refAllele.clear(); refAllele.shrink_to_fit(); altAllele.clear(); altAllele.shrink_to_fit();
                 genotypes.clear(); genotypes.shrink_to_fit(); continue;
             }
