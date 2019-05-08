@@ -75,7 +75,7 @@ int DminMain(int argc, char** argv) {
     std::map<string,std::vector<int>> treeTaxonNamesToLoc; std::vector<int> treeLevels;
     if (opt::treeFile != "") {
         treeFile = new std::ifstream(opt::treeFile.c_str());
-        if (!treeFile->good()) { std::cerr << "The file " << opt::treeFile << " could not be opened. Exiting..." << std::endl;}
+        if (!treeFile->good()) { std::cerr << "The file " << opt::treeFile << " could not be opened. Exiting..." << std::endl; exit(1);}
         outFileTree = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_tree.txt");
         //std::regex branchLengths(":[0-9].[0-9]+");
         getline(*treeFile, line);
@@ -117,9 +117,9 @@ int DminMain(int argc, char** argv) {
     }
     
     std::istream* vcfFile = createReader(opt::vcfFile.c_str());
-    if (!vcfFile->good()) { std::cerr << "The file " << opt::vcfFile << " could not be opened. Exiting..." << std::endl;}
+    if (!vcfFile->good()) { std::cerr << "The file " << opt::vcfFile << " could not be opened. Exiting..." << std::endl; exit(1);}
     std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
-    if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl;}
+    if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl; exit(1);}
     std::ofstream* outFileBBAA;
     std::ofstream* outFileDmin;
     std::ofstream* outFileCombine;
