@@ -8,12 +8,6 @@ To compile you must have a reasonably recent GCC or clang compiler (on mac OS th
 
 ```console
 $ git clone https://github.com/millanek/Dsuite.git
-remote: Enumerating objects: 163, done.
-remote: Counting objects: 100% (163/163), done.
-remote: Compressing objects: 100% (90/90), done.
-remote: Total 163 (delta 79), reused 138 (delta 54), pack-reused 0
-Receiving objects: 100% (163/163), 49.98 KiB | 223.00 KiB/s, done.
-Resolving deltas: 100% (79/79), done.
 $ cd Dsuite
 $ make
 ```
