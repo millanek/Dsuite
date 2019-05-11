@@ -1,4 +1,4 @@
-#  Dsuite - fast ABBA-BABA statistics across many populations/species 
+#  Dsuite - fast ABBA-BABA statistics across many populations
 Preprint now on bioRxiv:  
 Dsuite - fast D-statistics and related admixture evidence from VCF files  
 Milan Malinsky  
