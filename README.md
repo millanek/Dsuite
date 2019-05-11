@@ -1,5 +1,8 @@
 #  Dsuite
-Fast calculation of D-statistics and related admixture evidence directly from VCF files.
+Preprint now on bioRxiv:  
+Dsuite - fast D-statistics and related admixture evidence from VCF files  
+Milan Malinsky  
+bioRxiv 634477; doi: https://doi.org/10.1101/634477
 
 ## Compilation
 
@@ -52,7 +55,7 @@ The outgroup (can be multiple samples) should be specified by using the keywork 
 -n, --run-name                          run-name will be included in the output file name
 ```
 #### Output:
-The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D-statistics and the unadjusted p-values. Please read the [manuscript](https://www.google.com) for more details about the differences between these files. 
+The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D-statistics and the unadjusted p-values. Please read the [manuscript](https://www.biorxiv.org/content/biorxiv/early/2019/05/10/634477.full.pdf) for more details. 
 
 The output files with suffixes  `combine.txt` and  `combine_stderr.txt` are used as input to DtriosCombine. If you don't need to use DtriosCombine, you can safely delete these files.
 
