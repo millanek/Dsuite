@@ -22,7 +22,7 @@ static const char *ABBA_USAGE_MESSAGE =
 "There can be multiple lines and then the program generates multiple ouput files, named like POP1_POP2_POP3_localFstats_SIZE_STEP.txt\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
-"       -w SIZE, --window=SIZE,STEP             (required) D, f_D, and f_dM statistics for windows containing SIZE useable SNPs, moving by STEP (default: 50,25)\n"
+"       -w SIZE,STEP --window=SIZE,STEP         (required) D, f_D, and f_dM statistics for windows containing SIZE useable SNPs, moving by STEP (default: 50,25)\n"
 //"       --fJackKnife=WINDOW                     (optional) Calculate jackknife for the f_G statistic from Green et al. Also outputs \n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
 "\n"
@@ -97,7 +97,7 @@ void doAbbaBaba() {
         // std::cerr << line << std::endl;
         std::vector<string> threePops = split(line, '\t'); assert(threePops.size() == 3);
         std::ofstream* outFile = new std::ofstream(threePops[0] + "_" + threePops[1] + "_" + threePops[2]+ "_localFstats_" + opt::runName + "_" + numToString(opt::windowSize) + "_" + numToString(opt::windowStep) + ".txt");
-        *outFile << "chr\t" << threePops[0] << "\t" << threePops[1] << "\t" << threePops[2] << std::endl;
+        *outFile << "chr\twindowStart\twindowEnd\tD\tf_d\tf_dM" << std::endl;
         outFiles.push_back(outFile);
         testTrios.push_back(threePops);
     }
@@ -265,8 +265,10 @@ void parseAbbaBabaOptions(int argc, char** argv) {
             case '?': die = true; break;
             case 'w':
                 windowSizeStep = split(arg.str(), ',');
+                if(windowSizeStep.size() != 2) {std::cerr << "The -w option requires two arguments, separated by a comma ','\n"; exit(EXIT_FAILURE);}
                 opt::windowSize = atoi(windowSizeStep[0].c_str());
                 opt::windowStep = atoi(windowSizeStep[1].c_str());
+                break;
             case 'n': arg >> opt::runName; break;
             case 'h':
                 std::cout << ABBA_USAGE_MESSAGE;
