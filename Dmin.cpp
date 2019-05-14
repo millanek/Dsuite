@@ -77,8 +77,14 @@ int DminMain(int argc, char** argv) {
         treeFile = new std::ifstream(opt::treeFile.c_str());
         if (!treeFile->good()) { std::cerr << "The file " << opt::treeFile << " could not be opened. Exiting..." << std::endl; exit(1);}
         outFileTree = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_tree.txt");
-        //std::regex branchLengths(":[0-9].[0-9]+");
+
         getline(*treeFile, line);
+        // First take care of any branch lengths
+        std::regex branchLengths(":.*?(?=,|\\))");
+        line = std::regex_replace(line,branchLengths,"");
+        //std::cerr << line << std::endl;
+        
+        // Now process the tree
         treeLevels.assign(line.length(),0); int currentLevel = 0;
         std::vector<string> treeTaxonNames;
         string currentTaxonName = "";
