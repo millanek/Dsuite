@@ -6,7 +6,7 @@ bioRxiv 634477; doi: https://doi.org/10.1101/634477
 
 ## Compilation
 
-To compile you must have a reasonably recent GCC or clang compiler (on mac OS this comes with Command Line Tools) and the zlib compression library (https://www.zlib.net). Both should already be present on most systems. 
+To compile you must have a reasonably recent GCC (>=4.9.0) or clang compiler (on mac OS this comes with Command Line Tools) and the zlib compression library (https://www.zlib.net). Both should already be present on most systems. 
 
 
 ```console
