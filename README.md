@@ -33,8 +33,8 @@ IndN    Species_n
 ### Optional files:
 3. A tree in Newick format. The tree should have leaf labels corresponding to the species/population names. Branch lengths can be present but are not used.  
 Valid examples:  
-`(Species2,(Species1,Species3,Species5),Species4);`  
-`(Species2:6.0,(Species1:5.0,Species3:3.0,Species5:4.0):5.0,Species4:11.0);`
+`(Species2,(Species1,(Species3,Species4)));`  
+`(Species2:6.0,(Species1:5.0,(Species3:3.0,Species4:4.0)));`
 4. The `test_trios.txt` file for `Dinvestigate`. One trio of populations/species per line, separated by a tab in the order `P1  P2  P3`:
 ```
 Species1    Species2    Species3
