@@ -2,8 +2,8 @@
 Preprint now on bioRxiv:  
 Dsuite - fast D-statistics and related admixture evidence from VCF files  
 Milan Malinsky  
-bioRxiv 634477; doi: https://doi.org/10.1101/634477
-Data used in the manuscript:  
+bioRxiv 634477; doi: https://doi.org/10.1101/634477  
+Data used in the manuscript:
 [VCF file](http://cichlid.gurdon.cam.ac.uk/Malinsky_et_al_2018_LakeMalawiCichlids_scaffold_0.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/sets.txt)
 
 ## Compilation
