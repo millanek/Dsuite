@@ -32,7 +32,7 @@ IndN    Species_n
 ```
 ### Optional files:
 3. A tree in Newick format. For now I only have a  basic Newick format parser. The tree should only have leaf labels. Branch lengths can be present but are not used.  
-Examples:  `(B,(A,C,E),D);`  or  `(B:6.0,(A:5.0,C:3.0,E:4.0):5.0,D:11.0);`
+Examples:  `(Species2,(Species1,Species3,Species5),Species4);`  or  `(Species2:6.0,(Species1:5.0,Species3:3.0,Species5:4.0):5.0,Species4:11.0);`
 4. The `test_trios.txt` file for `Dinvestigate`. One trio of populations/species per line, separated by a tab in the order `P1  P2  P3`:
 ```
 Species1    Species2    Species3
