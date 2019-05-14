@@ -221,6 +221,8 @@ void doAbbaBaba() {
                 BABAtotals[i] += BABA;
                 testTrioResults[i][0].push_back(ABBA); testTrioResults[i][1].push_back(BABA); testTrioResults[i][2].push_back(F_d_denom);
                 testTrioResults[i][3].push_back(F_dM_denom); testTrioResults[i][4].push_back(stringToDouble(coord));
+                testTrioResults[i][0].pop_front(); testTrioResults[i][1].pop_front(); testTrioResults[i][2].pop_front();
+                testTrioResults[i][3].pop_front(); testTrioResults[i][4].pop_front();
             
             
                 if (usedVars[i] > opt::windowSize && (usedVars[i] % opt::windowStep == 0)) {
