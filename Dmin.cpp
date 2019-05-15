@@ -150,9 +150,12 @@ int DminMain(int argc, char** argv) {
     
     // Get the sample sets
     bool outgroupSpecified = false;
+    int l = 0;
     while (getline(*setsFile, line)) {
         // std::cerr << line << std::endl;
+        l++; if (line == "") { std::cerr << "Please fix the format of the " << opt::setsFile << " file.\nLine " << l << " is empty." << std::endl; exit(EXIT_FAILURE); }
         std::vector<string> ID_Species = split(line, '\t');
+        if (ID_Species.size() != 2) { std::cerr << "Please fix the format of the " << opt::setsFile << " file.\nLine " << l << " does not have two columns separated by a tab." << std::endl; exit(EXIT_FAILURE); }
         if (ID_Species[1] == "Outgroup") { outgroupSpecified = true; }
         speciesToIDsMap[ID_Species[1]].push_back(ID_Species[0]);
         IDsToSpeciesMap[ID_Species[0]] = ID_Species[1];

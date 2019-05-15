@@ -7,7 +7,7 @@ LDFLAGS=-lz
 all: $(BIN)/Dsuite
 
 $(BIN)/Dsuite: $(BIN)/Dsuite.o $(BIN)/Dsuite_utils.o $(BIN)/D.o $(BIN)/gzstream.o $(BIN)/Dmin.o $(BIN)/Dmin_combine.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(BIN)/%.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@

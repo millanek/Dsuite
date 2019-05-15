@@ -6,6 +6,8 @@ bioRxiv 634477; doi: https://doi.org/10.1101/634477
 Data used in the manuscript:
 [VCF file](http://cichlid.gurdon.cam.ac.uk/Malinsky_et_al_2018_LakeMalawiCichlids_scaffold_0.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/sets.txt)
 
+There is also a tutorial 
+
 ## Compilation
 
 To compile you must have a reasonably recent GCC (>=4.9.0) or clang compiler (on mac OS this comes with Command Line Tools) and the zlib compression library (https://www.zlib.net). Both should already be present on most systems. 
