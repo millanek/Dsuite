@@ -31,9 +31,13 @@ Ind2    Species1
 Ind3    Species2
 Ind4    Species2
 Ind5    Species3
+Ind6    Outgroup
+Ind7    Outgroup
+Ind8    xxx
 ...     ...
 IndN    Species_n
 ```
+At least one individual needs to be specified to be the outgroup by using the `Outgroup` keyword. If you want some individuals to be ignored entirely, use the `xxx` keyword instead. Therefore, you don't have to subset your VCF file if you only want to use a subset of the samples in it. 
 ### Optional files:
 3. A tree in Newick format. The tree should have leaf labels corresponding to the species/population names. Branch lengths can be present but are not used.  
 Valid examples:  
