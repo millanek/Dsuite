@@ -476,7 +476,8 @@ int DminMain(int argc, char** argv) {
     if (exceptionCount > 10) {
         std::cerr << "..." << std::endl;
         std::cerr << "p-value could not be claculated for " << exceptionCount << " trios" << std::endl;
-        std::cerr << "You should probably decrease the the jackknife block window size (-j option)" << std::endl;
+        std::cerr << "You should definitely decrease the the jackknife block window size!!!" << std::endl;
+        std::cerr << std::endl;
     }
     return 0;
     
