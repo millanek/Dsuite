@@ -347,6 +347,7 @@ int DminMain(int argc, char** argv) {
                 std::cerr << msg << std::endl;
                 std::cerr << "Could not calculate p-values for the trio: " << trios[i][0] << " " << trios[i][1] << " " << trios[i][2] << std::endl;
                 std::cerr << "You should probably decrease the the jackknife block window size (-j option)" << std::endl;
+                std::cerr << std::endl;
             }
             D1_p = nan(""); D2_p = nan(""); D3_p = nan("");
         }
