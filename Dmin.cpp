@@ -20,7 +20,7 @@ static const char *DMIN_USAGE_MESSAGE =
 "The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
-"       -j, --JKwindow                          (default=10000) Jackknife block size in SNPs\n"
+"       -j, --JKwindow                          (default=20000) Jackknife block size in SNPs\n"
 "       -r , --region=start,length              (optional) only process a subset of the VCF file\n"
 "       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix\n"
@@ -46,7 +46,7 @@ namespace opt
     static string setsFile;
     static string treeFile = "";
     static string runName = "";
-    int jkWindowSize = 10000;
+    int jkWindowSize = 20000;
     int regionStart = -1;
     int regionLength = -1;
 }
