@@ -465,17 +465,17 @@ int DminMain(int argc, char** argv) {
 
         }
         
-        if (exceptionCount > 10) {
-            std::cerr << "..." << std::endl;
-            std::cerr << "You should probably decrease the the jackknife block window size (-j option)" << std::endl;
-        }
-        
         // Output a simple file that can be used for combining multiple local runs:
         *outFileCombine << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
         print_vector(regionDs[i][0], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t"; print_vector(regionDs[i][1], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t";
         print_vector(regionDs[i][2], *outFileCombineStdErr, ',',false); *outFileCombineStdErr << std::endl;
         
         //std::cerr << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D2 << "\t" << D3 << "\t" << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
+    }
+    if (exceptionCount > 10) {
+        std::cerr << "..." << std::endl;
+        std::cerr << "p-value could not be claculated for " << exceptionCount << " trios" << std::endl;
+        std::cerr << "You should probably decrease the the jackknife block window size (-j option)" << std::endl;
     }
     return 0;
     
