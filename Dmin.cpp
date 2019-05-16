@@ -20,7 +20,7 @@ static const char *DMIN_USAGE_MESSAGE =
 "The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
-"       -j, --JKwindow                          (default=20000) Jackknife block size in SNPs\n"
+"       -j, --JKwindow                          (default=10000) Jackknife block size in SNPs\n"
 "       -r , --region=start,length              (optional) only process a subset of the VCF file\n"
 "       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix\n"
@@ -46,8 +46,7 @@ namespace opt
     static string setsFile;
     static string treeFile = "";
     static string runName = "";
-    static int windowSize = 50;
-    int jkWindowSize = 20000;
+    int jkWindowSize = 10000;
     int regionStart = -1;
     int regionLength = -1;
 }
@@ -256,7 +255,7 @@ int DminMain(int argc, char** argv) {
             if (totalVariantNumber % reportProgressEvery == 0) {
                 durationOverall = ( clock() - start ) / (double) CLOCKS_PER_SEC;
                 std::cerr << "Processed " << totalVariantNumber << " variants in " << durationOverall << "secs" << std::endl;
-                std::cerr << "GettingCounts " << durationGettingCounts << " calculation " << durationCalculation << "secs" << std::endl;
+                //std::cerr << "GettingCounts " << durationGettingCounts << " calculation " << durationCalculation << "secs" << std::endl;
             }
             fields = split(line, '\t');
             std::vector<std::string> genotypes(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
@@ -320,10 +319,8 @@ int DminMain(int argc, char** argv) {
     if (opt::treeFile != "") {
         *outFileTree << "P1\tP2\tP3\tDstatistic\tp-value" << std::endl;
     }
+    int exceptionCount = 0;
     for (int i = 0; i != trios.size(); i++) { //
-        // Get the standard error values:
-        double D1stdErr = jackknive_std_err(regionDs[i][0]); double D2stdErr = jackknive_std_err(regionDs[i][1]);
-        double D3stdErr = jackknive_std_err(regionDs[i][2]);
         // Get the D values
         double Dnum1 = ABBAtotals[i] - BABAtotals[i];
         double Dnum2 = ABBAtotals[i] - BBAAtotals[i];
@@ -333,13 +330,26 @@ int DminMain(int argc, char** argv) {
         double Ddenom2 = ABBAtotals[i] + BBAAtotals[i];
         double Ddenom3 = BBAAtotals[i] + BABAtotals[i];
         double D1 = Dnum1/Ddenom1; double D2 = Dnum2/Ddenom2; double D3 = Dnum3/Ddenom3;
-        // Get the Z-scores
-        double D1_Z = fabs(D1)/D1stdErr; double D2_Z = fabs(D2)/D2stdErr;
-        double D3_Z = fabs(D3)/D3stdErr;
-        // And p-values
-        double D1_p = 1 - normalCDF(D1_Z); double D2_p = 1 - normalCDF(D2_Z);
-        double D3_p = 1 - normalCDF(D3_Z);
-        
+        double D1_p; double D2_p; double D3_p;
+        try {
+            // Get the standard error values:
+            double D1stdErr = jackknive_std_err(regionDs[i][0]); double D2stdErr = jackknive_std_err(regionDs[i][1]);
+            double D3stdErr = jackknive_std_err(regionDs[i][2]);
+            // Get the Z-scores
+            double D1_Z = fabs(D1)/D1stdErr; double D2_Z = fabs(D2)/D2stdErr;
+            double D3_Z = fabs(D3)/D3stdErr;
+            // And p-values
+            D1_p = 1 - normalCDF(D1_Z); D2_p = 1 - normalCDF(D2_Z);
+            D3_p = 1 - normalCDF(D3_Z);
+        } catch (const char* msg) {
+            exceptionCount++;
+            if (exceptionCount <= 10) {
+                std::cerr << msg << std::endl;
+                std::cerr << "Could not calculate p-values for the trio: " << trios[i][0] << " " << trios[i][1] << " " << trios[i][2] << std::endl;
+                std::cerr << "You should probably decrease the the jackknife block window size (-j option)" << std::endl;
+            }
+            D1_p = nan(""); D2_p = nan(""); D3_p = nan("");
+        }
         
         // Find which topology is in agreement with the counts of the BBAA, BABA, and ABBA patterns
         if (BBAAtotals[i] >= BABAtotals[i] && BBAAtotals[i] >= ABBAtotals[i]) {
@@ -453,6 +463,11 @@ int DminMain(int argc, char** argv) {
                     break;
             }
 
+        }
+        
+        if (exceptionCount > 10) {
+            std::cerr << "..." << std::endl;
+            std::cerr << "You should probably decrease the the jackknife block window size (-j option)" << std::endl;
         }
         
         // Output a simple file that can be used for combining multiple local runs:

@@ -85,6 +85,9 @@ inline void copy_except(int i, std::vector<double>& inVec, std::vector<double>& 
 
 // jackknive standard error
 template <class T> double jackknive_std_err(T& vector) {
+    if (vector.size() <= 2) {
+        throw "Not enough blocks to calculate jackknife!!\n"
+    }
     std::vector<double> jackkniveAverages;
     std::vector<double> JregionDs; JregionDs.resize(vector.size()-1);
     for (std::vector<double>::size_type i = 0; i != vector.size(); i++) {
