@@ -151,6 +151,7 @@ int DminMain(int argc, char** argv) {
     bool outgroupSpecified = false;
     int l = 0;
     while (getline(*setsFile, line)) {
+        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
         // std::cerr << line << std::endl;
         l++; if (line == "") { std::cerr << "Please fix the format of the " << opt::setsFile << " file.\nLine " << l << " is empty." << std::endl; exit(EXIT_FAILURE); }
         std::vector<string> ID_Species = split(line, '\t');
