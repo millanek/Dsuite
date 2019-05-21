@@ -72,6 +72,7 @@ void doAbbaBaba() {
     bool outgroupSpecified = false;
     int l = 0;
     while (getline(*setsFile, line)) {
+        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
         l++; if (line == "") { std::cerr << "Please fix the format of the " << opt::setsFile << " file.\nLine " << l << " is empty." << std::endl; exit(EXIT_FAILURE); }
         // std::cerr << line << std::endl;
         std::vector<string> ID_Species = split(line, '\t');
@@ -97,6 +98,7 @@ void doAbbaBaba() {
     std::vector<std::ofstream*> outFilesGenes;
     std::vector<std::vector<string> > testTrios;
     while (getline(*testTriosFile,line)) {
+        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
         // std::cerr << line << std::endl;
         std::vector<string> threePops = split(line, '\t'); assert(threePops.size() == 3);
         std::ofstream* outFile = new std::ofstream(threePops[0] + "_" + threePops[1] + "_" + threePops[2]+ "_localFstats_" + opt::runName + "_" + numToString(opt::windowSize) + "_" + numToString(opt::windowStep) + ".txt");
