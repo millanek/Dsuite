@@ -101,6 +101,11 @@ void doAbbaBaba() {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
         // std::cerr << line << std::endl;
         std::vector<string> threePops = split(line, '\t'); assert(threePops.size() == 3);
+        for (int i = 0; i != threePops.size(); i++) { // Check that the test trios are in the sets file
+            if (speciesToIDsMap.count(threePops[i]) == 0) {
+                std::cerr << threePops[i] << " is present in the " << opt::testTriosFile << " but missing from the " << opt::setsFile << std::endl;
+            }
+        }
         std::ofstream* outFile = new std::ofstream(threePops[0] + "_" + threePops[1] + "_" + threePops[2]+ "_localFstats_" + opt::runName + "_" + numToString(opt::windowSize) + "_" + numToString(opt::windowStep) + ".txt");
         *outFile << "chr\twindowStart\twindowEnd\tD\tf_d\tf_dM" << std::endl;
         outFiles.push_back(outFile);
@@ -181,11 +186,14 @@ void doAbbaBaba() {
             
             double p_S1; double p_S2; double p_S3; double ABBA; double BABA; double F_d_denom; double F_dM_denom;
             for (int i = 0; i != testTrios.size(); i++) {
-                p_S1 = c->setDAFs.at(testTrios[i][0]);
+                try { p_S1 = c->setDAFs.at(testTrios[i][0]); } catch (const std::out_of_range& oor) {
+                std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][0] << std::endl; }
                 if (p_S1 == -1) continue;  // If any member of the trio has entirely missing data, just move on to the next trio
-                p_S2 = c->setDAFs.at(testTrios[i][1]);
+                try { p_S2 = c->setDAFs.at(testTrios[i][1]); } catch (const std::out_of_range& oor) {
+                    std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][1] << std::endl; }
                 if (p_S2 == -1) continue;
-                p_S3 = c->setDAFs.at(testTrios[i][2]);
+                try { p_S3 = c->setDAFs.at(testTrios[i][2]); } catch (const std::out_of_range& oor) {
+                    std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][0] << std::endl; }
                 if (p_S3 == -1) continue;
                 usedVars[i]++;
                 
