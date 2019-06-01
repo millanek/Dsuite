@@ -10,7 +10,7 @@
 
 double normalCDF(double x) // Phi(-∞, x) aka N(x)
 {
-    return erfc(-x/sqrt(2))/2;
+    return erfc(-x/std::sqrt(2))/2;
 }
 
 // Works only on biallelic markers

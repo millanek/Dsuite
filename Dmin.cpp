@@ -337,8 +337,8 @@ int DminMain(int argc, char** argv) {
             double D1stdErr = jackknive_std_err(regionDs[i][0]); double D2stdErr = jackknive_std_err(regionDs[i][1]);
             double D3stdErr = jackknive_std_err(regionDs[i][2]);
             // Get the Z-scores
-            double D1_Z = fabs(D1)/D1stdErr; double D2_Z = fabs(D2)/D2stdErr;
-            double D3_Z = fabs(D3)/D3stdErr;
+            double D1_Z = std::fabs(D1)/D1stdErr; double D2_Z = std::fabs(D2)/D2stdErr;
+            double D3_Z = std::fabs(D3)/D3stdErr;
             // And p-values
             D1_p = 1 - normalCDF(D1_Z); D2_p = 1 - normalCDF(D2_Z);
             D3_p = 1 - normalCDF(D3_Z);
@@ -359,44 +359,44 @@ int DminMain(int argc, char** argv) {
                 *outFileBBAA << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2];
             else
                 *outFileBBAA << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2];
-            *outFileBBAA << "\t" << fabs(D1) << "\t" << D1_p << std::endl;;
+            *outFileBBAA << "\t" << std::fabs(D1) << "\t" << D1_p << std::endl;;
             //*outFileBBAA << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
         } else if (BABAtotals[i] >= BBAAtotals[i] && BABAtotals[i] >= ABBAtotals[i]) {
             if (D2 >= 0)
                 *outFileBBAA << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1];
             else
                 *outFileBBAA << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1];
-            *outFileBBAA << "\t" << fabs(D2) << "\t" << D2_p << std::endl;;
+            *outFileBBAA << "\t" << std::fabs(D2) << "\t" << D2_p << std::endl;;
             //*outFileBBAA << BABAtotals[i] << "\t" << BBAAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
         } else if (ABBAtotals[i] >= BBAAtotals[i] && ABBAtotals[i] >= BABAtotals[i]) {
             if (D3 >= 0)
                 *outFileBBAA << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0];
             else
                 *outFileBBAA << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0];
-            *outFileBBAA << "\t" << fabs(D3) << "\t" << D3_p << std::endl;;
+            *outFileBBAA << "\t" << std::fabs(D3) << "\t" << D3_p << std::endl;;
             //*outFileBBAA << ABBAtotals[i] << "\t" << BABAtotals[i] << "\t" << BBAAtotals[i] << std::endl;
         }
         
         // Find Dmin:
-        if (fabs(D1) <= fabs(D2) && fabs(D1) <= fabs(D3)) { // (P3 == S3)
+        if (std::fabs(D1) <= std::fabs(D2) && std::fabs(D1) <= std::fabs(D3)) { // (P3 == S3)
             if (D1 >= 0)
                 *outFileDmin << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D1_p << std::endl;
             else
-                *outFileDmin << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << fabs(D1) << "\t" << D1_p << std::endl;
+                *outFileDmin << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << std::fabs(D1) << "\t" << D1_p << std::endl;
             // if (BBAAtotals[i] < BABAtotals[i] || BBAAtotals[i] < ABBAtotals[i])
             //     std::cerr << "\t" << "WARNING: Dmin tree different from DAF tree" << std::endl;
-        } else if (fabs(D2) <= fabs(D1) && fabs(D2) <= fabs(D3)) { // (P3 == S2)
+        } else if (std::fabs(D2) <= std::fabs(D1) && std::fabs(D2) <= std::fabs(D3)) { // (P3 == S2)
             if (D2 >= 0)
                 *outFileDmin << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << D2_p << std::endl;
             else
-                *outFileDmin << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << fabs(D2) << "\t" << D2_p << std::endl;
+                *outFileDmin << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << std::fabs(D2) << "\t" << D2_p << std::endl;
             // if (BABAtotals[i] < BBAAtotals[i] || BABAtotals[i] < ABBAtotals[i])
             //     std::cerr << "\t" << "WARNING: Dmin tree different from DAF tree" << std::endl;
-        } else if (fabs(D3) <= fabs(D1) && fabs(D3) <= fabs(D2)) { // (P3 == S1)
+        } else if (std::fabs(D3) <= std::fabs(D1) && std::fabs(D3) <= std::fabs(D2)) { // (P3 == S1)
             if (D3 >= 0)
                 *outFileDmin << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << D3_p << std::endl;
             else
-                *outFileDmin << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << fabs(D3) << "\t" << D3_p << std::endl;
+                *outFileDmin << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << std::fabs(D3) << "\t" << D3_p << std::endl;
             // if (ABBAtotals[i] < BBAAtotals[i] || ABBAtotals[i] < BABAtotals[i])
             //     std::cerr << "\t" << "WARNING: Dmin tree different from DAF tree" << std::endl;
         }
@@ -449,19 +449,19 @@ int DminMain(int argc, char** argv) {
                     if (D2 >= 0)
                         *outFileTree << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << D2_p << std::endl;
                     else
-                        *outFileTree << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << fabs(D2) << "\t" << D2_p << std::endl;
+                        *outFileTree << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << std::fabs(D2) << "\t" << D2_p << std::endl;
                     break;
                 case 2:
                     if (D1 >= 0)
                         *outFileTree << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D1_p << std::endl;
                     else
-                        *outFileTree << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << fabs(D1) << "\t" << D1_p << std::endl;
+                        *outFileTree << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << std::fabs(D1) << "\t" << D1_p << std::endl;
                     break;
                 case 3:
                     if (D3 >= 0)
                         *outFileTree << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << D3_p << std::endl;
                     else
-                        *outFileTree << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << fabs(D3) << "\t" << D3_p << std::endl;
+                        *outFileTree << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << std::fabs(D3) << "\t" << D3_p << std::endl;
                     break;
             }
 

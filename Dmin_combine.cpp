@@ -136,13 +136,13 @@ int DminCombineMain(int argc, char** argv) {
                     for (int j = 0; j < BBAA_D_strings.size(); j++) {
                         //std::cerr << "BBAA_D_strings[j] = " << BBAA_D_strings[j] << std::endl;
                         double thisBBAA_localD = stringToDouble(BBAA_D_strings[j]);
-                        if (!isnan(thisBBAA_localD)) BBAA_local_Ds.push_back(thisBBAA_localD);
+                        if (!std::isnan(thisBBAA_localD)) BBAA_local_Ds.push_back(thisBBAA_localD);
                         // std::cerr << "BABA_D_strings[j] = " << BABA_D_strings[j] << std::endl;
                         double thisBABA_localD = stringToDouble(BABA_D_strings[j]);
-                        if (!isnan(thisBABA_localD)) BABA_local_Ds.push_back(thisBABA_localD);
+                        if (!std::isnan(thisBABA_localD)) BABA_local_Ds.push_back(thisBABA_localD);
                         //std::cerr << "ABBA_D_strings[j] = " << ABBA_D_strings[j] << std::endl;
                         double thisABBA_localD = stringToDouble(ABBA_D_strings[j]);
-                        if (!isnan(thisABBA_localD)) ABBA_local_Ds.push_back(thisABBA_localD);
+                        if (!std::isnan(thisABBA_localD)) ABBA_local_Ds.push_back(thisABBA_localD);
                     }
                 } else {
                     print_vector(localDs,std::cerr);
@@ -162,8 +162,8 @@ int DminCombineMain(int argc, char** argv) {
         double ABBAstdErr = jackknive_std_err(ABBA_local_Ds);
         //std::cerr << "D1 = " << D1 << std::endl;
         //std::cerr << "BBAAstdErr" << BBAAstdErr << std::endl;
-        double D1_Z = fabs(D1)/BBAAstdErr; double D2_Z = fabs(D2)/BABAstdErr;
-        double D3_Z = fabs(D3)/ABBAstdErr;
+        double D1_Z = std::fabs(D1)/BBAAstdErr; double D2_Z = std::fabs(D2)/BABAstdErr;
+        double D3_Z = std::fabs(D3)/ABBAstdErr;
         
         // Find which topology is in agreement with the counts of the BBAA, BABA, and ABBA patterns
         if (BBAAtotal >= BABAtotal && BBAAtotal >= ABBAtotal) {
@@ -171,40 +171,40 @@ int DminCombineMain(int argc, char** argv) {
                 *outFileBBAA << s1 << "\t" << s2 << "\t" << s3;
             else
                 *outFileBBAA << s2 << "\t" << s1 << "\t" << s3;
-            *outFileBBAA << "\t" << fabs(D1) << "\t" << D1_Z << "\t";
+            *outFileBBAA << "\t" << std::fabs(D1) << "\t" << D1_Z << "\t";
             *outFileBBAA << BBAAtotal << "\t" << BABAtotal << "\t" << ABBAtotal << std::endl;
         } else if (BABAtotal >= BBAAtotal && BABAtotal >= ABBAtotal) {
             if (D2 >= 0)
                 *outFileBBAA << s1 << "\t" << s3 << "\t" << s2;
             else
                 *outFileBBAA << s3 << "\t" << s1 << "\t" << s2;
-            *outFileBBAA << "\t" << fabs(D2) << "\t" << D2_Z << "\t";
+            *outFileBBAA << "\t" << std::fabs(D2) << "\t" << D2_Z << "\t";
             *outFileBBAA << BABAtotal << "\t" << BBAAtotal << "\t" << ABBAtotal << std::endl;
         } else if (ABBAtotal >= BBAAtotal && ABBAtotal >= BABAtotal) {
             if (D3 >= 0)
                 *outFileBBAA << s3 << "\t" << s2 << "\t" << s1;
             else
                 *outFileBBAA << s2 << "\t" << s3 << "\t" << s1;
-            *outFileBBAA << "\t" << fabs(D3) << "\t" << D3_Z << "\t";
+            *outFileBBAA << "\t" << std::fabs(D3) << "\t" << D3_Z << "\t";
             *outFileBBAA << ABBAtotal << "\t" << BABAtotal << "\t" << BBAAtotal << std::endl;
         }
         
         // Find Dmin:
-        if (fabs(D1) <= fabs(D2) && fabs(D1) <= fabs(D3)) { // (P3 == S3)
+        if (std::fabs(D1) <= std::fabs(D2) && std::fabs(D1) <= std::fabs(D3)) { // (P3 == S3)
             if (D1 >= 0)
                 *outFileDmin << s1 << "\t" << s2 << "\t" << s3 << "\t" << D1 << "\t" << D1_Z << "\t" << std::endl;
             else
-                *outFileDmin << s1 << "\t" << s2 << "\t" << s3 << "\t" << fabs(D1) << "\t" << D1_Z << "\t"<< std::endl;
-        } else if (fabs(D2) <= fabs(D1) && fabs(D2) <= fabs(D3)) { // (P3 == S2)
+                *outFileDmin << s1 << "\t" << s2 << "\t" << s3 << "\t" << std::fabs(D1) << "\t" << D1_Z << "\t"<< std::endl;
+        } else if (std::fabs(D2) <= std::fabs(D1) && std::fabs(D2) <= std::fabs(D3)) { // (P3 == S2)
             if (D2 >= 0)
                 *outFileDmin << s1 << "\t" << s3 << "\t" << s2 << "\t" << D2 << "\t" << D2_Z << "\t"<< std::endl;
             else
-                *outFileDmin << s3 << "\t" << s1 << "\t" << s2 << "\t" << fabs(D2) << "\t" << D2_Z << "\t"<< std::endl;
-        } else if (fabs(D3) <= fabs(D1) && fabs(D3) <= fabs(D2)) { // (P3 == S1)
+                *outFileDmin << s3 << "\t" << s1 << "\t" << s2 << "\t" << std::fabs(D2) << "\t" << D2_Z << "\t"<< std::endl;
+        } else if (std::fabs(D3) <= std::fabs(D1) && std::fabs(D3) <= std::fabs(D2)) { // (P3 == S1)
             if (D3 >= 0)
                 *outFileDmin << s3 << "\t" << s2 << "\t" << s1 << "\t" << D3 << "\t" << D3_Z << "\t"<< std::endl;
             else
-                *outFileDmin << s2 << "\t" << s3 << "\t" << s1 << "\t" << fabs(D3) << "\t" << D3_Z << "\t" << std::endl;;
+                *outFileDmin << s2 << "\t" << s3 << "\t" << s1 << "\t" << std::fabs(D3) << "\t" << D3_Z << "\t" << std::endl;;
         }
         
         BBAA_local_Ds.clear(); ABBA_local_Ds.clear(); BABA_local_Ds.clear();

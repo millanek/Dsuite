@@ -14,7 +14,7 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 #include <assert.h>
 #include <time.h>
@@ -99,10 +99,10 @@ template <class T> double jackknive_std_err(T& vector) {
     double jackkniveOverallMean = vector_average(jackkniveAverages);
     double sum = 0;
     for (int i = 0; i < jackkniveAverages.size(); i++) {
-        sum += pow((jackkniveAverages[i] - jackkniveOverallMean), 2.0);
+        sum += std::pow((jackkniveAverages[i] - jackkniveOverallMean), 2.0);
     }
     double var = ((double)(jackkniveAverages.size()-1)/(double)jackkniveAverages.size()) * sum;
-    double Dstd_err = sqrt(var);
+    double Dstd_err = std::sqrt(var);
     return Dstd_err;
 }
 
