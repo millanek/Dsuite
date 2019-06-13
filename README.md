@@ -6,7 +6,7 @@ bioRxiv 634477; doi: https://doi.org/10.1101/634477
 Data used in the manuscript:
 [VCF file](http://cichlid.gurdon.cam.ac.uk/Malinsky_et_al_2018_LakeMalawiCichlids_scaffold_0.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/sets.txt)
 
-There is also a tutorial 
+There is also a very nice and detailed [tutorial](https://github.com/mmatschiner/tutorials/tree/master/analysis_of_introgression_with_snp_data) by [@mmatschiner](https://github.com/mmatschiner).
 
 ## Compilation
 
