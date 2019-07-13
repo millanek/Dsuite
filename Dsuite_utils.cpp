@@ -57,21 +57,25 @@ void GeneralSetCounts::getSetVariantCountsSimple(const std::vector<std::string>&
 void GeneralSetCounts::getBasicCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
     // Go through the genotypes - only biallelic markers are allowed
     for (std::vector<std::string>::size_type i = 0; i != genotypes.size(); i++) {
-        std::string species = posToSpeciesMap.at(i);
-        // The first allele in this individual
-        if (genotypes[i][0] == '1') {
-            overall++; individualsWithVariant[i]++;
-            setAltCounts[species]++; setAlleleCounts[species]++;
-        } else if (genotypes[i][0] == '0') {
-            setAlleleCounts[species]++; 
+        bool speciesDefined = true;
+        std::string species; try { species = posToSpeciesMap.at(i); } catch (const std::out_of_range& oor) {
+            speciesDefined = false;
         }
-        // The second allele in this individual
-        if (genotypes[i][2] == '1') {
-            overall++;
-            setAltCounts[species]++; setAlleleCounts[species]++;
-            individualsWithVariant[i]++;
-        } else if (genotypes[i][2] == '0') {
-            setAlleleCounts[species]++;
+        // The first allele in this individual
+        if (genotypes[i][0] == '1') { overall++; individualsWithVariant[i]++; }
+        if (genotypes[i][2] == '1') { overall++; individualsWithVariant[i]++; }
+        if (speciesDefined) {
+            if (genotypes[i][0] == '1') {
+                setAltCounts[species]++; setAlleleCounts[species]++;
+            } else if (genotypes[i][0] == '0') {
+                setAlleleCounts[species]++;
+            }
+            // The second allele in this individual
+            if (genotypes[i][2] == '1') {
+                setAltCounts[species]++; setAlleleCounts[species]++;
+            } else if (genotypes[i][2] == '0') {
+                setAlleleCounts[species]++;
+            }
         }
     }
 }
@@ -79,40 +83,46 @@ void GeneralSetCounts::getBasicCounts(const std::vector<std::string>& genotypes,
 void GeneralSetCountsWithSplits::getBasicCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
     // Go through the genotypes - only biallelic markers are allowed
     for (std::vector<std::string>::size_type i = 0; i != genotypes.size(); i++) {
-        double r = ((double) rand() / (RAND_MAX));
-        std::string species = posToSpeciesMap.at(i);
+        double r = ((double) rand() / (RAND_MAX)); bool speciesDefined = true;
+        std::string species; try { species = posToSpeciesMap.at(i); } catch (const std::out_of_range& oor) {
+            speciesDefined = false;
+        }
         // The first allele in this individual
-        if (genotypes[i][0] == '1') {
-            overall++; individualsWithVariant[i]++;
-            setAltCounts[species]++; setAlleleCounts[species]++;
-            if (r < 0.5) {
-                setAltCountsSplit1[species]++; setAlleleCountsSplit1[species]++;
-            } else {
-                setAltCountsSplit2[species]++; setAlleleCountsSplit2[species]++;
-            }
-        } else if (genotypes[i][0] == '0') {
-            setAlleleCounts[species]++;
-            if (r < 0.5) {
-                setAlleleCountsSplit1[species]++;
-            } else {
-                setAlleleCountsSplit2[species]++;
+        if (genotypes[i][0] == '1') { overall++; individualsWithVariant[i]++; }
+        if (speciesDefined) {
+            if (genotypes[i][0] == '1') {
+                setAltCounts[species]++; setAlleleCounts[species]++;
+                if (r < 0.5) {
+                    setAltCountsSplit1[species]++; setAlleleCountsSplit1[species]++;
+                } else {
+                    setAltCountsSplit2[species]++; setAlleleCountsSplit2[species]++;
+                }
+            } else if (genotypes[i][0] == '0') {
+                setAlleleCounts[species]++;
+                if (r < 0.5) {
+                    setAlleleCountsSplit1[species]++;
+                } else {
+                    setAlleleCountsSplit2[species]++;
+                }
             }
         }
         // The second allele in this individual
-        if (genotypes[i][2] == '1') {
-            overall++; individualsWithVariant[i]++;
-            setAltCounts[species]++; setAlleleCounts[species]++;
-            if (r < 0.5) {
-                setAltCountsSplit1[species]++; setAlleleCountsSplit1[species]++;
-            } else {
-                setAltCountsSplit2[species]++; setAlleleCountsSplit2[species]++;
-            }
-        } else if (genotypes[i][2] == '0') {
-            setAlleleCounts[species]++;
-            if (r < 0.5) {
-                setAlleleCountsSplit1[species]++;
-            } else {
-                setAlleleCountsSplit2[species]++;
+        if (genotypes[i][2] == '1') { overall++; individualsWithVariant[i]++; }
+        if (speciesDefined) {
+            if (genotypes[i][2] == '1') {
+                setAltCounts[species]++; setAlleleCounts[species]++;
+                if (r < 0.5) {
+                    setAltCountsSplit1[species]++; setAlleleCountsSplit1[species]++;
+                } else {
+                    setAltCountsSplit2[species]++; setAlleleCountsSplit2[species]++;
+                }
+            } else if (genotypes[i][2] == '0') {
+                setAlleleCounts[species]++;
+                if (r < 0.5) {
+                    setAlleleCountsSplit1[species]++;
+                } else {
+                    setAlleleCountsSplit2[species]++;
+                }
             }
         }
     }
@@ -134,9 +144,15 @@ void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& 
     
     // Now fill in the allele frequencies
     for(std::map<string,int>::iterator it = setAltCounts.begin(); it != setAltCounts.end(); ++it) {
+        if (it->first == "") {
+            std::cerr << "it->first " << it->first << "\t" << it->second << std::endl;
+        }
         if (setAlleleCounts.at(it->first) > 0) {
+            int nSplit1; int nSplit2;
             setAAFs[it->first] = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
-            int nSplit1 = setAlleleCountsSplit1.at(it->first); int nSplit2 = setAlleleCountsSplit2.at(it->first);
+            nSplit1 = setAlleleCountsSplit1.at(it->first); nSplit2 = setAlleleCountsSplit2.at(it->first);
+           // std::cerr << "it->first " << it->first << std::endl;
+            try {
             if (nSplit1 > 0)
                 setAAFsplit1[it->first] = (double)setAltCountsSplit1.at(it->first)/nSplit1;
             if (nSplit2 > 0)
@@ -154,6 +170,7 @@ void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& 
                 if (nSplit2 > 0)
                     setDAFsplit2[it->first] = 1 - ((double)setAltCountsSplit2.at(it->first)/nSplit2);
             }
+                } catch (std::out_of_range& e) { std::cerr << "The trouble was here" << it->first << std::endl; }
         }
     }
 }

@@ -86,7 +86,7 @@ void doAbbaBaba() {
     // Get a vector of set names (usually species)
     std::vector<string> species;
     for(std::map<string,std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {
-        if ((it->first) != "Outgroup") {
+        if (it->first != "Outgroup" && it->first != "xxx") {
             species.push_back(it->first);
             // std::cerr << it->first << std::endl;
         }
@@ -142,13 +142,15 @@ void doAbbaBaba() {
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
             // print_vector_stream(sampleNames, std::cerr);
             for (std::vector<std::string>::size_type i = 0; i != sampleNames.size(); i++) {
-                posToSpeciesMap[i] = IDsToSpeciesMap[sampleNames[i]];
+                try { posToSpeciesMap[i] = IDsToSpeciesMap.at(sampleNames[i]); } catch (const std::out_of_range& oor) {
+                    std::cerr << "WARNING: the sample " << sampleNames[i] << " is in the VCF but not assigned in the SETS.txt file" << std::endl;
+                }
             }
             // Iterate over all the keys in the map to find the samples in the VCF:
             // Give an error if no sample is found for a species:
             for(std::map<string, std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {
                 string sp =  it->first;
-                //std::cerr << "sp " << sp << std::endl;
+               // std::cerr << "sp " << sp << std::endl;
                 std::vector<string> IDs = it->second;
                 std::vector<size_t> spPos = locateSet(sampleNames, IDs);
                 if (spPos.empty()) {
@@ -176,12 +178,15 @@ void doAbbaBaba() {
             
             startGettingCounts = clock();
             GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(speciesToPosMap, (int)genotypes.size());
-            c->getSplitCounts(genotypes, posToSpeciesMap);
+             
+            try { c->getSplitCounts(genotypes, posToSpeciesMap); } catch (const std::out_of_range& oor) {
+                std::cerr << "Problems getting splitCounts for " << chr << " " << coord << std::endl; }
             genotypes.clear(); genotypes.shrink_to_fit();
             durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
             
             startCalculation = clock();
-            double p_O = c->setDAFs.at("Outgroup");
+            double p_O; try { p_O = c->setDAFs.at("Outgroup"); } catch (const std::out_of_range& oor) {
+                std::cerr << "Counts don't contain derived allele frequency for the Outgroup" << std::endl; }
             if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
             
             double p_S1; double p_S2; double p_S3; double ABBA; double BABA; double F_d_denom; double F_dM_denom;
@@ -218,9 +223,16 @@ void doAbbaBaba() {
                         F_dM_denom = -(((1-p_S3)*p_S2*p_S3*(1-p_O)) - (p_S3*(1-p_S2)*p_S3)*(1-p_O));
                     }
                 } Genome_f_DM_denom[i] += F_dM_denom;
-                
-                if (c->setAlleleCountsSplit1.at(testTrios[i][2]) > 0 && c->setAlleleCountsSplit2.at(testTrios[i][2]) > 0) {
-                    double p_S3a = c->setAAFsplit1.at(testTrios[i][2]); double p_S3b = c->setAAFsplit2.at(testTrios[i][2]);
+                int c_S3a; try { c_S3a = c->setAlleleCountsSplit1.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
+                { std::cerr << "Counts don't contain info for split 1 of " << testTrios[i][2] << std::endl; }
+                int c_S3b; try { c_S3b = c->setAlleleCountsSplit2.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
+                { std::cerr << "Counts don't contain info for split 2 of " << testTrios[i][2] << std::endl; }
+                if (c_S3a > 0 && c_S3b > 0) {
+                    //std::cerr << "Here" << std::endl;
+                    double p_S3a; try { p_S3a = c->setAAFsplit1.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
+                    { std::cerr << "Counts don't contain derived allele frequency for split 1 of " << testTrios[i][2] << std::endl; }
+                    double p_S3b; try { p_S3b = c->setAAFsplit2.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
+                    { std::cerr << "Counts don't contain derived allele frequency for split 2 of " << testTrios[i][2] << std::endl; }
                     Genome_f_G_num[i] += ABBA - BABA;
                     Genome_f_G_denom[i] += ((1-p_S1)*p_S3a*p_S3b*(1-p_O)) - (p_S1*(1-p_S3a)*p_S3b*(1-p_O));
                     usedVars_f_G[i]++;

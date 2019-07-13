@@ -226,7 +226,9 @@ int DminMain(int argc, char** argv) {
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
             // print_vector_stream(sampleNames, std::cerr);
             for (std::vector<std::string>::size_type i = 0; i != sampleNames.size(); i++) {
-                posToSpeciesMap[i] = IDsToSpeciesMap[sampleNames[i]];
+                try { posToSpeciesMap[i] = IDsToSpeciesMap.at(sampleNames[i]); } catch (const std::out_of_range& oor) {
+                    std::cerr << "WARNING: the sample " << sampleNames[i] << " is in the VCF but not assigned in the SETS.txt file" << std::endl;
+                }
             }
             // Iterate over all the keys in the map to find the samples in the VCF:
             // Give an error if no sample is found for a species:
