@@ -200,12 +200,23 @@ void doAbbaBaba() {
                 try { p_S3 = c->setDAFs.at(testTrios[i][2]); } catch (const std::out_of_range& oor) {
                     std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][0] << std::endl; }
                 if (p_S3 == -1) continue;
+                if (p_S3 == 0) continue; // XXAA pattern is not informative
                 if (p_S1 == 0 && p_S2 == 0 && p_S3 == 0) continue; // Checking if the SNP is variable in the trio
                 if (p_S1 == 1 && p_S2 == 1 && p_S3 == 1) continue; // Checking if the SNP is variable in the trio
+                if (p_S1 == 1 && p_S2 == 1) continue; // BBAA pattern is not informative
+                if (p_S1 == 0 && p_S2 == 0) continue; // AABA pattern is not informative
                 usedVars[i]++;
                 
                 ABBA = ((1-p_S1)*p_S2*p_S3*(1-p_O)); ABBAtotals[i] += ABBA;
                 BABA = (p_S1*(1-p_S2)*p_S3*(1-p_O)); BABAtotals[i] += BABA;
+                double ABBAplusBABA = ABBA + BABA;
+                if (ABBAplusBABA == 0) {
+                    std::cerr << "p_S1 " << p_S1 << std::endl;
+                    std::cerr << "p_S2 " << p_S2 << std::endl;
+                    std::cerr << "p_S3 " << p_S3 << std::endl;
+                    std::cerr << "p_O " << p_O << std::endl;
+                    std::cerr << std::endl;
+                }
                 if (p_S2 > p_S3) {
                     F_d_denom = ((1-p_S1)*p_S2*p_S2*(1-p_O)) - (p_S1*(1-p_S2)*p_S2*(1-p_O));
                 } else {
@@ -256,7 +267,7 @@ void doAbbaBaba() {
                     double wABBA = vector_sum(testTrioResults[i][0]); double wBABA = vector_sum(testTrioResults[i][1]);
                     double wDnum = wABBA - wBABA; double wDdenom = wABBA + wBABA;
                     double wF_d_denom = vector_sum(testTrioResults[i][2]); double wF_dM_denom = vector_sum(testTrioResults[i][3]);
-                    *outFiles[i] << chr << "\t" << testTrioResults[i][4][0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/wF_d_denom << "\t" << wDnum/wF_dM_denom << std::endl;
+                    *outFiles[i] << std::fixed << chr << "\t" << (int)testTrioResults[i][4][0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/wF_d_denom << "\t" << wDnum/wF_dM_denom << std::endl;
                 }
             }
             durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;

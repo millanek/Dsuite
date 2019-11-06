@@ -13,7 +13,7 @@
 #include "Dmin_combine.h"
 
 #define AUTHOR "Milan Malinsky"
-#define PACKAGE_VERSION "0.1 r4"
+#define PACKAGE_VERSION "0.1 r5"
 
 
 static const char *VERSION_MESSAGE =
