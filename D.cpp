@@ -200,6 +200,8 @@ void doAbbaBaba() {
                 try { p_S3 = c->setDAFs.at(testTrios[i][2]); } catch (const std::out_of_range& oor) {
                     std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][0] << std::endl; }
                 if (p_S3 == -1) continue;
+                if (p_S1 == 0 && p_S2 == 0 && p_S3 == 0) continue; // Checking if the SNP is variable in the trio
+                if (p_S1 == 1 && p_S2 == 1 && p_S3 == 1) continue; // Checking if the SNP is variable in the trio
                 usedVars[i]++;
                 
                 ABBA = ((1-p_S1)*p_S2*p_S3*(1-p_O)); ABBAtotals[i] += ABBA;

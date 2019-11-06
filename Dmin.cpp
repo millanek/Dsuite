@@ -293,6 +293,8 @@ int DminMain(int argc, char** argv) {
                 if (p_S2 == -1) continue;
                 p_S3 = allPs[triosInt[i][2]];
                 if (p_S3 == -1) continue;
+                if (p_S1 == 0 && p_S2 == 0 && p_S3 == 0) continue; // Checking if the SNP is variable in the trio
+                if (p_S1 == 1 && p_S2 == 1 && p_S3 == 1) continue; // Checking if the SNP is variable in the trio
                 usedVars[i]++;
                 
                 ABBA = ((1-p_S1)*p_S2*p_S3*(1-p_O)); ABBAtotals[i] += ABBA; localABBAtotals[i] += ABBA;
