@@ -11,9 +11,10 @@
 #include "Dmin.h"
 #include "D.h"
 #include "Dmin_combine.h"
+#include "Dsuite_fBranch.h"
 
 #define AUTHOR "Milan Malinsky"
-#define PACKAGE_VERSION "0.1 r5"
+#define PACKAGE_VERSION "0.2 r6"
 
 
 static const char *VERSION_MESSAGE =
@@ -60,6 +61,8 @@ int main(int argc, char **argv) {
             DminMain(argc - 1, argv + 1);
         else if (command == "DtriosCombine")
             DminCombineMain(argc - 1, argv + 1);
+        else if (command == "DbranchScore")
+            fBranchMain(argc - 1, argv + 1);
         else
         {
             std::cerr << "Unrecognized command: " << command << "\n";
