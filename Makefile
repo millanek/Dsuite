@@ -6,7 +6,7 @@ LDFLAGS=-lz
 
 all: $(BIN)/Dsuite
 
-$(BIN)/Dsuite: $(BIN)/Dsuite.o $(BIN)/Dsuite_utils.o $(BIN)/D.o $(BIN)/gzstream.o $(BIN)/Dmin.o $(BIN)/Dmin_combine.o
+$(BIN)/Dsuite: $(BIN)/Dsuite.o $(BIN)/Dsuite_utils.o $(BIN)/D.o $(BIN)/gzstream.o $(BIN)/Dmin.o $(BIN)/Dmin_combine.o $(BIN)/Dsuite_fBranch.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(BIN)/%.o: %.cpp
@@ -16,4 +16,4 @@ $(BIN):
 	mkdir -p $@
 
 # Dependencies
-$(BIN)/Dsuite: $(BIN)/Dsuite.o $(BIN)/Dsuite_utils.o $(BIN)/D.o $(BIN)/gzstream.o $(BIN)/Dmin.o $(BIN)/Dmin_combine.o | $(BIN)
+$(BIN)/Dsuite: $(BIN)/Dsuite.o $(BIN)/Dsuite_utils.o $(BIN)/D.o $(BIN)/gzstream.o $(BIN)/Dmin.o $(BIN)/Dmin_combine.o $(BIN)/Dsuite_fBranch.o | $(BIN)

@@ -7,16 +7,13 @@
 //
 
 #include "Dsuite_fBranch.h"
-#define SUBPROGRAM "DbranchScore"
+#define SUBPROGRAM "Dbranch"
 
 #define DEBUG 0
 
 static const char *BRANCHSCORE_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] TREE_FILE.nwk DVALS_tree.txt\n"
-
-"The test_trios.txt should contain names of three populations for which the statistics will be calculated:\n"
-"POP1   POP2    POP3\n"
-"There can be multiple lines and then the program generates multiple ouput files, named like POP1_POP2_POP3_localFstats_SIZE_STEP.txt\n"
+"Implements the 'f-branch' type calculations developed by Hannes Svardal for Malinsky et al., 2018, Nat. Ecol. Evo.\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
 "       -w SIZE,STEP --window=SIZE,STEP         (required) D, f_D, and f_dM statistics for windows containing SIZE useable SNPs, moving by STEP (default: 50,25)\n"
@@ -52,6 +49,16 @@ int fBranchMain(int argc, char** argv) {
     std::istream* treeFile = new std::ifstream(opt::treeFile.c_str());
     string treeString; getline(*treeFile, treeString);
     Tree* testTree = new Tree(treeString);
+    std::cout << "Here we are fine" << std::endl;
+    testTree->updateProgenyIds();
+    std::cout << "Here we are still fine" << std::endl;
+    for (std::vector<Branch*>::iterator b = testTree->branch.begin(); b != testTree->branch.end(); b++) {
+        std::cout << (*b)->id << std::endl;
+        std::cout << "(*b)->terminalSpeciesId: " << (*b)->terminalSpeciesId << std::endl;
+        std::cout << "(*b)->daughterId1: " << (*b)->daughterId1 << std::endl;
+        print_vector((*b)->progenyIds, std::cout);
+        std::cout << std::endl;
+    }
     return 0;
     
 }
@@ -89,4 +96,40 @@ void parseFbranchOptions(int argc, char** argv) {
     // Parse the input filenames
     opt::treeFile = argv[optind++];
     opt::DvalsFile = argv[optind++];
+}
+
+
+void Tree::updateProgenyIds() {
+    // Determine the progeny of each branch (needed to know whether conditions are met, and for fossil constraints).
+    // First of all, set progeniesComplete to 2 for all extinct and present branches.
+    for (std::vector<Branch*>::iterator b = branch.begin(); b != branch.end(); b++) {
+        if ((*b)->daughterId1 == "none") {
+            (*b)->progeniesComplete = 2;
+            (*b)->progenyIds.push_back((*b)->terminalSpeciesId);
+        }
+        // Set progenyPassedOn to true for the two root branches.
+        if ((*b)->parentId == "treeOrigin") (*b)->progenyPassedOn = true;
+    }
+    bool allProgeniesComplete = false;
+    while(!allProgeniesComplete) {
+        std::vector<Branch*> newlyCompleted;
+        for (std::vector<Branch*>::iterator b = branch.begin(); b != branch.end(); b++) {
+            // Determine if the progeny of this branch is clear but has not been passed on to the parent yet.
+            if ((*b)->progeniesComplete == 2 && (*b)->progenyPassedOn == false) {
+                newlyCompleted.push_back(*b);
+            }
+        }
+        if (newlyCompleted.size() == 0) allProgeniesComplete = true;
+        for (std::vector<Branch*>::iterator b = newlyCompleted.begin(); b != newlyCompleted.end(); b++) {
+            // Find parent, pass progeny+self on to parents progeny, add parent.progeniesComplete += 1, and change own progenyPassedOn to true.
+            for (std::vector<Branch*>::iterator bb = branch.begin(); bb != branch.end(); bb++) {
+                if ((*bb)->id == (*b)->parentId) {
+                    (*bb)->progenyIds.insert((*bb)->progenyIds.end(), (*b)->progenyIds.begin(), (*b)->progenyIds.end() );
+                    (*bb)->progeniesComplete++;
+                    (*b)->progenyPassedOn = true;
+                    break;
+                }
+            }
+        }
+    }
 }
