@@ -36,8 +36,6 @@ public:
         progenyPassedOn = false;
     };
     
-   // void getSetVariantCountsSimple(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
-   // void getSetVariantCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
     
     string id;
     string parentId;
@@ -45,11 +43,13 @@ public:
     string daughterId2;
     std::vector<string> progenyIds;
     string terminalSpeciesId;
+    
+    Branch* parentBranch;
+    Branch* sisterBranch;
+    std::vector<double> fbCvals;
+    
     int progeniesComplete;
     bool progenyPassedOn;
-    
-private:
-  //  void getBasicCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
 };
 
 
@@ -113,7 +113,6 @@ public:
         } else {
             tmp2BranchDaughterId1.push_back("none"); tmp2BranchDaughterId2.push_back("none");
         }
-       // std::cout << "Treeparse1: Here we are fine" << std::endl;
         
         // Find out about all remaining branches until either all branches end with extinctions, or all branches have reached the present.
         int branchIdCounter = 2;
@@ -127,7 +126,7 @@ public:
                     //std::cout << "tmp2BranchEndNodeId.size(): " << tmp2BranchEndNodeId.size() << std::endl;
                     // Find the two branches that have the same start node as this branch's end node.
                     for (int j = 0; j < tmpBranchStartNodeId.size(); j++) {
-                        std::cout << "j: " << j << " i: " << i << std::endl;
+                       // std::cout << "j: " << j << " i: " << i << std::endl;
                         if (tmpBranchStartNodeId[j] == tmp2BranchEndNodeId[i]) {
                             tmp2BranchID.push_back("b"+numToString(branchIdCounter));
                             //std::cout << "tmp2BranchID.size(): " << tmp2BranchID.size() << " i: " << i << std::endl;
@@ -158,7 +157,6 @@ public:
             }
             if (change == false) treeComplete = true;
         }
-        //std::cout << "Treeparse2: Here we are fine" << std::endl;
         
         // Fill array @branch, and at the same time, add species for terminal branches.
         std::vector<string> species;
@@ -168,15 +166,18 @@ public:
                 speciesId = "unknown";
             } else {
                 speciesId = tmp2BranchEndNodeId[i];
+                //if (tmp2BranchParentId[i] != "treeOrigin")
+                allSpecies.push_back(speciesId);
             }
-            branch.push_back(new Branch(tmp2BranchID[i], tmp2BranchParentId[i], tmp2BranchDaughterId1[i], tmp2BranchDaughterId2[i], speciesId));
+            branches.push_back(new Branch(tmp2BranchID[i], tmp2BranchParentId[i], tmp2BranchDaughterId1[i], tmp2BranchDaughterId2[i], speciesId));
             
         }
-        //std::cout << "Treeparse3: Here we are fine" << std::endl;
     };
     
-    std::vector<Branch*> branch;
+    std::vector<string> allSpecies;
+    std::vector<Branch*> branches;
     void updateProgenyIds();
+    void fillSisterBranches();
     
 };
 
