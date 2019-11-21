@@ -25,11 +25,12 @@ static const char *DMIN_USAGE_MESSAGE =
 "       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix\n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
+"       -f, --f-stats                           (optional) also calculate the f4, f_d, and f_dM statistics\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
-static const char* shortopts = "hr:n:t:j:";
+static const char* shortopts = "hr:n:t:j:fp";
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
@@ -37,6 +38,7 @@ static const struct option longopts[] = {
     { "tree",   required_argument, NULL, 't' },
     { "JKwindow",   required_argument, NULL, 'j' },
     { "help",   no_argument, NULL, 'h' },
+    { "f-stats",   no_argument, NULL, 'f' },
     { NULL, 0, NULL, 0 }
 };
 
@@ -49,6 +51,8 @@ namespace opt
     int jkWindowSize = 20000;
     int regionStart = -1;
     int regionLength = -1;
+    bool fStats = false;
+    bool Patterson = false;
 }
 
 inline unsigned nChoosek( unsigned n, unsigned k )
@@ -185,7 +189,6 @@ int DminMain(int argc, char** argv) {
         }
     }
     
-    
     // first, get all combinations of three sets (species):
     std::vector<std::vector<string>> trios; trios.resize(nCombinations);
     std::vector<std::vector<int>> triosInt; triosInt.resize(nCombinations);
@@ -198,16 +201,27 @@ int DminMain(int argc, char** argv) {
     } while (std::prev_permutation(v.begin(), v.end())); // Getting all permutations of the selection vector - so it selects all combinations
     std::cerr << "Done permutations" << std::endl;
     
-    // And need to prepare the vectors to hold the D values:
-    std::vector<double> init(3,0.0); // Vector of initial values
-    std::vector<std::vector<double>> initDs(3); // vector with three empty (double) vectors
-    std::vector<std::vector<std::vector<double>>> regionDs; regionDs.assign(nCombinations, initDs);
+    // Create objects to hold the results for each trio
+    std::vector<TrioDinfo> trioInfos(nCombinations); for (int i = 0; i < nCombinations; i++) { TrioDinfo info; trioInfos[i] = info; }
+    
+    // If a tree was supplied, check the tree arrangement for each trio...
+    if (opt::treeFile != "") {
+        for (int i = 0; i != trios.size(); i++) {
+            int loc1 = treeTaxonNamesToLoc[trios[i][0]][0];
+            int loc2 = treeTaxonNamesToLoc[trios[i][1]][0];
+            int loc3 = treeTaxonNamesToLoc[trios[i][2]][0];
+            trioInfos[i].assignTreeArrangement(treeLevels, loc1, loc2, loc3);
+        }
+    }
+    
+    // And need to prepare the vectors to hold allele frequency values:
     std::vector<double> allPs(species.size(),0.0);
-    std::vector<double> ABBAtotals(nCombinations,0); std::vector<double> BABAtotals(nCombinations,0);
-    std::vector<double> BBAAtotals(nCombinations,0);
-    std::vector<double> localABBAtotals(nCombinations,0); std::vector<double> localBABAtotals(nCombinations,0);
-    std::vector<double> localBBAAtotals(nCombinations,0);
+    std::vector<double> allSplit1Ps(species.size(),0.0); std::vector<int> allSplit1Counts(species.size(),0);
+    std::vector<double> allSplit2Ps(species.size(),0.0); std::vector<int> allSplit2Counts(species.size(),0);
+    
     std::vector<int> usedVars(nCombinations,0); // Will count the number of used variants for each trio
+    std::vector<double> Genome_f_G_num(nCombinations,0); std::vector<double> Genome_f_G_denom(nCombinations,0);
+    std::vector<double> Genome_f_D_denom(nCombinations,0); std::vector<double> Genome_f_DM_denom(nCombinations,0);
     int totalVariantNumber = 0;
     std::vector<string> sampleNames; std::vector<std::string> fields;
     // Find out how often to report progress, based on the number of trios
@@ -271,21 +285,38 @@ int DminMain(int argc, char** argv) {
             }
             
             startGettingCounts = clock();
-            GeneralSetCounts* c = new GeneralSetCounts(speciesToPosMap, (int)genotypes.size());
-            c->getSetVariantCounts(genotypes, posToSpeciesMap);
+            double p_O;
+            if (opt::fStats)  {
+                GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(speciesToPosMap, (int)genotypes.size());
+                c->getSplitCounts(genotypes, posToSpeciesMap);
+                p_O = c->setDAFs.at("Outgroup"); if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
+                for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                    try {
+                        allPs[i] = c->setDAFs.at(species[i]);
+                        allSplit1Ps[i] = c->setAAFsplit1.at(species[i]);
+                        allSplit2Ps[i] = c->setAAFsplit2.at(species[i]);
+                        allSplit1Counts[i] = c->setAlleleCountsSplit1.at(species[i]);
+                        allSplit2Counts[i] = c->setAlleleCountsSplit2.at(species[i]);
+                    } catch (const std::out_of_range& oor) {
+                        std::cerr << "Counts are missing some info for " << species[i] << std::endl;
+                    }
+                }
+                delete c;
+            } else {
+                GeneralSetCounts* c = (GeneralSetCountsWithSplits*) new GeneralSetCounts(speciesToPosMap, (int)genotypes.size());
+                c->getSetVariantCounts(genotypes, posToSpeciesMap);
+                p_O = c->setDAFs.at("Outgroup"); if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
+                for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                    allPs[i] = c->setDAFs.at(species[i]);
+                }
+                delete c;
+            }
             genotypes.clear(); genotypes.shrink_to_fit();
             durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
             
             startCalculation = clock();
-            double p_O = c->setDAFs.at("Outgroup");
-            if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
-            
-            for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
-                allPs[i] = c->setDAFs.at(species[i]);
-            }
-            
             // Now calculate the D stats:
-            double p_S1; double p_S2; double p_S3; double ABBA; double BABA; double BBAA;
+            double p_S1; double p_S2; double p_S3; double ABBA; double BABA; double BBAA; double BAAB; double ABAB; double AABB;
             for (int i = 0; i != trios.size(); i++) {
                 p_S1 = allPs[triosInt[i][0]];
                 if (p_S1 == -1) continue;  // If any member of the trio has entirely missing data, just move on to the next trio
@@ -297,25 +328,56 @@ int DminMain(int argc, char** argv) {
                 if (p_S1 == 1 && p_S2 == 1 && p_S3 == 1) continue; // Checking if the SNP is variable in the trio
                 usedVars[i]++;
                 
-                ABBA = ((1-p_S1)*p_S2*p_S3*(1-p_O)); ABBAtotals[i] += ABBA; localABBAtotals[i] += ABBA;
-                BABA = (p_S1*(1-p_S2)*p_S3*(1-p_O)); BABAtotals[i] += BABA; localBABAtotals[i] += BABA;
-                BBAA = ((1-p_S3)*p_S2*p_S1*(1-p_O)); BBAAtotals[i] += BBAA; localBBAAtotals[i] += BBAA;
+                ABBA = (1-p_S1)*p_S2*p_S3*(1-p_O); trioInfos[i].ABBAtotal += ABBA; trioInfos[i].localABBAtotal += ABBA;
+                BABA = p_S1*(1-p_S2)*p_S3*(1-p_O); trioInfos[i].BABAtotal += BABA; trioInfos[i].localBABAtotal += BABA;
+                BBAA = p_S1*p_S2*(1-p_S3)*(1-p_O); trioInfos[i].BBAAtotal += BBAA; trioInfos[i].localBBAAtotal += BBAA;
                 
-                
-
-                
-                if (usedVars[i] % opt::jkWindowSize == 0) {
-                    double localDnums1 = localABBAtotals[i] - localBABAtotals[i]; double localDnums2 = localABBAtotals[i] - localBBAAtotals[i]; double localDnums3 = localBBAAtotals[i] - localBABAtotals[i];
-                    double localDdenoms1 = localABBAtotals[i] + localBABAtotals[i]; double localDdenoms2 = localABBAtotals[i] + localBBAAtotals[i]; double localDdenoms3 = localBBAAtotals[i] + localBABAtotals[i];
-                    double regionD0 = localDnums1/localDdenoms1; double regionD1 = localDnums2/localDdenoms2;
-                    double regionD2 = localDnums3/localDdenoms3;
-                    regionDs[i][0].push_back(regionD0); regionDs[i][1].push_back(regionD1); regionDs[i][2].push_back(regionD2);
-                    localABBAtotals[i] = 0; localBABAtotals[i] = 0; localBBAAtotals[i] = 0;
+                if (opt::Patterson) {
+                    BAAB = p_S1*(1-p_S2)*(1-p_S3)*p_O; trioInfos[i].ABBAtotal += BAAB; trioInfos[i].localABBAtotal += BAAB;
+                    ABAB = (1-p_S1)*p_S2*(1-p_S3)*p_O; trioInfos[i].BABAtotal += ABAB; trioInfos[i].localBABAtotal += ABAB;
+                    AABB = (1-p_S1)*(1-p_S2)*p_S3*p_O; trioInfos[i].BBAAtotal += AABB; trioInfos[i].localBBAAtotal += AABB;
                 }
+                
+                if (opt::fStats && opt::treeFile != "") {
+                    double p_S1t = 0; double p_S2t = 0; double p_S3t = 0;
+                    if (trioInfos[i].treeArrangement == 1) {  p_S3t = p_S3; p_S1t = p_S1; p_S2t = p_S2; }
+                    if (trioInfos[i].treeArrangement == 2) {  p_S3t = p_S2; p_S1t = p_S1; p_S2t = p_S3; }
+                    if (trioInfos[i].treeArrangement == 3) {  p_S3t = p_S1; p_S1t = p_S3; p_S2t = p_S2; }
+                    
+                    // f_d
+                    trioInfos[i].F_d_denom += Fd_Denom_perVariant(p_S1t, p_S2t, p_S3t, p_O);
+                    trioInfos[i].F_d_denom_reversed += Fd_Denom_perVariant(p_S2t, p_S1t, p_S3t, p_O); // reverse p1t and p2t
+                    
+                    // f_dM
+                    trioInfos[i].F_dM_denom += FdM_Denom_perVariant(p_S1t, p_S2t, p_S3t, p_O);
+                    trioInfos[i].F_dM_denom_reversed += FdM_Denom_perVariant(p_S2t, p_S1t, p_S3t, p_O);
+                    
+                    // f_G
+                    int c_S3a = 0; int c_S3b = 0;
+                    if (trioInfos[i].treeArrangement == 1) { c_S3a = allSplit1Counts[triosInt[i][2]]; c_S3b = allSplit2Counts[triosInt[i][2]]; }
+                    if (trioInfos[i].treeArrangement == 2) { c_S3a = allSplit1Counts[triosInt[i][1]]; c_S3b = allSplit2Counts[triosInt[i][1]]; }
+                    if (trioInfos[i].treeArrangement == 3) { c_S3a = allSplit1Counts[triosInt[i][0]]; c_S3b = allSplit2Counts[triosInt[i][0]]; }
+                    if (c_S3a > 0 && c_S3b > 0) {
+                        double p_S3a = 0; double p_S3b = 0;
+                        switch (trioInfos[i].treeArrangement) {
+                            case 1: p_S3a = allSplit1Ps[triosInt[i][2]]; p_S3b = allSplit2Ps[triosInt[i][2]]; break;
+                            case 2: p_S3a = allSplit1Ps[triosInt[i][1]]; p_S3b = allSplit2Ps[triosInt[i][1]]; break;
+                            case 3: p_S3a = allSplit1Ps[triosInt[i][0]]; p_S3b = allSplit2Ps[triosInt[i][0]]; break;
+                        }
+                        trioInfos[i].F_G_denom += ((1-p_S1t)*p_S3a*p_S3b*(1-p_O)) - (p_S1t*(1-p_S3a)*p_S3b*(1-p_O));
+                        trioInfos[i].F_G_denom_reversed += ((1-p_S2t)*p_S3a*p_S3b*(1-p_O)) - (p_S2t*(1-p_S3a)*p_S3b*(1-p_O));
+                       // usedVars_f_G[i]++;
+                    } else if (p_S3t == 1) {
+                        trioInfos[i].F_G_denom += (1-p_S1t)*(1-p_O);
+                        trioInfos[i].F_G_denom_reversed += (1-p_S2t)*(1-p_O);
+                      //  usedVars_f_G[i]++;
+                    }
+                }
+            
+                if (usedVars[i] % opt::jkWindowSize == 0) trioInfos[i].addRegionDs();
                 // }
             }
             durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
-            delete c;
         }
     }
     std::cerr << "Done processing VCF. Preparing output files..." << '\n';
@@ -326,26 +388,16 @@ int DminMain(int argc, char** argv) {
     }
     int exceptionCount = 0;
     for (int i = 0; i != trios.size(); i++) { //
-        // Get the D values
-        double Dnum1 = ABBAtotals[i] - BABAtotals[i];
-        double Dnum2 = ABBAtotals[i] - BBAAtotals[i];
-        double Dnum3 = BBAAtotals[i] - BABAtotals[i];
         
-        double Ddenom1 = ABBAtotals[i] + BABAtotals[i];
-        double Ddenom2 = ABBAtotals[i] + BBAAtotals[i];
-        double Ddenom3 = BBAAtotals[i] + BABAtotals[i];
-        double D1 = Dnum1/Ddenom1; double D2 = Dnum2/Ddenom2; double D3 = Dnum3/Ddenom3;
-        double D1_p; double D2_p; double D3_p;
+       // std::cout << testTrios[i][0] << "\t" << testTrios[i][1] << "\t" << testTrios[i][2] << std::endl;
+       // std::cout << "D=" << (double)(ABBAtotals[i]-BABAtotals[i])/(ABBAtotals[i]+BABAtotals[i]) << std::endl;
+       // std::cout << "f_G=" << (double)Genome_f_G_num[i]/Genome_f_G_denom[i] << "\t" << Genome_f_G_num[i] << "/" << Genome_f_G_denom[i] << std::endl;
+       // std::cout << "f_d=" << (double)(ABBAtotals[i]-BABAtotals[i])/Genome_f_D_denom[i] << "\t" << (ABBAtotals[i]-BABAtotals[i]) << "/" << Genome_f_D_denom[i] << std::endl;
+       // std::cout << "f_dM=" << (double)(ABBAtotals[i]-BABAtotals[i])/Genome_f_DM_denom[i] << "\t" << (ABBAtotals[i]-BABAtotals[i]) << "/" << Genome_f_DM_denom[i] << std::endl;
+        
+        // Get the D values
         try {
-            // Get the standard error values:
-            double D1stdErr = jackknive_std_err(regionDs[i][0]); double D2stdErr = jackknive_std_err(regionDs[i][1]);
-            double D3stdErr = jackknive_std_err(regionDs[i][2]);
-            // Get the Z-scores
-            double D1_Z = std::fabs(D1)/D1stdErr; double D2_Z = std::fabs(D2)/D2stdErr;
-            double D3_Z = std::fabs(D3)/D3stdErr;
-            // And p-values
-            D1_p = 1 - normalCDF(D1_Z); D2_p = 1 - normalCDF(D2_Z);
-            D3_p = 1 - normalCDF(D3_Z);
+            trioInfos[i].calculateFinalDs();
         } catch (const char* msg) {
             exceptionCount++;
             if (exceptionCount <= 10) {
@@ -354,127 +406,47 @@ int DminMain(int argc, char** argv) {
                 std::cerr << "You should probably decrease the the jackknife block size (-j option)" << std::endl;
                 std::cerr << std::endl;
             }
-            D1_p = nan(""); D2_p = nan(""); D3_p = nan("");
+            trioInfos[i].D1_p = nan(""); trioInfos[i].D2_p = nan(""); trioInfos[i].D3_p = nan("");
         }
+        double D1 = trioInfos[i].D1; double D2 = trioInfos[i].D2; double D3 = trioInfos[i].D3;
         
-        // Find which topology is in agreement with the counts of the BBAA, BABA, and ABBA patterns
-        if (BBAAtotals[i] >= BABAtotals[i] && BBAAtotals[i] >= ABBAtotals[i]) {
-            if (D1 >= 0)
-                *outFileBBAA << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2];
-            else
-                *outFileBBAA << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2];
-            *outFileBBAA << "\t" << std::fabs(D1) << "\t" << D1_p << std::endl;;
-            //*outFileBBAA << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
-        } else if (BABAtotals[i] >= BBAAtotals[i] && BABAtotals[i] >= ABBAtotals[i]) {
-            if (D2 >= 0)
-                *outFileBBAA << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1];
-            else
-                *outFileBBAA << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1];
-            *outFileBBAA << "\t" << std::fabs(D2) << "\t" << D2_p << std::endl;;
-            //*outFileBBAA << BABAtotals[i] << "\t" << BBAAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
-        } else if (ABBAtotals[i] >= BBAAtotals[i] && ABBAtotals[i] >= BABAtotals[i]) {
-            if (D3 >= 0)
-                *outFileBBAA << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0];
-            else
-                *outFileBBAA << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0];
-            *outFileBBAA << "\t" << std::fabs(D3) << "\t" << D3_p << std::endl;;
-            //*outFileBBAA << ABBAtotals[i] << "\t" << BABAtotals[i] << "\t" << BBAAtotals[i] << std::endl;
-        }
+        // Find which topology is in agreement with the counts of BBAA, BABA, and ABBA
+        std::vector<string> BBAAoutVec = trioInfos[i].assignBBAAarrangement(trios[i], opt::fStats);
+        print_vector(BBAAoutVec,*outFileBBAA);
         
         // Find Dmin:
-        if (std::fabs(D1) <= std::fabs(D2) && std::fabs(D1) <= std::fabs(D3)) { // (P3 == S3)
-            if (D1 >= 0)
-                *outFileDmin << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D1_p << std::endl;
-            else
-                *outFileDmin << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << std::fabs(D1) << "\t" << D1_p << std::endl;
-            // if (BBAAtotals[i] < BABAtotals[i] || BBAAtotals[i] < ABBAtotals[i])
-            //     std::cerr << "\t" << "WARNING: Dmin tree different from DAF tree" << std::endl;
-        } else if (std::fabs(D2) <= std::fabs(D1) && std::fabs(D2) <= std::fabs(D3)) { // (P3 == S2)
-            if (D2 >= 0)
-                *outFileDmin << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << D2_p << std::endl;
-            else
-                *outFileDmin << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << std::fabs(D2) << "\t" << D2_p << std::endl;
-            // if (BABAtotals[i] < BBAAtotals[i] || BABAtotals[i] < ABBAtotals[i])
-            //     std::cerr << "\t" << "WARNING: Dmin tree different from DAF tree" << std::endl;
-        } else if (std::fabs(D3) <= std::fabs(D1) && std::fabs(D3) <= std::fabs(D2)) { // (P3 == S1)
-            if (D3 >= 0)
-                *outFileDmin << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << D3_p << std::endl;
-            else
-                *outFileDmin << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << std::fabs(D3) << "\t" << D3_p << std::endl;
-            // if (ABBAtotals[i] < BBAAtotals[i] || ABBAtotals[i] < BABAtotals[i])
-            //     std::cerr << "\t" << "WARNING: Dmin tree different from DAF tree" << std::endl;
-        }
+        std::vector<string> DminOutVec = trioInfos[i].assignDminArrangement(trios[i], opt::fStats);
+        print_vector(DminOutVec,*outFileDmin);
         
         // Find which arrangement of trios is consistent with the input tree (if provided):
         if (opt::treeFile != "") {
-            int loc1 = treeTaxonNamesToLoc[trios[i][0]][0];
-            int loc2 = treeTaxonNamesToLoc[trios[i][1]][0];
-            int loc3 = treeTaxonNamesToLoc[trios[i][2]][0];
-            
-            int arrangement = 0;    // 1 - trios[i][0] and trios[i][2] are P1 and P2
-                                    // 2 - trios[i][0] and trios[i][1] are P1 and P2
-                                    // 3 - trios[i][1] and trios[i][2] are P1 and P2
-            int midLoc = std::max(std::min(loc1,loc2), std::min(std::max(loc1,loc2),loc3));
-            if (midLoc == loc1) {
-                if (loc2 < loc1) {
-                    int m1 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc1);
-                    int m2 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc3);
-                    if (m1 < m2) arrangement = 1; else arrangement = 2;
-                } else {
-                    int m1 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc1);
-                    int m2 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc2);
-                    if (m1 < m2) arrangement = 2; else arrangement = 1;
-                }
-            } else if (midLoc == loc2) {
-                if (loc1 < loc2) {
-                    int m1 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc2);
-                    int m2 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc3);
-                    if (m1 < m2) arrangement = 3; else arrangement = 2;
-                } else {
-                    int m1 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc2);
-                    int m2 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc1);
-                    if (m1 < m2) arrangement = 2; else arrangement = 3;
-                }
-            } else if (midLoc == loc3) {
-                if (loc1 < loc3) {
-                    int m1 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc3);
-                    int m2 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc2);
-                    if (m1 < m2) arrangement = 3; else arrangement = 1;
-                    
-                } else {
-                    int m1 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc3);
-                    int m2 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc1);
-                    if (m1 < m2) arrangement = 1; else arrangement = 3;
-                }
-            }
-            switch (arrangement)
-            {
+            switch (trioInfos[i].treeArrangement) {
                 case 1:
-                    if (D2 >= 0)
-                        *outFileTree << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << D2_p << std::endl;
+                    if (D1 >= 0)
+                        *outFileTree << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << trioInfos[i].D1_p << std::endl;
                     else
-                        *outFileTree << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << std::fabs(D2) << "\t" << D2_p << std::endl;
+                        *outFileTree << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << std::fabs(D1) << "\t" << trioInfos[i].D1_p << std::endl;
                     break;
                 case 2:
-                    if (D1 >= 0)
-                        *outFileTree << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D1_p << std::endl;
+                    if (D2 >= 0)
+                        *outFileTree << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << trioInfos[i].D2_p << std::endl;
                     else
-                        *outFileTree << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << std::fabs(D1) << "\t" << D1_p << std::endl;
+                        *outFileTree << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << std::fabs(D2) << "\t" << trioInfos[i].D2_p << std::endl;
                     break;
                 case 3:
                     if (D3 >= 0)
-                        *outFileTree << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << D3_p << std::endl;
+                        *outFileTree << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << trioInfos[i].D3_p << std::endl;
                     else
-                        *outFileTree << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << std::fabs(D3) << "\t" << D3_p << std::endl;
+                        *outFileTree << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << std::fabs(D3) << "\t" << trioInfos[i].D3_p << std::endl;
                     break;
             }
 
         }
         
         // Output a simple file that can be used for combining multiple local runs:
-        *outFileCombine << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
-        print_vector(regionDs[i][0], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t"; print_vector(regionDs[i][1], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t";
-        print_vector(regionDs[i][2], *outFileCombineStdErr, ',',false); *outFileCombineStdErr << std::endl;
+        *outFileCombine << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << trioInfos[i].BBAAtotal << "\t" << trioInfos[i].BABAtotal << "\t" << trioInfos[i].ABBAtotal << std::endl;
+        print_vector(trioInfos[i].regionDs[0], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t"; print_vector(trioInfos[i].regionDs[1], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t";
+        print_vector(trioInfos[i].regionDs[2], *outFileCombineStdErr, ',',false); *outFileCombineStdErr << std::endl;
         
         //std::cerr << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D2 << "\t" << D3 << "\t" << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
     }
@@ -501,6 +473,8 @@ void parseDminOptions(int argc, char** argv) {
             case 'n': arg >> opt::runName; break;
             case 't': arg >> opt::treeFile; break;
             case 'j': arg >> opt::jkWindowSize; break;
+            case 'f': opt::fStats = true; break;
+            case 'p': opt::Patterson = true; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
                 opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;
             case 'h':

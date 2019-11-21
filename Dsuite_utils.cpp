@@ -13,6 +13,27 @@ double normalCDF(double x) // Phi(-∞, x) aka N(x)
     return erfc(-x/std::sqrt(2))/2;
 }
 
+double Fd_Denom_perVariant(double p1, double p2, double p3, double pO) {
+    double Fd_Denom = 0;
+    if (p2 > p3) Fd_Denom = ((1-p1)*p2*p2*(1-pO)) - (p1*(1-p2)*p2*(1-pO));
+    else Fd_Denom = ((1-p1)*p3*p3*(1-pO)) - (p1*(1-p3)*p3*(1-pO));
+    return Fd_Denom;
+}
+
+double FdM_Denom_perVariant(double p1, double p2, double p3, double pO) {
+    double FdM_Denom = 0;
+    if (p1 <= p2) {
+        if (p2 > p3) FdM_Denom = ((1-p1) * p2 * p2 * (1-pO)) - (p1 * (1-p2) * p2 * (1-pO));
+        else FdM_Denom = ((1-p1) * p3 * p3 * (1-pO)) - (p1 * (1-p3) * p3 * (1-pO));
+    } else {
+        if (p1 > p3) FdM_Denom = -(((1-p1)*p2*p1*(1-pO)) - (p1*(1-p2)*p1*(1-pO)));
+        else FdM_Denom = -(((1-p3)*p2*p3*(1-pO)) - (p3*(1-p2)*p3*(1-pO)));
+    }
+    return FdM_Denom;
+}
+
+
+
 // Works only on biallelic markers
 void GeneralSetCounts::getSetVariantCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
     
@@ -80,7 +101,7 @@ void GeneralSetCounts::getBasicCounts(const std::vector<std::string>& genotypes,
     }
 }
 
-void GeneralSetCountsWithSplits::getBasicCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
+void GeneralSetCountsWithSplits::getBasicCountsWithSplits(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
     // Go through the genotypes - only biallelic markers are allowed
     for (std::vector<std::string>::size_type i = 0; i != genotypes.size(); i++) {
         double r = ((double) rand() / (RAND_MAX)); bool speciesDefined = true;
@@ -130,7 +151,7 @@ void GeneralSetCountsWithSplits::getBasicCounts(const std::vector<std::string>& 
 
 void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
     
-    getBasicCounts(genotypes, posToSpeciesMap);
+    getBasicCountsWithSplits(genotypes, posToSpeciesMap);
     
     // If at least one of the outgroup individuals has non-missing data
     // Find out what is the "ancestral allele" - i.e. the one more common in the outgroup
@@ -175,6 +196,19 @@ void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& 
     }
 }
 
+
+double* calculateThreeDs(double ABBAtotal, double BABAtotal, double BBAAtotal) {
+    // Get the D values
+    double Dnum1 = ABBAtotal - BABAtotal;
+    double Dnum2 = ABBAtotal - BBAAtotal;
+    double Dnum3 = BBAAtotal - BABAtotal;
+    
+    double Ddenom1 = ABBAtotal + BABAtotal;
+    double Ddenom2 = ABBAtotal + BBAAtotal;
+    double Ddenom3 = BBAAtotal + BABAtotal;
+    static double Ds[3]; Ds[0] = Dnum1/Ddenom1; Ds[1] = Dnum2/Ddenom2; Ds[2] = Dnum3/Ddenom3;
+    return Ds;
+}
 
 
 double stringToDouble(std::string s) {

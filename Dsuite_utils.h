@@ -29,6 +29,9 @@ using std::string;
 // VCF format constant
 static const int NUM_NON_GENOTYPE_COLUMNS=9;  // 8 mendatory columns + 1 column with definition of the genotype columns
 
+double* calculateThreeDs(double ABBAtotal, double BABAtotal, double BBAAtotal);
+double Fd_Denom_perVariant(double p1, double p2, double p3, double pO);
+double FdM_Denom_perVariant(double p1, double p2, double p3, double pO);
 double normalCDF(double x);
 double stringToDouble(std::string s);
 std::string stripExtension(const std::string& filename);
@@ -187,7 +190,7 @@ public:
     void getSplitCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
 
 private:
-    void getBasicCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
+    void getBasicCountsWithSplits(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
 };
 
 #endif /* Dsuite_utils_h */
