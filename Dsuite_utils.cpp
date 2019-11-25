@@ -197,6 +197,17 @@ void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& 
 }
 
 
+double calculateOneDs(double ABBAtotal, double BABAtotal) {
+    // Get the D values
+    double Dnum1 = ABBAtotal - BABAtotal;
+    
+    double Ddenom1 = ABBAtotal + BABAtotal;
+    double D = Dnum1/Ddenom1;
+    return D;
+}
+
+
+
 double* calculateThreeDs(double ABBAtotal, double BABAtotal, double BBAAtotal) {
     // Get the D values
     double Dnum1 = ABBAtotal - BABAtotal;

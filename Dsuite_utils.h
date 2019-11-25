@@ -25,10 +25,15 @@
 #define PACKAGE_BUGREPORT "milan.malinsky@unibas.ch"
 #define GZIP_EXT ".gz"
 
+#define P3isTrios2 1
+#define P3isTrios1 2
+#define P3isTrios0 3
+
 using std::string;
 // VCF format constant
 static const int NUM_NON_GENOTYPE_COLUMNS=9;  // 8 mendatory columns + 1 column with definition of the genotype columns
 
+double calculateOneDs(double ABBAtotal, double BABAtotal);
 double* calculateThreeDs(double ABBAtotal, double BABAtotal, double BBAAtotal);
 double Fd_Denom_perVariant(double p1, double p2, double p3, double pO);
 double FdM_Denom_perVariant(double p1, double p2, double p3, double pO);
@@ -120,7 +125,7 @@ inline void copy_except(int i, std::vector<double>& inVec, std::vector<double>& 
 
 // jackknive standard error
 template <class T> double jackknive_std_err(T& vector) {
-    if (vector.size() <= 2) {
+    if (vector.size() <= 10) {
         throw "WARNING: Not enough blocks to calculate jackknife!!";
     }
     std::vector<double> jackkniveAverages;

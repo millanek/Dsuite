@@ -8,8 +8,9 @@
 
 #ifndef Dmin_h
 #define Dmin_h
-
 #include "Dsuite_utils.h"
+
+
 void parseDminOptions(int argc, char** argv);
 int DminMain(int argc, char** argv);
 
@@ -20,7 +21,10 @@ public:
         BABAtotal = 0;
         BBAAtotal = 0;
         treeArrangement = 0; BBAAarrangement = 0; DminArrangement = 0;
-        regionDs.resize(3);
+        regionDs.resize(3); usedVars.resize(3);
+        usedVars[0] = 0; usedVars[1] = 0; usedVars[2] = 0;
+        localD1num = 0; localD2num = 0; localD3num = 0;
+        localD1denom = 0; localD2denom = 0; localD3denom = 0;
     };
     
     // string P1; string P2; string P3;
@@ -30,7 +34,10 @@ public:
     double F_dM_denom; double F_dM_denom_reversed;
     double F_G_denom; double F_G_denom_reversed;
     
-    double localABBAtotal; double localBABAtotal; double localBBAAtotal; std::vector<std::vector<double>> regionDs; // vector with three empty (double) vectors
+    double localD1num; double localD2num; double localD3num;
+    double localD1denom; double localD2denom; double localD3denom;
+    std::vector<std::vector<double>> regionDs; // vector with three empty (double) vectors
+    std::vector<int> usedVars;
     
     int treeArrangement;    // 1 - trios[i][0] and trios[i][1] are P1 and P2
                             // 2 - trios[i][0] and trios[i][2] are P1 and P2
@@ -85,17 +92,17 @@ public:
         std::vector<string> outVec; if (fStats) outVec.resize(11); else outVec.resize(5);
         // Find which topology is in agreement with the counts of the BBAA, BABA, and ABBA patterns
         if (BBAAtotal >= BABAtotal && BBAAtotal >= ABBAtotal) {
-            BBAAarrangement = 1; outVec[2] = trio[2];
+            BBAAarrangement = P3isTrios2; outVec[2] = trio[2];
             if (D1 >= 0) {outVec[0] = trio[0]; outVec[1] = trio[1]; }
             else { outVec[0] = trio[1]; outVec[1] = trio[0]; }
             outVec[3] = numToString(std::fabs(D1)); outVec[4] = numToString(D1_p);
         } else if (BABAtotal >= BBAAtotal && BABAtotal >= ABBAtotal) {
-            BBAAarrangement = 2; outVec[2] = trio[1];
+            BBAAarrangement = P3isTrios1; outVec[2] = trio[1];
             if (D2 >= 0) {outVec[0] = trio[0]; outVec[1] = trio[2]; }
             else { outVec[0] = trio[2]; outVec[1] = trio[0]; }
             outVec[3] = numToString(std::fabs(D2)); outVec[4] = numToString(D2_p);
         } else if (ABBAtotal >= BBAAtotal && ABBAtotal >= BABAtotal) {
-            BBAAarrangement = 3; outVec[2] = trio[0];
+            BBAAarrangement = P3isTrios0; outVec[2] = trio[0];
             if (D3 >= 0) {outVec[0] = trio[2]; outVec[1] = trio[1]; }
             else { outVec[0] = trio[1]; outVec[1] = trio[2]; }
             outVec[3] = numToString(std::fabs(D3)); outVec[4] = numToString(D3_p);
@@ -106,17 +113,17 @@ public:
     std::vector<string> assignDminArrangement(std::vector<string>& trio, bool fStats) {
         std::vector<string> outVec; if (fStats) outVec.resize(11); else outVec.resize(5);
         if (std::fabs(D1) <= std::fabs(D2) && std::fabs(D1) <= std::fabs(D3)) { // (P3 == S3)
-            DminArrangement = 1; outVec[2] = trio[2];
+            DminArrangement = P3isTrios2; outVec[2] = trio[2];
             if (D1 >= 0) { outVec[0] = trio[0]; outVec[1] = trio[1]; }
             else {outVec[0] = trio[1]; outVec[1] = trio[0];}
             outVec[3] = numToString(std::fabs(D1)); outVec[4] = numToString(D1_p);
         } else if (std::fabs(D2) <= std::fabs(D1) && std::fabs(D2) <= std::fabs(D3)) { // (P3 == S2)
-            DminArrangement = 2; outVec[2] = trio[1];
+            DminArrangement = P3isTrios1; outVec[2] = trio[1];
             if (D2 >= 0) {outVec[0] = trio[0]; outVec[1] = trio[2]; }
             else { outVec[0] = trio[2]; outVec[1] = trio[0]; }
             outVec[3] = numToString(std::fabs(D2)); outVec[4] = numToString(D2_p);
         } else if (std::fabs(D3) <= std::fabs(D1) && std::fabs(D3) <= std::fabs(D2)) { // (P3 == S1)
-            DminArrangement = 3; outVec[2] = trio[0];
+            DminArrangement = P3isTrios0; outVec[2] = trio[0];
             if (D3 >= 0) {outVec[0] = trio[2]; outVec[1] = trio[1]; }
             else { outVec[0] = trio[1]; outVec[1] = trio[2]; }
             outVec[3] = numToString(std::fabs(D3)); outVec[4] = numToString(D3_p);
@@ -141,10 +148,12 @@ public:
         D3_p = 1 - normalCDF(D3_Z);
     }
     
-    void addRegionDs() {
-        double* Ds = calculateThreeDs(localABBAtotal, localBABAtotal, localBBAAtotal);
-        regionDs[0].push_back(Ds[0]); regionDs[1].push_back(Ds[1]); regionDs[2].push_back(Ds[2]);
-        localABBAtotal = 0; localBABAtotal = 0; localBBAAtotal = 0;
+    void addRegionDs(int arrangement) {
+        switch (arrangement) {
+            case P3isTrios2: regionDs[0].push_back(localD1num/localD1denom); localD1num = 0; localD1denom = 0; break;
+            case P3isTrios1: regionDs[1].push_back(localD2num/localD2denom); localD2num = 0; localD2denom = 0; break;
+            case P3isTrios0: regionDs[2].push_back(localD3num/localD3denom); localD3num = 0; localD3denom = 0; break;
+        }
     }
     
 };

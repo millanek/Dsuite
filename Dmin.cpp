@@ -20,7 +20,7 @@ static const char *DMIN_USAGE_MESSAGE =
 "The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
-"       -j, --JKwindow                          (default=20000) Jackknife block size in SNPs\n"
+"       -j, --JKwindow                          (default=2000) Jackknife block size in SNPs\n"
 "       -r , --region=start,length              (optional) only process a subset of the VCF file\n"
 "       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix\n"
@@ -48,7 +48,7 @@ namespace opt
     static string setsFile;
     static string treeFile = "";
     static string runName = "";
-    int jkWindowSize = 20000;
+    int jkWindowSize = 2000;
     int regionStart = -1;
     int regionLength = -1;
     bool fStats = false;
@@ -328,14 +328,20 @@ int DminMain(int argc, char** argv) {
                 if (p_S1 == 1 && p_S2 == 1 && p_S3 == 1) continue; // Checking if the SNP is variable in the trio
                 usedVars[i]++;
                 
-                ABBA = (1-p_S1)*p_S2*p_S3*(1-p_O); trioInfos[i].ABBAtotal += ABBA; trioInfos[i].localABBAtotal += ABBA;
-                BABA = p_S1*(1-p_S2)*p_S3*(1-p_O); trioInfos[i].BABAtotal += BABA; trioInfos[i].localBABAtotal += BABA;
-                BBAA = p_S1*p_S2*(1-p_S3)*(1-p_O); trioInfos[i].BBAAtotal += BBAA; trioInfos[i].localBBAAtotal += BBAA;
+                ABBA = (1-p_S1)*p_S2*p_S3*(1-p_O); trioInfos[i].ABBAtotal += ABBA;
+                BABA = p_S1*(1-p_S2)*p_S3*(1-p_O); trioInfos[i].BABAtotal += BABA;
+                BBAA = p_S1*p_S2*(1-p_S3)*(1-p_O); trioInfos[i].BBAAtotal += BBAA;
+                if (ABBA + BABA != 0) trioInfos[i].usedVars[0]++; trioInfos[i].localD1num += ABBA - BABA; trioInfos[i].localD1denom += ABBA + BABA;
+                if (ABBA + BBAA != 0) trioInfos[i].usedVars[1]++; trioInfos[i].localD2num += ABBA - BBAA; trioInfos[i].localD2denom += ABBA + BBAA;
+                if (BBAA + BABA != 0) trioInfos[i].usedVars[2]++; trioInfos[i].localD3num += BBAA - BABA; trioInfos[i].localD3denom += BBAA + BABA;
                 
                 if (opt::Patterson) {
-                    BAAB = p_S1*(1-p_S2)*(1-p_S3)*p_O; trioInfos[i].ABBAtotal += BAAB; trioInfos[i].localABBAtotal += BAAB;
-                    ABAB = (1-p_S1)*p_S2*(1-p_S3)*p_O; trioInfos[i].BABAtotal += ABAB; trioInfos[i].localBABAtotal += ABAB;
-                    AABB = (1-p_S1)*(1-p_S2)*p_S3*p_O; trioInfos[i].BBAAtotal += AABB; trioInfos[i].localBBAAtotal += AABB;
+                    BAAB = p_S1*(1-p_S2)*(1-p_S3)*p_O; trioInfos[i].ABBAtotal += BAAB;
+                    ABAB = (1-p_S1)*p_S2*(1-p_S3)*p_O; trioInfos[i].BABAtotal += ABAB;
+                    AABB = (1-p_S1)*(1-p_S2)*p_S3*p_O; trioInfos[i].BBAAtotal += AABB;
+                    if (BAAB + ABAB != 0)  trioInfos[i].localD1num += BAAB - ABAB; trioInfos[i].localD1denom += BAAB + ABAB;
+                    if (BAAB + AABB != 0)  trioInfos[i].localD2num += BAAB - AABB; trioInfos[i].localD2denom += BAAB + AABB;
+                    if (AABB + ABAB != 0)  trioInfos[i].localD3num += AABB - ABAB; trioInfos[i].localD3denom += AABB + ABAB;
                 }
                 
                 if (opt::fStats && opt::treeFile != "") {
@@ -360,21 +366,21 @@ int DminMain(int argc, char** argv) {
                     if (c_S3a > 0 && c_S3b > 0) {
                         double p_S3a = 0; double p_S3b = 0;
                         switch (trioInfos[i].treeArrangement) {
-                            case 1: p_S3a = allSplit1Ps[triosInt[i][2]]; p_S3b = allSplit2Ps[triosInt[i][2]]; break;
-                            case 2: p_S3a = allSplit1Ps[triosInt[i][1]]; p_S3b = allSplit2Ps[triosInt[i][1]]; break;
-                            case 3: p_S3a = allSplit1Ps[triosInt[i][0]]; p_S3b = allSplit2Ps[triosInt[i][0]]; break;
+                            case P3isTrios2: p_S3a = allSplit1Ps[triosInt[i][2]]; p_S3b = allSplit2Ps[triosInt[i][2]]; break;
+                            case P3isTrios1: p_S3a = allSplit1Ps[triosInt[i][1]]; p_S3b = allSplit2Ps[triosInt[i][1]]; break;
+                            case P3isTrios0: p_S3a = allSplit1Ps[triosInt[i][0]]; p_S3b = allSplit2Ps[triosInt[i][0]]; break;
                         }
                         trioInfos[i].F_G_denom += ((1-p_S1t)*p_S3a*p_S3b*(1-p_O)) - (p_S1t*(1-p_S3a)*p_S3b*(1-p_O));
                         trioInfos[i].F_G_denom_reversed += ((1-p_S2t)*p_S3a*p_S3b*(1-p_O)) - (p_S2t*(1-p_S3a)*p_S3b*(1-p_O));
-                       // usedVars_f_G[i]++;
                     } else if (p_S3t == 1) {
                         trioInfos[i].F_G_denom += (1-p_S1t)*(1-p_O);
                         trioInfos[i].F_G_denom_reversed += (1-p_S2t)*(1-p_O);
-                      //  usedVars_f_G[i]++;
                     }
                 }
             
-                if (usedVars[i] % opt::jkWindowSize == 0) trioInfos[i].addRegionDs();
+                if (trioInfos[i].usedVars[0] % opt::jkWindowSize == 0) trioInfos[i].addRegionDs(P3isTrios2);
+                if (trioInfos[i].usedVars[1] % opt::jkWindowSize == 0) trioInfos[i].addRegionDs(P3isTrios1);
+                if (trioInfos[i].usedVars[2] % opt::jkWindowSize == 0) trioInfos[i].addRegionDs(P3isTrios0);
                 // }
             }
             durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
@@ -404,6 +410,7 @@ int DminMain(int argc, char** argv) {
                 std::cerr << msg << std::endl;
                 std::cerr << "Could not calculate p-values for the trio: " << trios[i][0] << " " << trios[i][1] << " " << trios[i][2] << std::endl;
                 std::cerr << "You should probably decrease the the jackknife block size (-j option)" << std::endl;
+                std::cerr << "Or use DtriosCombine if this was a run for a subset of the genome (e.g. one chromosome)" << std::endl;
                 std::cerr << std::endl;
             }
             trioInfos[i].D1_p = nan(""); trioInfos[i].D2_p = nan(""); trioInfos[i].D3_p = nan("");
@@ -421,23 +428,17 @@ int DminMain(int argc, char** argv) {
         // Find which arrangement of trios is consistent with the input tree (if provided):
         if (opt::treeFile != "") {
             switch (trioInfos[i].treeArrangement) {
-                case 1:
-                    if (D1 >= 0)
-                        *outFileTree << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << trioInfos[i].D1_p << std::endl;
-                    else
-                        *outFileTree << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << std::fabs(D1) << "\t" << trioInfos[i].D1_p << std::endl;
+                case P3isTrios2:
+                    if (D1 >= 0) *outFileTree << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << trioInfos[i].D1_p << std::endl;
+                    else *outFileTree << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << std::fabs(D1) << "\t" << trioInfos[i].D1_p << std::endl;
                     break;
-                case 2:
-                    if (D2 >= 0)
-                        *outFileTree << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << trioInfos[i].D2_p << std::endl;
-                    else
-                        *outFileTree << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << std::fabs(D2) << "\t" << trioInfos[i].D2_p << std::endl;
+                case P3isTrios1:
+                    if (D2 >= 0) *outFileTree << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << trioInfos[i].D2_p << std::endl;
+                    else *outFileTree << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << std::fabs(D2) << "\t" << trioInfos[i].D2_p << std::endl;
                     break;
-                case 3:
-                    if (D3 >= 0)
-                        *outFileTree << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << trioInfos[i].D3_p << std::endl;
-                    else
-                        *outFileTree << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << std::fabs(D3) << "\t" << trioInfos[i].D3_p << std::endl;
+                case P3isTrios0:
+                    if (D3 >= 0) *outFileTree << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << trioInfos[i].D3_p << std::endl;
+                    else *outFileTree << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << std::fabs(D3) << "\t" << trioInfos[i].D3_p << std::endl;
                     break;
             }
 
@@ -449,12 +450,6 @@ int DminMain(int argc, char** argv) {
         print_vector(trioInfos[i].regionDs[2], *outFileCombineStdErr, ',',false); *outFileCombineStdErr << std::endl;
         
         //std::cerr << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D2 << "\t" << D3 << "\t" << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
-    }
-    if (exceptionCount > 10) {
-        std::cerr << "..." << std::endl;
-        std::cerr << "p-value could not be claculated for " << exceptionCount << " trios" << std::endl;
-        std::cerr << "You should definitely decrease the the jackknife block size!!!" << std::endl;
-        std::cerr << std::endl;
     }
     return 0;
     
