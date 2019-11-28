@@ -165,7 +165,7 @@ void doAbbaBaba() {
             if (totalVariantNumber % reportProgressEvery == 0) {
                 durationOverall = ( clock() - start ) / (double) CLOCKS_PER_SEC;
                 std::cerr << "Processed " << totalVariantNumber << " variants in " << durationOverall << "secs" << std::endl;
-                std::cerr << "GettingCounts " << durationGettingCounts << " calculation " << durationCalculation << "secs" << std::endl;
+                //std::cerr << "GettingCounts " << durationGettingCounts << " calculation " << durationCalculation << "secs" << std::endl;
             }
             fields = split(line, '\t'); chr = fields[0]; coord = fields[1];
             std::vector<std::string> genotypes(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
@@ -255,8 +255,6 @@ void doAbbaBaba() {
                     usedVars_f_G[i]++;
                 }
                 
-                ABBAtotals[i] += ABBA;
-                BABAtotals[i] += BABA;
                 testTrioResults[i][0].push_back(ABBA); testTrioResults[i][1].push_back(BABA); testTrioResults[i][2].push_back(F_d_denom);
                 testTrioResults[i][3].push_back(F_dM_denom); testTrioResults[i][4].push_back(stringToDouble(coord));
                 testTrioResults[i][0].pop_front(); testTrioResults[i][1].pop_front(); testTrioResults[i][2].pop_front();

@@ -36,6 +36,7 @@ static const int NUM_NON_GENOTYPE_COLUMNS=9;  // 8 mendatory columns + 1 column 
 double calculateOneDs(double ABBAtotal, double BABAtotal);
 double* calculateThreeDs(double ABBAtotal, double BABAtotal, double BBAAtotal);
 double Fd_Denom_perVariant(double p1, double p2, double p3, double pO);
+double fG_Denom_perVariant(double p1, double p3a, double p3b, double pO);
 double FdM_Denom_perVariant(double p1, double p2, double p3, double pO);
 double normalCDF(double x);
 double stringToDouble(std::string s);
@@ -45,6 +46,7 @@ std::vector<size_t> locateSet(std::vector<std::string>& sample_names, const std:
 std::istream* createReader(const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
 std::ostream* createWriter(const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
 bool file_exists(const std::string& name);
+void assignTreeLevelsAndLinkToTaxa(string& treeLine, std::map<string,std::vector<int>>& taxaToLoc, std::vector<int>& levels);
 
 // Converting numbers (int, double, size_t, and char) to string
 template <typename T> std::string numToString(T i) {
@@ -125,8 +127,8 @@ inline void copy_except(int i, std::vector<double>& inVec, std::vector<double>& 
 
 // jackknive standard error
 template <class T> double jackknive_std_err(T& vector) {
-    if (vector.size() <= 10) {
-        throw "WARNING: Not enough blocks to calculate jackknife!!";
+    if (vector.size() < 5) {
+        throw "WARNING: Fewer than five blocks to calculate jackknife!!";
     }
     std::vector<double> jackkniveAverages;
     std::vector<double> JregionDs; JregionDs.resize(vector.size()-1);

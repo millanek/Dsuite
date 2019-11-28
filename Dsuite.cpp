@@ -14,7 +14,7 @@
 #include "Dsuite_fBranch.h"
 
 #define AUTHOR "Milan Malinsky"
-#define PACKAGE_VERSION "0.2 r10"
+#define PACKAGE_VERSION "0.2 r11"
 
 
 static const char *VERSION_MESSAGE =

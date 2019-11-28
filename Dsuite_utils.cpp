@@ -20,6 +20,11 @@ double Fd_Denom_perVariant(double p1, double p2, double p3, double pO) {
     return Fd_Denom;
 }
 
+double fG_Denom_perVariant(double p1, double p3a, double p3b, double pO) {
+    double fG_Denom = ((1-p1)*p3a*p3b*(1-pO)) - (p1*(1-p3a)*p3b*(1-pO));
+    return fG_Denom;
+}
+
 double FdM_Denom_perVariant(double p1, double p2, double p3, double pO) {
     double FdM_Denom = 0;
     if (p1 <= p2) {
@@ -360,4 +365,48 @@ std::ostream* createWriter(const std::string& filename,
 bool file_exists(const std::string& name) {
     std::ifstream f(name.c_str());
     return f.good();
+}
+
+void assignTreeLevelsAndLinkToTaxa(string& treeLine, std::map<string,std::vector<int>>& taxaToLoc, std::vector<int>& levels) {
+    // First take care of any branch lengths
+    std::regex branchLengths(":.*?(?=,|\\))");
+    treeLine = std::regex_replace(treeLine,branchLengths,"");
+    //std::cerr << line << std::endl;
+
+    // Now process the tree
+    levels.assign(treeLine.length(),0); int currentLevel = 0;
+    std::vector<string> treeTaxonNames;
+    string currentTaxonName = "";
+    int lastBegin = 0;
+    for (int i = 0; i < treeLine.length(); ++i) {
+        if (treeLine[i] == '(') {
+            currentLevel++; levels[i] = currentLevel;
+        } else if (treeLine[i] == ')') {
+            currentLevel--; levels[i] = currentLevel;
+            if (currentTaxonName != "") {
+                treeTaxonNames.push_back(currentTaxonName);
+                taxaToLoc[currentTaxonName].push_back(lastBegin);
+                taxaToLoc[currentTaxonName].push_back(i-1);
+                currentTaxonName = "";
+            }
+        } else if (treeLine[i] == ',') {
+            levels[i] = currentLevel;
+            if (currentTaxonName != "") {
+                treeTaxonNames.push_back(currentTaxonName);
+                taxaToLoc[currentTaxonName].push_back(lastBegin);
+                taxaToLoc[currentTaxonName].push_back(i-1);
+                currentTaxonName = "";
+            }
+        } else {
+            if (currentTaxonName == "")
+                lastBegin = i;
+            levels[i] = currentLevel;
+            currentTaxonName += treeLine[i];
+        }
+    }
+    //print_vector(treeTaxonNames, std::cout,'\n');
+    //print_vector(treeLevels, std::cout,' ');
+    //for (std::map<string,std::vector<int>>::iterator i = treeTaxonNamesToLoc.begin(); i != treeTaxonNamesToLoc.end(); i++) {
+    //    std::cout << i->first << "\t" << i->second[0] << "\t" << i->second[1] << "\t" << treeLevels[i->second[0]] << "\t" << treeLevels[i->second[1]] << std::endl;
+    //}
 }

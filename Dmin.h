@@ -25,14 +25,19 @@ public:
         usedVars[0] = 0; usedVars[1] = 0; usedVars[2] = 0;
         localD1num = 0; localD2num = 0; localD3num = 0;
         localD1denom = 0; localD2denom = 0; localD3denom = 0;
+        F_d_denom1 = 0; F_d_denom1_reversed = 0; F_dM_denom1 = 0; F_dM_denom1_reversed = 0; F_G_denom1 = 0; F_G_denom1_reversed = 0;
+        F_d_denom2 = 0; F_d_denom2_reversed = 0; F_dM_denom2 = 0; F_dM_denom2_reversed = 0; F_G_denom2 = 0; F_G_denom2_reversed = 0;
+        F_d_denom3 = 0; F_d_denom3_reversed = 0; F_dM_denom3 = 0; F_dM_denom3_reversed = 0; F_G_denom3 = 0; F_G_denom3_reversed = 0;
     };
     
     // string P1; string P2; string P3;
     double ABBAtotal; double BABAtotal; double BBAAtotal;
     double D1; double D2; double D3; double D1_p; double D2_p; double D3_p;
-    double F_d_denom; double F_d_denom_reversed;
-    double F_dM_denom; double F_dM_denom_reversed;
-    double F_G_denom; double F_G_denom_reversed;
+    double F_d_denom1; double F_d_denom1_reversed; double F_dM_denom1; double F_dM_denom1_reversed; double F_G_denom1; double F_G_denom1_reversed;
+    double F_d_denom2; double F_d_denom2_reversed; double F_dM_denom2; double F_dM_denom2_reversed; double F_G_denom2; double F_G_denom2_reversed;
+    double F_d_denom3; double F_d_denom3_reversed; double F_dM_denom3; double F_dM_denom3_reversed; double F_G_denom3; double F_G_denom3_reversed;
+    
+    
     
     double localD1num; double localD2num; double localD3num;
     double localD1denom; double localD2denom; double localD3denom;
@@ -150,9 +155,9 @@ public:
     
     void addRegionDs(int arrangement) {
         switch (arrangement) {
-            case P3isTrios2: regionDs[0].push_back(localD1num/localD1denom); localD1num = 0; localD1denom = 0; break;
-            case P3isTrios1: regionDs[1].push_back(localD2num/localD2denom); localD2num = 0; localD2denom = 0; break;
-            case P3isTrios0: regionDs[2].push_back(localD3num/localD3denom); localD3num = 0; localD3denom = 0; break;
+            case P3isTrios2: regionDs[0].push_back(localD1num/localD1denom); localD1num = 0; localD1denom = 0; usedVars[0] = 0; break;
+            case P3isTrios1: regionDs[1].push_back(localD2num/localD2denom); localD2num = 0; localD2denom = 0; usedVars[1] = 0; break;
+            case P3isTrios0: regionDs[2].push_back(localD3num/localD3denom); localD3num = 0; localD3denom = 0; usedVars[2] = 0; break;
         }
     }
     

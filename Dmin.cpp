@@ -20,7 +20,7 @@ static const char *DMIN_USAGE_MESSAGE =
 "The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
-"       -j, --JKwindow                          (default=2000) Jackknife block size in SNPs\n"
+"       -j, --JKwindow                          (default=1000) Jackknife block size in SNPs\n"
 "       -r , --region=start,length              (optional) only process a subset of the VCF file\n"
 "       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix\n"
@@ -48,7 +48,7 @@ namespace opt
     static string setsFile;
     static string treeFile = "";
     static string runName = "";
-    int jkWindowSize = 2000;
+    int jkWindowSize = 1000;
     int regionStart = -1;
     int regionLength = -1;
     bool fStats = false;
@@ -73,83 +73,32 @@ int DminMain(int argc, char** argv) {
     parseDminOptions(argc, argv);
     string line; // for reading the input files
     string setsFileRoot = stripExtension(opt::setsFile);
-    std::istream* treeFile;
-    std::ofstream* outFileTree;
+    std::istream* treeFile; std::ofstream* outFileTree;
     std::map<string,std::vector<int>> treeTaxonNamesToLoc; std::vector<int> treeLevels;
     if (opt::treeFile != "") {
         treeFile = new std::ifstream(opt::treeFile.c_str());
         if (!treeFile->good()) { std::cerr << "The file " << opt::treeFile << " could not be opened. Exiting..." << std::endl; exit(1);}
         outFileTree = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_tree.txt");
-
         getline(*treeFile, line);
-        // First take care of any branch lengths
-        std::regex branchLengths(":.*?(?=,|\\))");
-        line = std::regex_replace(line,branchLengths,"");
-        //std::cerr << line << std::endl;
-        
-        // Now process the tree
-        treeLevels.assign(line.length(),0); int currentLevel = 0;
-        std::vector<string> treeTaxonNames;
-        string currentTaxonName = "";
-        int lastBegin = 0;
-        for (int i = 0; i < line.length(); ++i) {
-            if (line[i] == '(') {
-                currentLevel++; treeLevels[i] = currentLevel;
-            } else if (line[i] == ')') {
-                currentLevel--; treeLevels[i] = currentLevel;
-                if (currentTaxonName != "") {
-                    treeTaxonNames.push_back(currentTaxonName);
-                    treeTaxonNamesToLoc[currentTaxonName].push_back(lastBegin);
-                    treeTaxonNamesToLoc[currentTaxonName].push_back(i-1);
-                    currentTaxonName = "";
-                }
-            } else if (line[i] == ',') {
-                treeLevels[i] = currentLevel;
-                if (currentTaxonName != "") {
-                    treeTaxonNames.push_back(currentTaxonName);
-                    treeTaxonNamesToLoc[currentTaxonName].push_back(lastBegin);
-                    treeTaxonNamesToLoc[currentTaxonName].push_back(i-1);
-                    currentTaxonName = "";
-                }
-            } else {
-                if (currentTaxonName == "")
-                    lastBegin = i;
-                treeLevels[i] = currentLevel;
-                currentTaxonName += line[i];
-            }
-        }
-        //print_vector(treeTaxonNames, std::cout,'\n');
-        //print_vector(treeLevels, std::cout,' ');
-        //for (std::map<string,std::vector<int>>::iterator i = treeTaxonNamesToLoc.begin(); i != treeTaxonNamesToLoc.end(); i++) {
-        //    std::cout << i->first << "\t" << i->second[0] << "\t" << i->second[1] << "\t" << treeLevels[i->second[0]] << "\t" << treeLevels[i->second[1]] << std::endl;
-        //}
+        assignTreeLevelsAndLinkToTaxa(line,treeTaxonNamesToLoc,treeLevels);
     }
     
     std::istream* vcfFile = createReader(opt::vcfFile.c_str());
     std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
     if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl; exit(1);}
-    std::ofstream* outFileBBAA;
-    std::ofstream* outFileDmin;
-    std::ofstream* outFileCombine;
-    std::ofstream* outFileCombineStdErr;
-    if (opt::regionStart == -1) {
-        outFileBBAA = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_BBAA.txt");
-        outFileDmin = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_Dmin.txt");
-        outFileCombine = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_combine.txt");
-        outFileCombineStdErr = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_combine_stderr.txt");
-    } else {
-        string fileNameString = setsFileRoot+"_"+opt::runName+"_"+numToString(opt::regionStart)+"_"+numToString(opt::regionStart+opt::regionLength);
-        outFileBBAA = new std::ofstream(fileNameString+"_BBAA.txt");
-        outFileDmin = new std::ofstream(fileNameString+"_Dmin.txt");
-        outFileCombine = new std::ofstream(fileNameString+"_combine.txt");
-        outFileCombineStdErr = new std::ofstream(fileNameString+"_combine_stderr.txt");
-    }
-
     
-    std::map<string, std::vector<string>> speciesToIDsMap;
-    std::map<string, string> IDsToSpeciesMap;
-    std::map<string, std::vector<size_t>> speciesToPosMap;
-    std::map<size_t, string> posToSpeciesMap;
+    std::ofstream* outFileBBAA; std::ofstream* outFileDmin;
+    std::ofstream* outFileCombine; std::ofstream* outFileCombineStdErr;
+    string fileNameString;
+    if (opt::regionStart == -1) fileNameString = setsFileRoot+ "_" + opt::runName;
+    else fileNameString = setsFileRoot+"_"+opt::runName+"_"+numToString(opt::regionStart)+"_"+numToString(opt::regionStart+opt::regionLength);
+    outFileBBAA = new std::ofstream(fileNameString+"_BBAA.txt");
+    outFileDmin = new std::ofstream(fileNameString+"_Dmin.txt");
+    outFileCombine = new std::ofstream(fileNameString+"_combine.txt");
+    outFileCombineStdErr = new std::ofstream(fileNameString+"_combine_stderr.txt");
+
+    std::map<string, std::vector<string>> speciesToIDsMap; std::map<string, string> IDsToSpeciesMap;
+    std::map<string, std::vector<size_t>> speciesToPosMap; std::map<size_t, string> posToSpeciesMap;
     
     // Get the sample sets
     bool outgroupSpecified = false;
@@ -219,9 +168,6 @@ int DminMain(int argc, char** argv) {
     std::vector<double> allSplit1Ps(species.size(),0.0); std::vector<int> allSplit1Counts(species.size(),0);
     std::vector<double> allSplit2Ps(species.size(),0.0); std::vector<int> allSplit2Counts(species.size(),0);
     
-    std::vector<int> usedVars(nCombinations,0); // Will count the number of used variants for each trio
-    std::vector<double> Genome_f_G_num(nCombinations,0); std::vector<double> Genome_f_G_denom(nCombinations,0);
-    std::vector<double> Genome_f_D_denom(nCombinations,0); std::vector<double> Genome_f_DM_denom(nCombinations,0);
     int totalVariantNumber = 0;
     std::vector<string> sampleNames; std::vector<std::string> fields;
     // Find out how often to report progress, based on the number of trios
@@ -326,61 +272,82 @@ int DminMain(int argc, char** argv) {
                 if (p_S3 == -1) continue;
                 if (p_S1 == 0 && p_S2 == 0 && p_S3 == 0) continue; // Checking if the SNP is variable in the trio
                 if (p_S1 == 1 && p_S2 == 1 && p_S3 == 1) continue; // Checking if the SNP is variable in the trio
-                usedVars[i]++;
                 
                 ABBA = (1-p_S1)*p_S2*p_S3*(1-p_O); trioInfos[i].ABBAtotal += ABBA;
                 BABA = p_S1*(1-p_S2)*p_S3*(1-p_O); trioInfos[i].BABAtotal += BABA;
                 BBAA = p_S1*p_S2*(1-p_S3)*(1-p_O); trioInfos[i].BBAAtotal += BBAA;
-                if (ABBA + BABA != 0) trioInfos[i].usedVars[0]++; trioInfos[i].localD1num += ABBA - BABA; trioInfos[i].localD1denom += ABBA + BABA;
-                if (ABBA + BBAA != 0) trioInfos[i].usedVars[1]++; trioInfos[i].localD2num += ABBA - BBAA; trioInfos[i].localD2denom += ABBA + BBAA;
-                if (BBAA + BABA != 0) trioInfos[i].usedVars[2]++; trioInfos[i].localD3num += BBAA - BABA; trioInfos[i].localD3denom += BBAA + BABA;
+                if ((ABBA + BABA) != 0) { trioInfos[i].usedVars[0]++; trioInfos[i].localD1num += ABBA - BABA; trioInfos[i].localD1denom += ABBA + BABA; }
+                if ((ABBA + BBAA) != 0) { trioInfos[i].usedVars[1]++; trioInfos[i].localD2num += ABBA - BBAA; trioInfos[i].localD2denom += ABBA + BBAA; }
+                if ((BBAA + BABA) != 0) { trioInfos[i].usedVars[2]++; trioInfos[i].localD3num += BBAA - BABA; trioInfos[i].localD3denom += BBAA + BABA; }
                 
-                if (opt::Patterson) {
+                if (opt::Patterson && (p_O != 0)) {
                     BAAB = p_S1*(1-p_S2)*(1-p_S3)*p_O; trioInfos[i].ABBAtotal += BAAB;
                     ABAB = (1-p_S1)*p_S2*(1-p_S3)*p_O; trioInfos[i].BABAtotal += ABAB;
                     AABB = (1-p_S1)*(1-p_S2)*p_S3*p_O; trioInfos[i].BBAAtotal += AABB;
-                    if (BAAB + ABAB != 0)  trioInfos[i].localD1num += BAAB - ABAB; trioInfos[i].localD1denom += BAAB + ABAB;
-                    if (BAAB + AABB != 0)  trioInfos[i].localD2num += BAAB - AABB; trioInfos[i].localD2denom += BAAB + AABB;
-                    if (AABB + ABAB != 0)  trioInfos[i].localD3num += AABB - ABAB; trioInfos[i].localD3denom += AABB + ABAB;
+                    if (BAAB + ABAB != 0)  { trioInfos[i].localD1num += BAAB - ABAB; trioInfos[i].localD1denom += BAAB + ABAB; }
+                    if (BAAB + AABB != 0)  { trioInfos[i].localD2num += BAAB - AABB; trioInfos[i].localD2denom += BAAB + AABB; }
+                    if (AABB + ABAB != 0)  { trioInfos[i].localD3num += AABB - ABAB; trioInfos[i].localD3denom += AABB + ABAB; }
                 }
                 
-                if (opt::fStats && opt::treeFile != "") {
-                    double p_S1t = 0; double p_S2t = 0; double p_S3t = 0;
-                    if (trioInfos[i].treeArrangement == 1) {  p_S3t = p_S3; p_S1t = p_S1; p_S2t = p_S2; }
-                    if (trioInfos[i].treeArrangement == 2) {  p_S3t = p_S2; p_S1t = p_S1; p_S2t = p_S3; }
-                    if (trioInfos[i].treeArrangement == 3) {  p_S3t = p_S1; p_S1t = p_S3; p_S2t = p_S2; }
+                if (opt::fStats) {
+                   // double p_S1t = 0; double p_S2t = 0; double p_S3t = 0;
+                   // if (trioInfos[i].treeArrangement == 1) {  p_S3t = p_S3; p_S1t = p_S1; p_S2t = p_S2; }
+                   // if (trioInfos[i].treeArrangement == 2) {  p_S3t = p_S2; p_S1t = p_S1; p_S2t = p_S3; }
+                   // if (trioInfos[i].treeArrangement == 3) {  p_S3t = p_S1; p_S1t = p_S3; p_S2t = p_S2; }
                     
                     // f_d
-                    trioInfos[i].F_d_denom += Fd_Denom_perVariant(p_S1t, p_S2t, p_S3t, p_O);
-                    trioInfos[i].F_d_denom_reversed += Fd_Denom_perVariant(p_S2t, p_S1t, p_S3t, p_O); // reverse p1t and p2t
+                    trioInfos[i].F_d_denom1 += Fd_Denom_perVariant(p_S1, p_S2, p_S3, p_O);
+                    trioInfos[i].F_d_denom1_reversed += Fd_Denom_perVariant(p_S2, p_S1, p_S3, p_O); // reverse p1 and p2
+                    trioInfos[i].F_d_denom2 += Fd_Denom_perVariant(p_S1, p_S3, p_S2, p_O);
+                    trioInfos[i].F_d_denom2_reversed += Fd_Denom_perVariant(p_S3, p_S1, p_S2, p_O); // reverse p1 and p2
+                    trioInfos[i].F_d_denom3 += Fd_Denom_perVariant(p_S3, p_S2, p_S1, p_O);
+                    trioInfos[i].F_d_denom3_reversed += Fd_Denom_perVariant(p_S3, p_S2, p_S1, p_O); // reverse p1 and p2
                     
                     // f_dM
-                    trioInfos[i].F_dM_denom += FdM_Denom_perVariant(p_S1t, p_S2t, p_S3t, p_O);
-                    trioInfos[i].F_dM_denom_reversed += FdM_Denom_perVariant(p_S2t, p_S1t, p_S3t, p_O);
+                    trioInfos[i].F_dM_denom1 += FdM_Denom_perVariant(p_S1, p_S2, p_S3, p_O);
+                    trioInfos[i].F_dM_denom1_reversed += FdM_Denom_perVariant(p_S2, p_S1, p_S3, p_O);
+                    trioInfos[i].F_dM_denom2 += FdM_Denom_perVariant(p_S1, p_S3, p_S2, p_O);
+                    trioInfos[i].F_dM_denom2_reversed += FdM_Denom_perVariant(p_S3, p_S1, p_S2, p_O);
+                    trioInfos[i].F_dM_denom2 += FdM_Denom_perVariant(p_S3, p_S2, p_S1, p_O);
+                    trioInfos[i].F_dM_denom2_reversed += FdM_Denom_perVariant(p_S2, p_S3, p_S1, p_O);
                     
                     // f_G
-                    int c_S3a = 0; int c_S3b = 0;
-                    if (trioInfos[i].treeArrangement == 1) { c_S3a = allSplit1Counts[triosInt[i][2]]; c_S3b = allSplit2Counts[triosInt[i][2]]; }
-                    if (trioInfos[i].treeArrangement == 2) { c_S3a = allSplit1Counts[triosInt[i][1]]; c_S3b = allSplit2Counts[triosInt[i][1]]; }
-                    if (trioInfos[i].treeArrangement == 3) { c_S3a = allSplit1Counts[triosInt[i][0]]; c_S3b = allSplit2Counts[triosInt[i][0]]; }
+                    int c_S1a = 0; int c_S1b = 0; int c_S2a = 0; int c_S2b = 0;int c_S3a = 0; int c_S3b = 0;
+                    c_S3a = allSplit1Counts[triosInt[i][2]]; c_S3b = allSplit2Counts[triosInt[i][2]];
+                    c_S2a = allSplit1Counts[triosInt[i][1]]; c_S2b = allSplit2Counts[triosInt[i][1]];
+                    c_S1a = allSplit1Counts[triosInt[i][0]]; c_S1b = allSplit2Counts[triosInt[i][0]];
+                    
+                    double p_S1a = 0; double p_S1b = 0; double p_S2a = 0; double p_S2b = 0; double p_S3a = 0; double p_S3b = 0;
                     if (c_S3a > 0 && c_S3b > 0) {
-                        double p_S3a = 0; double p_S3b = 0;
-                        switch (trioInfos[i].treeArrangement) {
-                            case P3isTrios2: p_S3a = allSplit1Ps[triosInt[i][2]]; p_S3b = allSplit2Ps[triosInt[i][2]]; break;
-                            case P3isTrios1: p_S3a = allSplit1Ps[triosInt[i][1]]; p_S3b = allSplit2Ps[triosInt[i][1]]; break;
-                            case P3isTrios0: p_S3a = allSplit1Ps[triosInt[i][0]]; p_S3b = allSplit2Ps[triosInt[i][0]]; break;
-                        }
-                        trioInfos[i].F_G_denom += ((1-p_S1t)*p_S3a*p_S3b*(1-p_O)) - (p_S1t*(1-p_S3a)*p_S3b*(1-p_O));
-                        trioInfos[i].F_G_denom_reversed += ((1-p_S2t)*p_S3a*p_S3b*(1-p_O)) - (p_S2t*(1-p_S3a)*p_S3b*(1-p_O));
-                    } else if (p_S3t == 1) {
-                        trioInfos[i].F_G_denom += (1-p_S1t)*(1-p_O);
-                        trioInfos[i].F_G_denom_reversed += (1-p_S2t)*(1-p_O);
+                        p_S3a = allSplit1Ps[triosInt[i][2]]; p_S3b = allSplit2Ps[triosInt[i][2]];
+                        trioInfos[i].F_G_denom1 += fG_Denom_perVariant(p_S1,p_S3a,p_S3b,p_O);
+                        trioInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(p_S2,p_S3a,p_S3b,p_O);
+                    } else if (p_S3 == 1) {
+                        trioInfos[i].F_G_denom1 += (1-p_S1)*(1-p_O);
+                        trioInfos[i].F_G_denom1_reversed += (1-p_S2)*(1-p_O);
                     }
+                    if (c_S2a > 0 && c_S2b > 0) {
+                        p_S2a = allSplit1Ps[triosInt[i][1]]; p_S2b = allSplit2Ps[triosInt[i][1]];
+                        trioInfos[i].F_G_denom2 += fG_Denom_perVariant(p_S1,p_S2a,p_S2b,p_O);
+                        trioInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(p_S3,p_S2a,p_S2b,p_O);
+                    } else if (p_S2 == 1) {
+                        trioInfos[i].F_G_denom2 += (1-p_S1)*(1-p_O);
+                        trioInfos[i].F_G_denom2_reversed += (1-p_S3)*(1-p_O);
+                    }
+                    if (c_S1a > 0 && c_S1b > 0) {
+                        p_S1a = allSplit1Ps[triosInt[i][0]]; p_S1b = allSplit2Ps[triosInt[i][0]];
+                        trioInfos[i].F_G_denom3 += fG_Denom_perVariant(p_S3,p_S1a,p_S1b,p_O);
+                        trioInfos[i].F_G_denom3_reversed += fG_Denom_perVariant(p_S2,p_S1a,p_S1b,p_O);
+                    } else if (p_S1 == 1) {
+                        trioInfos[i].F_G_denom3 += (1-p_S3)*(1-p_O);
+                        trioInfos[i].F_G_denom3_reversed += (1-p_S2)*(1-p_O);
+                    }
+                    
                 }
-            
-                if (trioInfos[i].usedVars[0] % opt::jkWindowSize == 0) trioInfos[i].addRegionDs(P3isTrios2);
-                if (trioInfos[i].usedVars[1] % opt::jkWindowSize == 0) trioInfos[i].addRegionDs(P3isTrios1);
-                if (trioInfos[i].usedVars[2] % opt::jkWindowSize == 0) trioInfos[i].addRegionDs(P3isTrios0);
+                // std::cerr << "trioInfos[i].localD1num" << trioInfos[i].localD1denom << std::endl;
+                if (trioInfos[i].usedVars[0] == opt::jkWindowSize) { trioInfos[i].addRegionDs(P3isTrios2); }
+                if (trioInfos[i].usedVars[1] == opt::jkWindowSize) trioInfos[i].addRegionDs(P3isTrios1);
+                if (trioInfos[i].usedVars[2] == opt::jkWindowSize) trioInfos[i].addRegionDs(P3isTrios0);
                 // }
             }
             durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
@@ -410,7 +377,6 @@ int DminMain(int argc, char** argv) {
                 std::cerr << msg << std::endl;
                 std::cerr << "Could not calculate p-values for the trio: " << trios[i][0] << " " << trios[i][1] << " " << trios[i][2] << std::endl;
                 std::cerr << "You should probably decrease the the jackknife block size (-j option)" << std::endl;
-                std::cerr << "Or use DtriosCombine if this was a run for a subset of the genome (e.g. one chromosome)" << std::endl;
                 std::cerr << std::endl;
             }
             trioInfos[i].D1_p = nan(""); trioInfos[i].D2_p = nan(""); trioInfos[i].D3_p = nan("");
@@ -450,6 +416,13 @@ int DminMain(int argc, char** argv) {
         print_vector(trioInfos[i].regionDs[2], *outFileCombineStdErr, ',',false); *outFileCombineStdErr << std::endl;
         
         //std::cerr << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D2 << "\t" << D3 << "\t" << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
+    }
+    if (exceptionCount > 10) {
+        std::cerr << "..." << std::endl;
+        std::cerr << "p-value could not be claculated for " << exceptionCount << " trios" << std::endl;
+        std::cerr << "You should definitely decrease the the jackknife block size!!!" << std::endl;
+        std::cerr << "Or use DtriosCombine if this was a run for a subset of the genome (e.g. one chromosome)" << std::endl;
+        std::cerr << std::endl;
     }
     return 0;
     
