@@ -245,14 +245,14 @@ void doAbbaBaba() {
                     testTrioInfos[i].windowABBAs.push_back(ABBA);  testTrioInfos[i].windowBABAs.push_back(BABA);
                     testTrioInfos[i].windowF_d_denoms.push_back(testTrioInfos[i].interimF_d_denom);
                     testTrioInfos[i].windowF_dM_denoms.push_back(testTrioInfos[i].interimF_dM_denom);
-                    testTrioInfos[i].windowInformativeSitesCords.push_back(coord);
+                    testTrioInfos[i].windowInformativeSitesCords.push_back(atoi(coord.c_str()));
                     testTrioInfos[i].windowABBAs.pop_front(); testTrioInfos[i].windowBABAs.pop_front();
                     testTrioInfos[i].windowF_d_denoms.pop_front(); testTrioInfos[i].windowF_dM_denoms.pop_front();
                     testTrioInfos[i].windowInformativeSitesCords.pop_front();
                     testTrioInfos[i].interimF_d_denom = 0; testTrioInfos[i].interimF_dM_denom = 0;
                 }
             
-                if (testTrioInfos[i].usedVars > opt::windowSize && (testTrioInfos[i].usedVars % opt::windowStep == 0)) {
+                if ((testTrioInfos[i].usedVars > opt::windowSize) && (testTrioInfos[i].usedVars % opt::windowStep == 0)) {
                     double windowABBAtotal = vector_sum(testTrioInfos[i].windowABBAs); double windowBABAtotal = vector_sum(testTrioInfos[i].windowBABAs);
                     double windowF_d_denom = vector_sum(testTrioInfos[i].windowF_d_denoms); double windowF_dM_denom = vector_sum(testTrioInfos[i].windowF_dM_denoms);
                     double wDnum = windowABBAtotal - windowBABAtotal; double wDdenom = windowABBAtotal + windowBABAtotal;

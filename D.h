@@ -30,7 +30,7 @@ public:
     
     std::deque<double> windowABBAs; std::deque<double> windowBABAs;
     std::deque<double> windowF_d_denoms; std::deque<double> windowF_dM_denoms;
-    std::deque<string> windowInformativeSitesCords;
+    std::deque<int> windowInformativeSitesCords;
     double interimF_d_denom; double interimF_dM_denom;
     //double D1; double D2; double D3; double D1_p; double D2_p; double D3_p;
     
