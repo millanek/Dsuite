@@ -112,24 +112,15 @@ void doAbbaBaba() {
         testTrios.push_back(threePops);
     }
     
-    // And need to prepare the vectors to hold the PBS values and the coordinates:
-    std::deque<double> initDeq(opt::windowSize,0.0); // deque to initialise per-site values
-    // vector of three per-site PBS deques - for (ABBA-BABA), and the Fg, Fd, and Fdm denominators
-    // and the final is for the coordinates
-    std::vector<std::deque<double>> initFiveDeques(5,initDeq);
-    std::vector<std::vector<std::deque<double>>> testTrioResults(testTrios.size(),initFiveDeques);
+    // Create objects to hold the results for each trio
+    TestTrioInfo info(opt::windowSize); std::vector<TestTrioInfo> testTrioInfos(testTrios.size(), info);
     
     // Now go through the vcf and calculate D
     int totalVariantNumber = 0;
-    std::vector<int> usedVars(testTrios.size(),0); // Will count the number of used variants for each trio
     std::vector<int> usedVars_f_G(testTrios.size(),0); // Will count the number of used variants for each trio
     int reportProgressEvery = 1000; string chr; string coord;
-    std::vector<double> ABBAtotals(testTrios.size(),0); std::vector<double> BABAtotals(testTrios.size(),0);
-    std::vector<double> Genome_f_G_num(testTrios.size(),0); std::vector<double> Genome_f_G_denom(testTrios.size(),0);
-    std::vector<double> Genome_f_D_denom(testTrios.size(),0); std::vector<double> Genome_f_DM_denom(testTrios.size(),0);
-   // ABBA_BABA_Freq_allResults r;
+
    // int lastPrint = 0; int lastWindowVariant = 0;
-   // std::vector<double> regionDs; std::vector<double> region_f_Gs; std::vector<double> region_f_Ds; std::vector<double> region_f_DMs;
     std::vector<string> sampleNames; std::vector<std::string> fields;
     clock_t start; clock_t startGettingCounts; clock_t startCalculation;
     double durationOverall; double durationGettingCounts; double durationCalculation;
@@ -200,29 +191,22 @@ void doAbbaBaba() {
                 try { p_S3 = c->setDAFs.at(testTrios[i][2]); } catch (const std::out_of_range& oor) {
                     std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][0] << std::endl; }
                 if (p_S3 == -1) continue;
-                if (p_S3 == 0) continue; // XXAA pattern is not informative
+                //if (p_S3 == 0) continue; // XXAA pattern is not informative
                 if (p_S1 == 0 && p_S2 == 0 && p_S3 == 0) continue; // Checking if the SNP is variable in the trio
                 if (p_S1 == 1 && p_S2 == 1 && p_S3 == 1) continue; // Checking if the SNP is variable in the trio
-                if (p_S1 == 1 && p_S2 == 1) continue; // BBAA pattern is not informative
-                if (p_S1 == 0 && p_S2 == 0) continue; // AABA pattern is not informative
-                usedVars[i]++;
+                //if (p_S1 == 1 && p_S2 == 1) continue; // BBAA pattern is not informative
+                //if (p_S1 == 0 && p_S2 == 0) continue; // AABA pattern is not informative
+                testTrioInfos[i].usedVars++;
                 
-                ABBA = ((1-p_S1)*p_S2*p_S3*(1-p_O)); ABBAtotals[i] += ABBA;
-                BABA = (p_S1*(1-p_S2)*p_S3*(1-p_O)); BABAtotals[i] += BABA;
-                double ABBAplusBABA = ABBA + BABA;
-                if (ABBAplusBABA == 0) {
-                    std::cerr << "p_S1 " << p_S1 << std::endl;
-                    std::cerr << "p_S2 " << p_S2 << std::endl;
-                    std::cerr << "p_S3 " << p_S3 << std::endl;
-                    std::cerr << "p_O " << p_O << std::endl;
-                    std::cerr << std::endl;
-                }
+                ABBA = ((1-p_S1)*p_S2*p_S3*(1-p_O)); testTrioInfos[i].ABBAtotal += ABBA;
+                BABA = (p_S1*(1-p_S2)*p_S3*(1-p_O)); testTrioInfos[i].BABAtotal += BABA; 
+                
                 if (p_S2 > p_S3) {
                     F_d_denom = ((1-p_S1)*p_S2*p_S2*(1-p_O)) - (p_S1*(1-p_S2)*p_S2*(1-p_O));
                 } else {
                     F_d_denom = ((1-p_S1)*p_S3*p_S3*(1-p_O)) - (p_S1*(1-p_S3)*p_S3*(1-p_O));
-                }
-                Genome_f_D_denom[i] += F_d_denom;
+                } testTrioInfos[i].F_d_denom += F_d_denom; testTrioInfos[i].interimF_d_denom += F_d_denom;
+                
                 if (p_S1 <= p_S2) {
                     if (p_S2 > p_S3) {
                         F_dM_denom = ((1-p_S1)*p_S2*p_S2*(1-p_O)) - (p_S1*(1-p_S2)*p_S2*(1-p_O));
@@ -235,37 +219,44 @@ void doAbbaBaba() {
                     } else {
                         F_dM_denom = -(((1-p_S3)*p_S2*p_S3*(1-p_O)) - (p_S3*(1-p_S2)*p_S3)*(1-p_O));
                     }
-                } Genome_f_DM_denom[i] += F_dM_denom;
+                } testTrioInfos[i].F_dM_denom += F_dM_denom; testTrioInfos[i].interimF_dM_denom += F_dM_denom;
                 int c_S3a; try { c_S3a = c->setAlleleCountsSplit1.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
                 { std::cerr << "Counts don't contain info for split 1 of " << testTrios[i][2] << std::endl; }
                 int c_S3b; try { c_S3b = c->setAlleleCountsSplit2.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
                 { std::cerr << "Counts don't contain info for split 2 of " << testTrios[i][2] << std::endl; }
+                double F_G_denom = 0; double F_G_num = 0;
                 if (c_S3a > 0 && c_S3b > 0) {
                     //std::cerr << "Here" << std::endl;
                     double p_S3a; try { p_S3a = c->setAAFsplit1.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
                     { std::cerr << "Counts don't contain derived allele frequency for split 1 of " << testTrios[i][2] << std::endl; }
                     double p_S3b; try { p_S3b = c->setAAFsplit2.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
                     { std::cerr << "Counts don't contain derived allele frequency for split 2 of " << testTrios[i][2] << std::endl; }
-                    Genome_f_G_num[i] += ABBA - BABA;
-                    Genome_f_G_denom[i] += ((1-p_S1)*p_S3a*p_S3b*(1-p_O)) - (p_S1*(1-p_S3a)*p_S3b*(1-p_O));
+                    F_G_num = ABBA - BABA;
+                    F_G_denom = ((1-p_S1)*p_S3a*p_S3b*(1-p_O)) - (p_S1*(1-p_S3a)*p_S3b*(1-p_O));
                     usedVars_f_G[i]++;
                 } else if (p_S3 == 1) {
-                    Genome_f_G_num[i] += ABBA - BABA;
-                    Genome_f_G_denom[i] += (1-p_S1)*(1-p_O);
+                    F_G_num = ABBA - BABA;
+                    F_G_denom = (1-p_S1)*(1-p_O);
                     usedVars_f_G[i]++;
-                }
+                } testTrioInfos[i].F_G_denom += F_G_denom; testTrioInfos[i].F_G_num += F_G_num;
                 
-                testTrioResults[i][0].push_back(ABBA); testTrioResults[i][1].push_back(BABA); testTrioResults[i][2].push_back(F_d_denom);
-                testTrioResults[i][3].push_back(F_dM_denom); testTrioResults[i][4].push_back(stringToDouble(coord));
-                testTrioResults[i][0].pop_front(); testTrioResults[i][1].pop_front(); testTrioResults[i][2].pop_front();
-                testTrioResults[i][3].pop_front(); testTrioResults[i][4].pop_front();
+                double ABBAplusBABA = ABBA + BABA;
+                if (ABBAplusBABA != 0) {
+                    testTrioInfos[i].windowABBAs.push_back(ABBA);  testTrioInfos[i].windowBABAs.push_back(BABA);
+                    testTrioInfos[i].windowF_d_denoms.push_back(testTrioInfos[i].interimF_d_denom);
+                    testTrioInfos[i].windowF_dM_denoms.push_back(testTrioInfos[i].interimF_dM_denom);
+                    testTrioInfos[i].windowInformativeSitesCords.push_back(coord);
+                    testTrioInfos[i].windowABBAs.pop_front(); testTrioInfos[i].windowBABAs.pop_front();
+                    testTrioInfos[i].windowF_d_denoms.pop_front(); testTrioInfos[i].windowF_dM_denoms.pop_front();
+                    testTrioInfos[i].windowInformativeSitesCords.pop_front();
+                    testTrioInfos[i].interimF_d_denom = 0; testTrioInfos[i].interimF_dM_denom = 0;
+                }
             
-            
-                if (usedVars[i] > opt::windowSize && (usedVars[i] % opt::windowStep == 0)) {
-                    double wABBA = vector_sum(testTrioResults[i][0]); double wBABA = vector_sum(testTrioResults[i][1]);
-                    double wDnum = wABBA - wBABA; double wDdenom = wABBA + wBABA;
-                    double wF_d_denom = vector_sum(testTrioResults[i][2]); double wF_dM_denom = vector_sum(testTrioResults[i][3]);
-                    *outFiles[i] << std::fixed << chr << "\t" << (int)testTrioResults[i][4][0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/wF_d_denom << "\t" << wDnum/wF_dM_denom << std::endl;
+                if (testTrioInfos[i].usedVars > opt::windowSize && (testTrioInfos[i].usedVars % opt::windowStep == 0)) {
+                    double windowABBAtotal = vector_sum(testTrioInfos[i].windowABBAs); double windowBABAtotal = vector_sum(testTrioInfos[i].windowBABAs);
+                    double windowF_d_denom = vector_sum(testTrioInfos[i].windowF_d_denoms); double windowF_dM_denom = vector_sum(testTrioInfos[i].windowF_dM_denoms);
+                    double wDnum = windowABBAtotal - windowBABAtotal; double wDdenom = windowABBAtotal + windowBABAtotal;
+                    *outFiles[i] << std::fixed << chr << "\t" << testTrioInfos[i].windowInformativeSitesCords[0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/windowF_d_denom << "\t" << wDnum/windowF_dM_denom << std::endl;
                 }
             }
             durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
@@ -276,10 +267,10 @@ void doAbbaBaba() {
     
     for (int i = 0; i != testTrios.size(); i++) {
         std::cout << testTrios[i][0] << "\t" << testTrios[i][1] << "\t" << testTrios[i][2] << std::endl;
-        std::cout << "D=" << (double)(ABBAtotals[i]-BABAtotals[i])/(ABBAtotals[i]+BABAtotals[i]) << std::endl;
-        std::cout << "f_G=" << (double)Genome_f_G_num[i]/Genome_f_G_denom[i] << "\t" << Genome_f_G_num[i] << "/" << Genome_f_G_denom[i] << std::endl;
-        std::cout << "f_d=" << (double)(ABBAtotals[i]-BABAtotals[i])/Genome_f_D_denom[i] << "\t" << (ABBAtotals[i]-BABAtotals[i]) << "/" << Genome_f_D_denom[i] << std::endl;
-        std::cout << "f_dM=" << (double)(ABBAtotals[i]-BABAtotals[i])/Genome_f_DM_denom[i] << "\t" << (ABBAtotals[i]-BABAtotals[i]) << "/" << Genome_f_DM_denom[i] << std::endl;
+        std::cout << "D=" << (double)(testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal)/(testTrioInfos[i].ABBAtotal+testTrioInfos[i].BABAtotal) << std::endl;
+        std::cout << "f_G=" << (double)testTrioInfos[i].F_G_num/testTrioInfos[i].F_G_denom << "\t" << testTrioInfos[i].F_G_num << "/" << testTrioInfos[i].F_G_denom << std::endl;
+        std::cout << "f_d=" << (double)(testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal)/testTrioInfos[i].F_d_denom << "\t" << (testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal) << "/" << testTrioInfos[i].F_d_denom << std::endl;
+        std::cout << "f_dM=" << (double)(testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal)/testTrioInfos[i].F_dM_denom << "\t" << (testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal) << "/" << testTrioInfos[i].F_dM_denom << std::endl;
         std::cout << std::endl;
     }
 }
