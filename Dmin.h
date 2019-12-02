@@ -117,17 +117,17 @@ public:
                 outVec[0] = trio[0]; outVec[1] = trio[1];
                 if (fStats) {
                     double Dnum = ABBAtotal-BABAtotal;
-                    outVec[5] = Dnum/F_G_denom1;
-                    outVec[6] = Dnum/F_d_denom1;
-                    outVec[7] = Dnum/F_dM_denom1;
+                    outVec[5] = numToString(Dnum/F_G_denom1);
+                    outVec[6] = numToString(Dnum/F_d_denom1);
+                    outVec[7] = numToString(Dnum/F_dM_denom1);
                 }
             } else {
                 outVec[0] = trio[1]; outVec[1] = trio[0];
                 if (fStats) {
                     double Dnum = BABAtotal-ABBAtotal;
-                    outVec[5] = Dnum/F_G_denom1_reversed;
-                    outVec[6] = Dnum/F_d_denom1_reversed;
-                    outVec[7] = Dnum/F_dM_denom1_reversed;
+                    outVec[5] = numToString(Dnum/F_G_denom1_reversed);
+                    outVec[6] = numToString(Dnum/F_d_denom1_reversed);
+                    outVec[7] = numToString(Dnum/F_dM_denom1_reversed);
                 }
             } break;
                 
@@ -137,17 +137,17 @@ public:
                 outVec[0] = trio[0]; outVec[1] = trio[2];
                 if (fStats) {
                     double Dnum = ABBAtotal - BBAAtotal;
-                    outVec[5] = Dnum/F_G_denom2;
-                    outVec[6] = Dnum/F_d_denom2;
-                    outVec[7] = Dnum/F_dM_denom2;
+                    outVec[5] = numToString(Dnum/F_G_denom2);
+                    outVec[6] = numToString(Dnum/F_d_denom2);
+                    outVec[7] = numToString(Dnum/F_dM_denom2);
                 }
             } else {
                 outVec[0] = trio[2]; outVec[1] = trio[0];
                 if (fStats) {
                     double Dnum = BBAAtotal - ABBAtotal;
-                    outVec[5] = Dnum/F_G_denom2_reversed;
-                    outVec[6] = Dnum/F_d_denom2_reversed;
-                    outVec[7] = Dnum/F_dM_denom2_reversed;
+                    outVec[5] = numToString(Dnum/F_G_denom2_reversed);
+                    outVec[6] = numToString(Dnum/F_d_denom2_reversed);
+                    outVec[7] = numToString(Dnum/F_dM_denom2_reversed);
                 }
             } break;
                 
@@ -157,17 +157,17 @@ public:
                 outVec[0] = trio[2]; outVec[1] = trio[1];
                 if (fStats) {
                     double Dnum = BBAAtotal - BABAtotal;
-                    outVec[5] = Dnum/F_G_denom3;
-                    outVec[6] = Dnum/F_d_denom3;
-                    outVec[7] = Dnum/F_dM_denom3;
+                    outVec[5] = numToString(Dnum/F_G_denom3);
+                    outVec[6] = numToString(Dnum/F_d_denom3);
+                    outVec[7] = numToString(Dnum/F_dM_denom3);
                 }
             } else {
                 outVec[0] = trio[1]; outVec[1] = trio[2];
                 if (fStats) {
                     double Dnum = BABAtotal - BBAAtotal;
-                    outVec[5] = Dnum/F_G_denom3_reversed;
-                    outVec[6] = Dnum/F_d_denom3_reversed;
-                    outVec[7] = Dnum/F_dM_denom3_reversed;
+                    outVec[5] = numToString(Dnum/F_G_denom3_reversed);
+                    outVec[6] = numToString(Dnum/F_d_denom3_reversed);
+                    outVec[7] = numToString(Dnum/F_dM_denom3_reversed);
                 }
             } break;
                 

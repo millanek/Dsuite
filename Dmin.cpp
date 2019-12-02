@@ -308,8 +308,8 @@ int DminMain(int argc, char** argv) {
                     trioInfos[i].F_dM_denom1_reversed += FdM_Denom_perVariant(p_S2, p_S1, p_S3, p_O);
                     trioInfos[i].F_dM_denom2 += FdM_Denom_perVariant(p_S1, p_S3, p_S2, p_O);
                     trioInfos[i].F_dM_denom2_reversed += FdM_Denom_perVariant(p_S3, p_S1, p_S2, p_O);
-                    trioInfos[i].F_dM_denom2 += FdM_Denom_perVariant(p_S3, p_S2, p_S1, p_O);
-                    trioInfos[i].F_dM_denom2_reversed += FdM_Denom_perVariant(p_S2, p_S3, p_S1, p_O);
+                    trioInfos[i].F_dM_denom3 += FdM_Denom_perVariant(p_S3, p_S2, p_S1, p_O);
+                    trioInfos[i].F_dM_denom3_reversed += FdM_Denom_perVariant(p_S2, p_S3, p_S1, p_O);
                     
                     // f_G
                     int c_S1a = 0; int c_S1b = 0; int c_S2a = 0; int c_S2b = 0;int c_S3a = 0; int c_S3b = 0;
@@ -354,11 +354,11 @@ int DminMain(int argc, char** argv) {
         }
     }
     std::cerr << "Done processing VCF. Preparing output files..." << '\n';
-    *outFileBBAA << "P1\tP2\tP3\tDstatistic\tp-value" << std::endl;
-    *outFileDmin << "P1\tP2\tP3\tDstatistic\tp-value" << std::endl;
-    if (opt::treeFile != "") {
-        *outFileTree << "P1\tP2\tP3\tDstatistic\tp-value" << std::endl;
-    }
+    
+    string header = "P1\tP2\tP3\tDstatistic\tp-value"; if (opt::fStats) header += "\tf_G\tf_D\tf_dM";
+    *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
+    if (opt::treeFile != "") *outFileTree << header << std::endl;
+    
     int exceptionCount = 0;
     for (int i = 0; i != trios.size(); i++) { //
         // Get the D values
