@@ -346,8 +346,8 @@ int DminMain(int argc, char** argv) {
                 }
                 // std::cerr << "trioInfos[i].localD1num" << trioInfos[i].localD1denom << std::endl;
                 if (trioInfos[i].usedVars[0] == opt::jkWindowSize) { trioInfos[i].addRegionDs(P3isTrios2); }
-                if (trioInfos[i].usedVars[1] == opt::jkWindowSize) trioInfos[i].addRegionDs(P3isTrios1);
-                if (trioInfos[i].usedVars[2] == opt::jkWindowSize) trioInfos[i].addRegionDs(P3isTrios0);
+                if (trioInfos[i].usedVars[1] == opt::jkWindowSize) { trioInfos[i].addRegionDs(P3isTrios1); }
+                if (trioInfos[i].usedVars[2] == opt::jkWindowSize) { trioInfos[i].addRegionDs(P3isTrios0); }
                 // }
             }
             durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
@@ -361,13 +361,6 @@ int DminMain(int argc, char** argv) {
     }
     int exceptionCount = 0;
     for (int i = 0; i != trios.size(); i++) { //
-        
-       // std::cout << testTrios[i][0] << "\t" << testTrios[i][1] << "\t" << testTrios[i][2] << std::endl;
-       // std::cout << "D=" << (double)(ABBAtotals[i]-BABAtotals[i])/(ABBAtotals[i]+BABAtotals[i]) << std::endl;
-       // std::cout << "f_G=" << (double)Genome_f_G_num[i]/Genome_f_G_denom[i] << "\t" << Genome_f_G_num[i] << "/" << Genome_f_G_denom[i] << std::endl;
-       // std::cout << "f_d=" << (double)(ABBAtotals[i]-BABAtotals[i])/Genome_f_D_denom[i] << "\t" << (ABBAtotals[i]-BABAtotals[i]) << "/" << Genome_f_D_denom[i] << std::endl;
-       // std::cout << "f_dM=" << (double)(ABBAtotals[i]-BABAtotals[i])/Genome_f_DM_denom[i] << "\t" << (ABBAtotals[i]-BABAtotals[i]) << "/" << Genome_f_DM_denom[i] << std::endl;
-        
         // Get the D values
         try {
             trioInfos[i].calculateFinalDs();
@@ -381,37 +374,35 @@ int DminMain(int argc, char** argv) {
             }
             trioInfos[i].D1_p = nan(""); trioInfos[i].D2_p = nan(""); trioInfos[i].D3_p = nan("");
         }
-        double D1 = trioInfos[i].D1; double D2 = trioInfos[i].D2; double D3 = trioInfos[i].D3;
         
         // Find which topology is in agreement with the counts of BBAA, BABA, and ABBA
-        std::vector<string> BBAAoutVec = trioInfos[i].assignBBAAarrangement(trios[i], opt::fStats);
+        trioInfos[i].assignBBAAarrangement(trios[i]);
+        std::vector<string> BBAAoutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, trioInfos[i].BBAAarrangement);
         print_vector(BBAAoutVec,*outFileBBAA);
         
         // Find Dmin:
-        std::vector<string> DminOutVec = trioInfos[i].assignDminArrangement(trios[i], opt::fStats);
+        trioInfos[i].assignDminArrangement(trios[i]);
+        std::vector<string> DminOutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, trioInfos[i].DminArrangement);
         print_vector(DminOutVec,*outFileDmin);
         
         // Find which arrangement of trios is consistent with the input tree (if provided):
         if (opt::treeFile != "") {
-            switch (trioInfos[i].treeArrangement) {
-                case P3isTrios2:
-                    if (D1 >= 0) *outFileTree << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << trioInfos[i].D1_p << std::endl;
-                    else *outFileTree << trios[i][1] << "\t" << trios[i][0] << "\t" << trios[i][2] << "\t" << std::fabs(D1) << "\t" << trioInfos[i].D1_p << std::endl;
-                    break;
-                case P3isTrios1:
-                    if (D2 >= 0) *outFileTree << trios[i][0] << "\t" << trios[i][2] << "\t" << trios[i][1] << "\t" << D2 << "\t" << trioInfos[i].D2_p << std::endl;
-                    else *outFileTree << trios[i][2] << "\t" << trios[i][0] << "\t" << trios[i][1] << "\t" << std::fabs(D2) << "\t" << trioInfos[i].D2_p << std::endl;
-                    break;
-                case P3isTrios0:
-                    if (D3 >= 0) *outFileTree << trios[i][2] << "\t" << trios[i][1] << "\t" << trios[i][0] << "\t" << D3 << "\t" << trioInfos[i].D3_p << std::endl;
-                    else *outFileTree << trios[i][1] << "\t" << trios[i][2] << "\t" << trios[i][0] << "\t" << std::fabs(D3) << "\t" << trioInfos[i].D3_p << std::endl;
-                    break;
-            }
-
+            std::vector<string> treeOutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, trioInfos[i].treeArrangement);
+            print_vector(treeOutVec,*outFileTree);
         }
         
         // Output a simple file that can be used for combining multiple local runs:
-        *outFileCombine << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << trioInfos[i].BBAAtotal << "\t" << trioInfos[i].BABAtotal << "\t" << trioInfos[i].ABBAtotal << std::endl;
+        *outFileCombine << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << trioInfos[i].BBAAtotal << "\t" << trioInfos[i].BABAtotal << "\t" << trioInfos[i].ABBAtotal;
+        if (opt::fStats) {
+            *outFileCombine << "\t" << trioInfos[i].F_G_denom1 << "\t" << trioInfos[i].F_G_denom2 << "\t" << trioInfos[i].F_G_denom3;
+            *outFileCombine << "\t" << trioInfos[i].F_G_denom1_reversed << "\t" << trioInfos[i].F_G_denom2_reversed << "\t" << trioInfos[i].F_G_denom3_reversed;
+            *outFileCombine << "\t" << trioInfos[i].F_d_denom1 << "\t" << trioInfos[i].F_d_denom2 << "\t" << trioInfos[i].F_d_denom3;
+            *outFileCombine << "\t" << trioInfos[i].F_d_denom1_reversed << "\t" << trioInfos[i].F_d_denom2_reversed << "\t" << trioInfos[i].F_d_denom3_reversed;
+            *outFileCombine << "\t" << trioInfos[i].F_dM_denom1 << "\t" << trioInfos[i].F_dM_denom2 << "\t" << trioInfos[i].F_dM_denom3;
+            *outFileCombine << "\t" << trioInfos[i].F_dM_denom1_reversed << "\t" << trioInfos[i].F_dM_denom2_reversed << "\t" << trioInfos[i].F_dM_denom3_reversed;
+        } else {
+            *outFileCombine << std::endl;
+        }
         print_vector(trioInfos[i].regionDs[0], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t"; print_vector(trioInfos[i].regionDs[1], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t";
         print_vector(trioInfos[i].regionDs[2], *outFileCombineStdErr, ',',false); *outFileCombineStdErr << std::endl;
         
@@ -419,7 +410,7 @@ int DminMain(int argc, char** argv) {
     }
     if (exceptionCount > 10) {
         std::cerr << "..." << std::endl;
-        std::cerr << "p-value could not be claculated for " << exceptionCount << " trios" << std::endl;
+        std::cerr << "p-value could not be calculated for " << exceptionCount << " trios" << std::endl;
         std::cerr << "You should definitely decrease the the jackknife block size!!!" << std::endl;
         std::cerr << "Or use DtriosCombine if this was a run for a subset of the genome (e.g. one chromosome)" << std::endl;
         std::cerr << std::endl;
