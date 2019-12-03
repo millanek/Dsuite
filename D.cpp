@@ -257,7 +257,9 @@ void doAbbaBaba() {
                     double windowABBAtotal = vector_sum(testTrioInfos[i].windowABBAs); double windowBABAtotal = vector_sum(testTrioInfos[i].windowBABAs);
                     double windowF_d_denom = vector_sum(testTrioInfos[i].windowF_d_denoms); double windowF_dM_denom = vector_sum(testTrioInfos[i].windowF_dM_denoms);
                     double wDnum = windowABBAtotal - windowBABAtotal; double wDdenom = windowABBAtotal + windowBABAtotal;
-                    *outFiles[i] << std::fixed << chr << "\t" << testTrioInfos[i].windowInformativeSitesCords[0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/windowF_d_denom << "\t" << wDnum/windowF_dM_denom << std::endl;
+                    if ((atoi(coord.c_str()) - testTrioInfos[i].windowInformativeSitesCords[0]) > 0) {
+                        *outFiles[i] << std::fixed << chr << "\t" << testTrioInfos[i].windowInformativeSitesCords[0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/windowF_d_denom << "\t" << wDnum/windowF_dM_denom << std::endl;
+                    }
                 }
             }
             durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
