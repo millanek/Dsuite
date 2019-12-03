@@ -196,7 +196,7 @@ void doAbbaBaba() {
                 if (p_S1 == 1 && p_S2 == 1 && p_S3 == 1) continue; // Checking if the SNP is variable in the trio
                 //if (p_S1 == 1 && p_S2 == 1) continue; // BBAA pattern is not informative
                 //if (p_S1 == 0 && p_S2 == 0) continue; // AABA pattern is not informative
-                testTrioInfos[i].usedVars++;
+                
                 
                 ABBA = ((1-p_S1)*p_S2*p_S3*(1-p_O)); testTrioInfos[i].ABBAtotal += ABBA;
                 BABA = (p_S1*(1-p_S2)*p_S3*(1-p_O)); testTrioInfos[i].BABAtotal += BABA; 
@@ -250,6 +250,7 @@ void doAbbaBaba() {
                     testTrioInfos[i].windowF_d_denoms.pop_front(); testTrioInfos[i].windowF_dM_denoms.pop_front();
                     testTrioInfos[i].windowInformativeSitesCords.pop_front();
                     testTrioInfos[i].interimF_d_denom = 0; testTrioInfos[i].interimF_dM_denom = 0;
+                    testTrioInfos[i].usedVars++;
                 }
             
                 if ((testTrioInfos[i].usedVars > opt::windowSize) && (testTrioInfos[i].usedVars % opt::windowStep == 0)) {
