@@ -251,14 +251,14 @@ void doAbbaBaba() {
                     testTrioInfos[i].windowInformativeSitesCords.pop_front();
                     testTrioInfos[i].interimF_d_denom = 0; testTrioInfos[i].interimF_dM_denom = 0;
                     testTrioInfos[i].usedVars++;
-                }
-            
-                if ((testTrioInfos[i].usedVars > opt::windowSize) && (testTrioInfos[i].usedVars % opt::windowStep == 0)) {
-                    double windowABBAtotal = vector_sum(testTrioInfos[i].windowABBAs); double windowBABAtotal = vector_sum(testTrioInfos[i].windowBABAs);
-                    double windowF_d_denom = vector_sum(testTrioInfos[i].windowF_d_denoms); double windowF_dM_denom = vector_sum(testTrioInfos[i].windowF_dM_denoms);
-                    double wDnum = windowABBAtotal - windowBABAtotal; double wDdenom = windowABBAtotal + windowBABAtotal;
-                    if ((atoi(coord.c_str()) - testTrioInfos[i].windowInformativeSitesCords[0]) > 0) {
-                        *outFiles[i] << std::fixed << chr << "\t" << testTrioInfos[i].windowInformativeSitesCords[0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/windowF_d_denom << "\t" << wDnum/windowF_dM_denom << std::endl;
+                
+                    if ((testTrioInfos[i].usedVars > opt::windowSize) && (testTrioInfos[i].usedVars % opt::windowStep == 0)) {
+                        double windowABBAtotal = vector_sum(testTrioInfos[i].windowABBAs); double windowBABAtotal = vector_sum(testTrioInfos[i].windowBABAs);
+                        double windowF_d_denom = vector_sum(testTrioInfos[i].windowF_d_denoms); double windowF_dM_denom = vector_sum(testTrioInfos[i].windowF_dM_denoms);
+                        double wDnum = windowABBAtotal - windowBABAtotal; double wDdenom = windowABBAtotal + windowBABAtotal;
+                        if ((atoi(coord.c_str()) - testTrioInfos[i].windowInformativeSitesCords[0]) > 0) {
+                            *outFiles[i] << std::fixed << chr << "\t" << testTrioInfos[i].windowInformativeSitesCords[0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/windowF_d_denom << "\t" << wDnum/windowF_dM_denom << std::endl;
+                        }
                     }
                 }
             }
