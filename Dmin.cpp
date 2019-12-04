@@ -396,10 +396,11 @@ int DminMain(int argc, char** argv) {
         if (opt::fStats) {
             *outFileCombine << "\t" << trioInfos[i].F_G_denom1 << "\t" << trioInfos[i].F_G_denom2 << "\t" << trioInfos[i].F_G_denom3;
             *outFileCombine << "\t" << trioInfos[i].F_G_denom1_reversed << "\t" << trioInfos[i].F_G_denom2_reversed << "\t" << trioInfos[i].F_G_denom3_reversed;
-            *outFileCombine << "\t" << trioInfos[i].F_d_denom1 << "\t" << trioInfos[i].F_d_denom2 << "\t" << trioInfos[i].F_d_denom3;
-            *outFileCombine << "\t" << trioInfos[i].F_d_denom1_reversed << "\t" << trioInfos[i].F_d_denom2_reversed << "\t" << trioInfos[i].F_d_denom3_reversed;
-            *outFileCombine << "\t" << trioInfos[i].F_dM_denom1 << "\t" << trioInfos[i].F_dM_denom2 << "\t" << trioInfos[i].F_dM_denom3;
-            *outFileCombine << "\t" << trioInfos[i].F_dM_denom1_reversed << "\t" << trioInfos[i].F_dM_denom2_reversed << "\t" << trioInfos[i].F_dM_denom3_reversed;
+            //*outFileCombine << "\t" << trioInfos[i].F_d_denom1 << "\t" << trioInfos[i].F_d_denom2 << "\t" << trioInfos[i].F_d_denom3;
+            //*outFileCombine << "\t" << trioInfos[i].F_d_denom1_reversed << "\t" << trioInfos[i].F_d_denom2_reversed << "\t" << trioInfos[i].F_d_denom3_reversed;
+            //*outFileCombine << "\t" << trioInfos[i].F_dM_denom1 << "\t" << trioInfos[i].F_dM_denom2 << "\t" << trioInfos[i].F_dM_denom3;
+            //*outFileCombine << "\t" << trioInfos[i].F_dM_denom1_reversed << "\t" << trioInfos[i].F_dM_denom2_reversed << "\t" << trioInfos[i].F_dM_denom3_reversed;
+            *outFileCombine << std::endl;
         } else {
             *outFileCombine << std::endl;
         }
