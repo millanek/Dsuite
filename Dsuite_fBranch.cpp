@@ -7,13 +7,14 @@
 //
 
 #include "Dsuite_fBranch.h"
-#define SUBPROGRAM "Dbranch"
+#define SUBPROGRAM "Fbranch"
 
 #define DEBUG 0
 
 static const char *BRANCHSCORE_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] TREE_FILE.nwk DVALS_tree.txt\n"
 "Implements the 'f-branch' type calculations developed by Hannes Svardal for Malinsky et al., 2018, Nat. Ecol. Evo.\n"
+"Uses the f_G values produced by Dsuite Dtrios with the -f option\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
 "\n"
@@ -51,8 +52,12 @@ int fBranchMain(int argc, char** argv) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
         l++; if (line == "") { std::cerr << "Please fix the format of the " << opt::DvalsFile << " file.\nLine " << l << " is empty." << std::endl; exit(EXIT_FAILURE); }
         std::vector<string> speciesAndVals = split(line, '\t');
-        std::vector<string> bAndVal;  bAndVal.push_back(speciesAndVals[1]); bAndVal.push_back(speciesAndVals[3]);
-        std::vector<string> aAndVal;  aAndVal.push_back(speciesAndVals[0]); aAndVal.push_back(speciesAndVals[3]);
+        if (speciesAndVals.size() <= 6) { std::cerr << "Please fix the format of the " << opt::DvalsFile << " file." << std::endl;
+            std::cerr << "Looks like the file does not contain f statistics. Run Dsuite Dtrios with the -f option" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        std::vector<string> bAndVal;  bAndVal.push_back(speciesAndVals[1]); bAndVal.push_back(speciesAndVals[5]);
+        std::vector<string> aAndVal;  aAndVal.push_back(speciesAndVals[0]); aAndVal.push_back(speciesAndVals[5]);
         acToBmap[speciesAndVals[0]+","+speciesAndVals[2]].push_back(bAndVal);
     }
     string treeString; getline(*treeFile, treeString);

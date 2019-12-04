@@ -14,7 +14,7 @@
 #include "Dsuite_fBranch.h"
 
 #define AUTHOR "Milan Malinsky"
-#define PACKAGE_VERSION "0.2 r15"
+#define PACKAGE_VERSION "0.2 r16"
 
 
 static const char *VERSION_MESSAGE =
@@ -32,7 +32,7 @@ static const char *USAGE_MESSAGE =
 "           DtriosCombine           Combine results from Dtrios runs across genomic regions (e.g. per-chromosome)\n"
 "           Dinvestigate            Follow up analyses for trios with significantly elevated D:\n"
 "                                   calculates the f4 statistic, and also f_d and f_dM in windows along the genome\n"
-"           Dbranch                 Calculate D and f statistics for branches on a tree that relates the populations/species\n"
+"           Fbranch                 Calculate D and f statistics for branches on a tree that relates the populations/species\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 int main(int argc, char **argv) {
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
             DminMain(argc - 1, argv + 1);
         else if (command == "DtriosCombine")
             DminCombineMain(argc - 1, argv + 1);
-        else if (command == "Dbranch")
+        else if (command == "Fbranch")
             fBranchMain(argc - 1, argv + 1);
         else
         {
