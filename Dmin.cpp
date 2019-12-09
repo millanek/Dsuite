@@ -376,12 +376,12 @@ int DminMain(int argc, char** argv) {
         }
         
         // Find which topology is in agreement with the counts of BBAA, BABA, and ABBA
-        trioInfos[i].assignBBAAarrangement(trios[i]);
+        trioInfos[i].assignBBAAarrangement();
         std::vector<string> BBAAoutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, trioInfos[i].BBAAarrangement);
         print_vector(BBAAoutVec,*outFileBBAA);
         
         // Find Dmin:
-        trioInfos[i].assignDminArrangement(trios[i]);
+        trioInfos[i].assignDminArrangement();
         std::vector<string> DminOutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, trioInfos[i].DminArrangement);
         print_vector(DminOutVec,*outFileDmin);
         

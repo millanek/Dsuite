@@ -260,6 +260,20 @@ std::vector<std::string> split(const std::string &s, char delim) {
     return elems;
 }
 
+std::vector<std::string> split2(std::string s, string delim) {
+    std::vector<std::string> elems;
+    size_t pos = 0;
+    std::string token;
+    while ((pos = s.find(delim)) != std::string::npos) {
+        token = s.substr(0, pos);
+        elems.push_back(token);
+        s.erase(0, pos + delim.length());
+    }
+    elems.push_back(s);
+    return elems;
+}
+
+
 std::vector<size_t> locateSet(std::vector<std::string>& sample_names, const std::vector<std::string>& set) {
     std::vector<size_t> setLocs;
     for (std::vector<std::string>::size_type i = 0; i != set.size(); i++) {

@@ -12,9 +12,9 @@
 #define DEBUG 0
 
 static const char *BRANCHSCORE_USAGE_MESSAGE =
-"Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] TREE_FILE.nwk DVALS_tree.txt\n"
+"Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] TREE_FILE.nwk FVALS_tree.txt\n"
 "Implements the 'f-branch' type calculations developed by Hannes Svardal for Malinsky et al., 2018, Nat. Ecol. Evo.\n"
-"Uses the f_G values produced by Dsuite Dtrios with the -f option\n"
+"Uses the f_G values produced by Dsuite Dtrios with the -f and --tree options; this is the output of Dtrios with the \"_tree.txt\" suffix\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
 "\n"
@@ -44,16 +44,19 @@ namespace opt
 int fBranchMain(int argc, char** argv) {
     parseFbranchOptions(argc, argv);
     std::istream* treeFile = new std::ifstream(opt::treeFile.c_str());
+    if (!treeFile->good()) { std::cerr << "The file " << opt::treeFile << " could not be opened. Exiting..." << std::endl; exit(EXIT_FAILURE);}
     std::istream* DvalsFile = new std::ifstream(opt::DvalsFile.c_str());
+    if (!DvalsFile->good()) { std::cerr << "The file " << opt::DvalsFile << " could not be opened. Exiting..." << std::endl; exit(EXIT_FAILURE);}
+    if (opt::DvalsFile.substr(opt::DvalsFile.size()-9) != "_tree.txt") { std::cerr << "The name of the input file with the f_G values should end in \"_tree.txt\".\nPlease make sure you run Dtrios with the -f and --tree options and then feed the correct file into Fbranch. Exiting..." << std::endl; exit(EXIT_FAILURE); }
     std::map<string,std::vector<std::vector<string>>> acToBmap;
     string line; int l = 0;
     getline(*DvalsFile, line); // skip over the header
     while (getline(*DvalsFile, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
-        l++; if (line == "") { std::cerr << "Please fix the format of the " << opt::DvalsFile << " file.\nLine " << l << " is empty." << std::endl; exit(EXIT_FAILURE); }
+        l++; if (line == "") { std::cerr << "Please fix the format of the " << opt::DvalsFile << " file.\nLine " << l << " is empty. Exiting..." << std::endl; exit(EXIT_FAILURE); }
         std::vector<string> speciesAndVals = split(line, '\t');
         if (speciesAndVals.size() <= 6) { std::cerr << "Please fix the format of the " << opt::DvalsFile << " file." << std::endl;
-            std::cerr << "Looks like the file does not contain f statistics. Run Dsuite Dtrios with the -f option" << std::endl;
+            std::cerr << "Looks like the file does not contain f statistics. Run Dsuite Dtrios with the -f option. Exiting..." << std::endl;
             exit(EXIT_FAILURE);
         }
         std::vector<string> bAndVal;  bAndVal.push_back(speciesAndVals[1]); bAndVal.push_back(speciesAndVals[5]);

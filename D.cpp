@@ -60,7 +60,9 @@ void doAbbaBaba() {
     
     std::istream* vcfFile = createReader(opt::vcfFile);
     std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
+    if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl; exit(EXIT_FAILURE);}
     std::ifstream* testTriosFile = new std::ifstream(opt::testTriosFile.c_str());
+    if (!testTriosFile->good()) { std::cerr << "The file " << opt::testTriosFile << " could not be opened. Exiting..." << std::endl; exit(EXIT_FAILURE);}
     
     // Get the sample sets
     std::map<string, std::vector<string>> speciesToIDsMap;
