@@ -295,7 +295,7 @@ public:
     
     std::vector<string> makeOutVec(const std::vector<string>& trio, const bool fStats, const int arrangement) {
         
-        std::vector<string> outVec; if (fStats) outVec.resize(8); else outVec.resize(5);
+        std::vector<string> outVec; if (fStats) outVec.resize(6); else outVec.resize(5);
         
         switch (arrangement) {
                 
@@ -306,16 +306,16 @@ public:
                 if (fStats) {
                     double Dnum = ABBAtotal-BABAtotal;
                     outVec[5] = numToString(Dnum/F_G_denom1);
-                    outVec[6] = numToString(Dnum/F_d_denom1);
-                    outVec[7] = numToString(Dnum/F_dM_denom1);
+                   // outVec[6] = numToString(Dnum/F_d_denom1);
+                   // outVec[7] = numToString(Dnum/F_dM_denom1);
                 }
             } else {
                 outVec[0] = trio[1]; outVec[1] = trio[0];
                 if (fStats) {
                     double Dnum = BABAtotal-ABBAtotal;
                     outVec[5] = numToString(Dnum/F_G_denom1_reversed);
-                    outVec[6] = numToString(Dnum/F_d_denom1_reversed);
-                    outVec[7] = numToString(Dnum/F_dM_denom1_reversed);
+                    //outVec[6] = numToString(Dnum/F_d_denom1_reversed);
+                    //outVec[7] = numToString(Dnum/F_dM_denom1_reversed);
                 }
             } break;
                 
@@ -326,16 +326,16 @@ public:
                 if (fStats) {
                     double Dnum = ABBAtotal - BBAAtotal;
                     outVec[5] = numToString(Dnum/F_G_denom2);
-                    outVec[6] = numToString(Dnum/F_d_denom2);
-                    outVec[7] = numToString(Dnum/F_dM_denom2);
+                   // outVec[6] = numToString(Dnum/F_d_denom2);
+                   // outVec[7] = numToString(Dnum/F_dM_denom2);
                 }
             } else {
                 outVec[0] = trio[2]; outVec[1] = trio[0];
                 if (fStats) {
                     double Dnum = BBAAtotal - ABBAtotal;
                     outVec[5] = numToString(Dnum/F_G_denom2_reversed);
-                    outVec[6] = numToString(Dnum/F_d_denom2_reversed);
-                    outVec[7] = numToString(Dnum/F_dM_denom2_reversed);
+                   // outVec[6] = numToString(Dnum/F_d_denom2_reversed);
+                   // outVec[7] = numToString(Dnum/F_dM_denom2_reversed);
                 }
             } break;
                 
@@ -346,16 +346,16 @@ public:
                 if (fStats) {
                     double Dnum = BBAAtotal - BABAtotal;
                     outVec[5] = numToString(Dnum/F_G_denom3);
-                    outVec[6] = numToString(Dnum/F_d_denom3);
-                    outVec[7] = numToString(Dnum/F_dM_denom3);
+                   // outVec[6] = numToString(Dnum/F_d_denom3);
+                   // outVec[7] = numToString(Dnum/F_dM_denom3);
                 }
             } else {
                 outVec[0] = trio[1]; outVec[1] = trio[2];
                 if (fStats) {
                     double Dnum = BABAtotal - BBAAtotal;
                     outVec[5] = numToString(Dnum/F_G_denom3_reversed);
-                    outVec[6] = numToString(Dnum/F_d_denom3_reversed);
-                    outVec[7] = numToString(Dnum/F_dM_denom3_reversed);
+                   // outVec[6] = numToString(Dnum/F_d_denom3_reversed);
+                   // outVec[7] = numToString(Dnum/F_dM_denom3_reversed);
                 }
             } break;
                 

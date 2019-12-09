@@ -99,16 +99,29 @@ int DminCombineMain(int argc, char** argv) {
             if (getline(*dminBBAAscoreFiles[i], line)) {
                 std::vector<string> patternCounts = split(line, '\t');
                 assert(patternCounts.size() == 6 || patternCounts.size() == 12);
-                
+
                 if (i == 0) {
                     s1 = patternCounts[0]; s2 = patternCounts[1]; s3 = patternCounts[2];
-                    if (patternCounts.size() == 12) fIncluded = true;
+                    if (processedTriosNumber == 1) {
+                        if (patternCounts.size() == 12) fIncluded = true;
+                        string header = "P1\tP2\tP3\tDstatistic\tp-value"; if (fIncluded) header += "\tf_GM";
+                        *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
+                        if (opt::treeFile != "") *outFileTree << header << std::endl;
+                    }
                 } else {
                     assert(s1 == patternCounts[0]); assert(s2 == patternCounts[1]); assert(s3 == patternCounts[2]);
                 }
                 info.BBAAtotal += stringToDouble(patternCounts[3]);
                 info.BABAtotal += stringToDouble(patternCounts[4]);
                 info.ABBAtotal += stringToDouble(patternCounts[5]);
+                if (fIncluded) {
+                    info.F_G_denom1 += stringToDouble(patternCounts[6]);
+                    info.F_G_denom2 += stringToDouble(patternCounts[7]);
+                    info.F_G_denom3 += stringToDouble(patternCounts[8]);
+                    info.F_G_denom1_reversed += stringToDouble(patternCounts[9]);
+                    info.F_G_denom2_reversed += stringToDouble(patternCounts[10]);
+                    info.F_G_denom3_reversed += stringToDouble(patternCounts[11]);
+                }
             } else {
                 allDone = true; break;
             }
