@@ -55,7 +55,7 @@ int fBranchMain(int argc, char** argv) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
         l++; if (line == "") { std::cerr << "Please fix the format of the " << opt::DvalsFile << " file.\nLine " << l << " is empty. Exiting..." << std::endl; exit(EXIT_FAILURE); }
         std::vector<string> speciesAndVals = split(line, '\t');
-        if (speciesAndVals.size() <= 6) { std::cerr << "Please fix the format of the " << opt::DvalsFile << " file." << std::endl;
+        if (speciesAndVals.size() < 6) { std::cerr << "Please fix the format of the " << opt::DvalsFile << " file." << std::endl;
             std::cerr << "Looks like the file does not contain f statistics. Run Dsuite Dtrios with the -f option. Exiting..." << std::endl;
             exit(EXIT_FAILURE);
         }
