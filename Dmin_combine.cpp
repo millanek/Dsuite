@@ -104,7 +104,7 @@ int DminCombineMain(int argc, char** argv) {
                     s1 = patternCounts[0]; s2 = patternCounts[1]; s3 = patternCounts[2];
                     if (processedTriosNumber == 1) {
                         if (patternCounts.size() == 12) fIncluded = true;
-                        string header = "P1\tP2\tP3\tDstatistic\tp-value"; if (fIncluded) header += "\tf_GM";
+                        string header = "P1\tP2\tP3\tDstatistic\tp-value"; if (fIncluded) header += "\tf_G";
                         *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
                         if (opt::treeFile != "") *outFileTree << header << std::endl;
                     }
