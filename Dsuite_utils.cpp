@@ -424,3 +424,10 @@ void assignTreeLevelsAndLinkToTaxa(string& treeLine, std::map<string,std::vector
     //    std::cout << i->first << "\t" << i->second[0] << "\t" << i->second[1] << "\t" << treeLevels[i->second[0]] << "\t" << treeLevels[i->second[1]] << std::endl;
     //}
 }
+
+void assignSplits01FromAlleleFrequency(const double p, double& splitA, double& splitB) {
+    double r = ((double) rand() / (RAND_MAX));
+    if (r <= p) { splitA = 1; }
+    double r2 = ((double) rand() / (RAND_MAX));
+    if (r2 <= p) { splitB = 1; }
+}

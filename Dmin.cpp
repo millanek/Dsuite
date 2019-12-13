@@ -316,29 +316,42 @@ int DminMain(int argc, char** argv) {
                     c_S1a = allSplit1Counts[triosInt[i][0]]; c_S1b = allSplit2Counts[triosInt[i][0]];
                     
                     double p_S1a = 0; double p_S1b = 0; double p_S2a = 0; double p_S2b = 0; double p_S3a = 0; double p_S3b = 0;
+                    
                     if (c_S3a > 0 && c_S3b > 0) {
                         p_S3a = allSplit1Ps[triosInt[i][2]]; p_S3b = allSplit2Ps[triosInt[i][2]];
-                        trioInfos[i].F_G_denom1 += fG_Denom_perVariant(p_S1,p_S3a,p_S3b,p_O);
-                        trioInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(p_S2,p_S3a,p_S3b,p_O);
-                    } else if (p_S3 == 1) {
-                        trioInfos[i].F_G_denom1 += (1-p_S1)*(1-p_O);
-                        trioInfos[i].F_G_denom1_reversed += (1-p_S2)*(1-p_O);
+                    } else if (p_S3 == 1 || p_S3 == 0) {
+                        p_S3a = p_S3; p_S3b = p_S3;
+                    } else { assignSplits01FromAlleleFrequency(p_S3, p_S3a, p_S3b); }
+                    trioInfos[i].F_G_denom1 += fG_Denom_perVariant(p_S1,p_S3a,p_S3b,p_O);
+                    trioInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(p_S2,p_S3a,p_S3b,p_O);
+                    if (opt::Patterson && (p_O != 0)) {
+                        trioInfos[i].F_G_denom1 += fG_Denom_perVariant(1-p_S1,1-p_S3a,1-p_S3b,1-p_O);
+                        trioInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(1-p_S2,1-p_S3a,1-p_S3b,1-p_O);
                     }
+                    
                     if (c_S2a > 0 && c_S2b > 0) {
                         p_S2a = allSplit1Ps[triosInt[i][1]]; p_S2b = allSplit2Ps[triosInt[i][1]];
-                        trioInfos[i].F_G_denom2 += fG_Denom_perVariant(p_S1,p_S2a,p_S2b,p_O);
-                        trioInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(p_S3,p_S2a,p_S2b,p_O);
-                    } else if (p_S2 == 1) {
-                        trioInfos[i].F_G_denom2 += (1-p_S1)*(1-p_O);
-                        trioInfos[i].F_G_denom2_reversed += (1-p_S3)*(1-p_O);
+                    } else if (p_S2 == 1 || p_S2 == 0) {
+                        p_S2a = p_S2; p_S2b = p_S2;
+                    } else { assignSplits01FromAlleleFrequency(p_S2, p_S2a, p_S2b); }
+                    trioInfos[i].F_G_denom2 += fG_Denom_perVariant(p_S1,p_S2a,p_S2b,p_O);
+                    trioInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(p_S3,p_S2a,p_S2b,p_O);
+                    if (opt::Patterson && (p_O != 0)) {
+                        trioInfos[i].F_G_denom2 += fG_Denom_perVariant(1-p_S1,1-p_S2a,1-p_S2b,1-p_O);
+                        trioInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(1-p_S3,1-p_S2a,1-p_S2b,1-p_O);
                     }
+                    
                     if (c_S1a > 0 && c_S1b > 0) {
                         p_S1a = allSplit1Ps[triosInt[i][0]]; p_S1b = allSplit2Ps[triosInt[i][0]];
-                        trioInfos[i].F_G_denom3 += fG_Denom_perVariant(p_S3,p_S1a,p_S1b,p_O);
-                        trioInfos[i].F_G_denom3_reversed += fG_Denom_perVariant(p_S2,p_S1a,p_S1b,p_O);
-                    } else if (p_S1 == 1) {
-                        trioInfos[i].F_G_denom3 += (1-p_S3)*(1-p_O);
-                        trioInfos[i].F_G_denom3_reversed += (1-p_S2)*(1-p_O);
+                    } else if (p_S1 == 1 || p_S1 == 0) {
+                        p_S1a = p_S1; p_S1b = p_S1;
+                    } else { assignSplits01FromAlleleFrequency(p_S1, p_S1a, p_S1b); }
+                    
+                    trioInfos[i].F_G_denom3 += fG_Denom_perVariant(p_S3,p_S1a,p_S1b,p_O);
+                    trioInfos[i].F_G_denom3_reversed += fG_Denom_perVariant(p_S2,p_S1a,p_S1b,p_O);
+                    if (opt::Patterson && (p_O != 0)) {
+                        trioInfos[i].F_G_denom3 += fG_Denom_perVariant(1-p_S3,1-p_S1a,1-p_S1b,1-p_O);
+                        trioInfos[i].F_G_denom3_reversed += fG_Denom_perVariant(1-p_S2,1-p_S1a,1-p_S1b,1-p_O);
                     }
                     
                 }
