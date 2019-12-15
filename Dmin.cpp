@@ -34,7 +34,7 @@ static const char* shortopts = "hr:n:t:j:fp";
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
-    { "region",   no_argument, NULL, 'r' },
+    { "region",   required_argument, NULL, 'r' },
     { "tree",   required_argument, NULL, 't' },
     { "JKwindow",   required_argument, NULL, 'j' },
     { "help",   no_argument, NULL, 'h' },
