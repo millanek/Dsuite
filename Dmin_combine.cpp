@@ -93,6 +93,14 @@ int DminCombineMain(int argc, char** argv) {
     string s1; string s2; string s3;
     bool allDone = false; bool fIncluded = false;
     int processedTriosNumber = 0; int exceptionCount = 0;
+    
+    getline(*dminBBAAscoreFiles[0], line); std::vector<string> patternCounts = split(line, '\t');
+    if (patternCounts.size() == 12) fIncluded = true;
+    string header = "P1\tP2\tP3\tDstatistic\tp-value"; if (fIncluded) header += "\tf_G";
+    *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
+    if (opt::treeFile != "") *outFileTree << header << std::endl;
+    dminBBAAscoreFiles[0]->seekg(0, dminBBAAscoreFiles[0]->beg); // Go back to the beginning of this file
+    
     do {
         TrioDinfo info; processedTriosNumber++;
         if (processedTriosNumber % 10000 == 0) { std::cerr << "Processed " << processedTriosNumber << " trios" << std::endl; }
@@ -116,12 +124,6 @@ int DminCombineMain(int argc, char** argv) {
 
                 if (i == 0) {
                     s1 = patternCounts[0]; s2 = patternCounts[1]; s3 = patternCounts[2];
-                    if (processedTriosNumber == 1) {
-                        if (patternCounts.size() == 12) fIncluded = true;
-                        string header = "P1\tP2\tP3\tDstatistic\tp-value"; if (fIncluded) header += "\tf_G";
-                        *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
-                        if (opt::treeFile != "") *outFileTree << header << std::endl;
-                    }
                 } else {
                     assert(s1 == patternCounts[0]); assert(s2 == patternCounts[1]); assert(s3 == patternCounts[2]);
                 }
