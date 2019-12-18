@@ -59,9 +59,10 @@ int fBranchMain(int argc, char** argv) {
             std::cerr << "Looks like the file does not contain f statistics. Run Dsuite Dtrios with the -f option. Exiting..." << std::endl;
             exit(EXIT_FAILURE);
         }
-        std::vector<string> bAndVal;  bAndVal.push_back(speciesAndVals[1]); bAndVal.push_back(speciesAndVals[5]);
-        std::vector<string> aAndVal;  aAndVal.push_back(speciesAndVals[0]); aAndVal.push_back(speciesAndVals[5]);
-        acToBmap[speciesAndVals[0]+","+speciesAndVals[2]].push_back(bAndVal);
+        std::vector<string> bAndValLine;  bAndValLine.push_back(speciesAndVals[1]); bAndValLine.push_back(speciesAndVals[5]);
+        std::vector<string> aAndValLine;  aAndValLine.push_back(speciesAndVals[0]); aAndValLine.push_back("0");
+        acToBmap[speciesAndVals[0]+","+speciesAndVals[2]].push_back(bAndValLine);
+        acToBmap[speciesAndVals[1]+","+speciesAndVals[2]].push_back(aAndValLine);
     }
     string treeString; getline(*treeFile, treeString);
     Tree* testTree = new Tree(treeString);
@@ -71,6 +72,7 @@ int fBranchMain(int argc, char** argv) {
         if ((*b)->parentId != "treeOrigin") {
             std::vector<string> Bs = (*b)->progenyIds;
             std::vector<string> As = (*b)->sisterBranch->progenyIds;
+            //if((*b)->id == "b5") { print_vector(Bs, std::cout); }
             std::vector<double> Bmins; std::vector<double> vals;
             for (std::vector<string>::iterator C = testTree->allSpecies.begin(); C != testTree->allSpecies.end(); C++) {
                 for (std::vector<string>::iterator A = As.begin(); A != As.end(); A++) {
@@ -80,13 +82,16 @@ int fBranchMain(int argc, char** argv) {
                         if (std::count(Bs.begin(), Bs.end(), bAndVal[i][0])) {
                             vals.push_back(stringToDouble(bAndVal[i][1]));
                         }
+                        //if((*b)->id == "b5") { std::cout << *A << "\t" << bAndVal[i][0] << "\t" << bAndVal[i][1] << "\tbAndVal.size():\t" << bAndVal.size() << "\ti:\t" << i << std::endl;
+                            //
+                        //}
                     }
                     if (!vals.empty()) { Bmins.push_back(*std::min_element(vals.begin(),vals.end())); vals.clear(); }
- 
+                    //
                 }
                 double fbC = NAN;
                 if (!Bmins.empty()) { fbC = median(Bmins.begin(),Bmins.end()); Bmins.clear(); }
-                else { // There is no positive value; just find if any value is possible for this ABC combination
+                /* else { // There is no positive value; just find if any value is possible for this ABC combination
                     bool ACpossible = false;
                     for (std::vector<string>::iterator B = Bs.begin(); B != Bs.end(); B++) {
                         std::vector<std::vector<string>> bAndVal; std::vector<std::vector<string>> aAndVal;
@@ -98,7 +103,7 @@ int fBranchMain(int argc, char** argv) {
                         }
                     }
                     if (ACpossible) fbC = 0;
-                }
+                } */
                 (*b)->fbCvals.push_back(fbC);
             }
         }
