@@ -111,7 +111,7 @@ int DminCombineMain(int argc, char** argv) {
                 for (int i = 0; i < dminstdErrFiles.size(); i++) { getline(*dminstdErrFiles[i], line); }
                 continue;
             }
-            if (processedTriosNumber > (opt::subsetStart+opt::subsetLength)) {
+            if (processedTriosNumber >= (opt::subsetStart+opt::subsetLength)) {
                 std::cerr << "DONE" << std::endl; break;
             }
         }
