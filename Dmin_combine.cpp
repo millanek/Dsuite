@@ -21,15 +21,17 @@ static const char *DMINCOMBINE_USAGE_MESSAGE =
 "       -n, --run-name                          run-name will be included in the output file name\n"
 "       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix\n"
+"       -s , --subset=start,length              (optional) only process a subset of the trios\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
 enum { OPT_AA_EQ_O }; 
 
-static const char* shortopts = "hn:t:";
+static const char* shortopts = "hn:t:s:";
 
 static const struct option longopts[] = {
+    { "subset",   required_argument, NULL, 's' },
     { "run-name",   required_argument, NULL, 'n' },
     { "tree",   required_argument, NULL, 't' },
     { "help",   no_argument, NULL, 'h' },
@@ -94,6 +96,18 @@ int DminCombineMain(int argc, char** argv) {
     do {
         TrioDinfo info; processedTriosNumber++;
         if (processedTriosNumber % 10000 == 0) { std::cerr << "Processed " << processedTriosNumber << " trios" << std::endl; }
+        
+        if (opt::subsetStart != -1) {
+            if (processedTriosNumber < opt::subsetStart) {
+                for (int i = 0; i < dminBBAAscoreFiles.size(); i++) { getline(*dminBBAAscoreFiles[i], line); }
+                for (int i = 0; i < dminstdErrFiles.size(); i++) { getline(*dminstdErrFiles[i], line); }
+                continue;
+            }
+            if (processedTriosNumber > (opt::subsetStart+opt::subsetLength)) {
+                std::cerr << "DONE" << std::endl; break;
+            }
+        }
+        
         
         for (int i = 0; i < dminBBAAscoreFiles.size(); i++) {
             if (getline(*dminBBAAscoreFiles[i], line)) {
@@ -214,8 +228,8 @@ void parseDminCombineOptions(int argc, char** argv) {
             case '?': die = true; break;
             case 'n': arg >> opt::runName; break;
             case 't': arg >> opt::treeFile; break;
-         //   case 's': arg >> subsetArgString; subsetArgs = split(subsetArgString, ',');
-         //       opt::subsetStart = (int)stringToDouble(subsetArgs[0]); opt::subsetLength = (int)stringToDouble(subsetArgs[1]);  break;
+            case 's': arg >> subsetArgString; subsetArgs = split(subsetArgString, ',');
+                opt::subsetStart = (int)stringToDouble(subsetArgs[0]); opt::subsetLength = (int)stringToDouble(subsetArgs[1]);  break;
             case 'h':
                 std::cout << DMINCOMBINE_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);
