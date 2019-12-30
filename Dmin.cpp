@@ -52,7 +52,7 @@ namespace opt
     int regionStart = -1;
     int regionLength = -1;
     bool fStats = false;
-    bool Patterson = false;
+    bool Patterson = true;
 }
 
 inline unsigned nChoosek( unsigned n, unsigned k )
