@@ -49,49 +49,83 @@ Species1    Species2    Species3
 Species1    Species4    Species2
 ...         ...         ...
 ```
-## Commands:
-### Dsuite Dtrios - Calculate D-statistics (ABBA-BABA) for all possible trios of populations/species
+
+## Commands (v0.3):
+### Dsuite Dtrios - Calculate the D (ABBA-BABA) and f4-ratio (f_G) statistics for all possible trios of populations/species
 ```
-Usage: Dsuite Dtrios [OPTIONS] INPUT_FILE.vcf SETS.txt
-Calculate the Dmin-statistic - the ABBA/BABA stat for all trios of species in the dataset (the outgroup being fixed)
-the calculation is as definded in Durand et al. 2011
+Calculate the D (ABBA/BABA) and f4-ratio (f_G) statistics for all trios of species in the dataset (the outgroup being fixed)
+the results are as definded in Patterson et al. 2012 (equivalent to Durand et al. 2011 when the Outgroup is fixed for the ancestral allele)
 The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID
 The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID
 
--h, --help                              display this help and exit
--j, --JKwindow                          (default=20000) Jackknife block size in SNPs
--r , --region=start,length              (optional) only process a subset of the VCF file
--t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species
-                                        D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix
--n, --run-name                          run-name will be included in the output file name
+       -h, --help                              display this help and exit
+       -k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset
+       -j, --JKwindow                          (default=NA) Jackknife block size in number of informative SNPs (as used in v0.2)
+                                               when specified, this is used in place of the --JKnum option
+       -r, --region=start,length               (optional) only process a subset of the VCF file
+       -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species
+                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix
+       -n, --run-name                          run-name will be included in the output file name
+
 ```
 #### Output:
-The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D-statistics and the unadjusted p-values. Please read the [manuscript](https://www.biorxiv.org/content/biorxiv/early/2019/05/10/634477.full.pdf) for more details. 
+The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D statistics, unadjusted p-values, and the f4-ratios (f_G). Please read the [manuscript](https://www.biorxiv.org/content/biorxiv/early/2019/05/10/634477.full.pdf) for more details. 
 
 The output files with suffixes  `combine.txt` and  `combine_stderr.txt` are used as input to DtriosCombine. If you don't need to use DtriosCombine, you can safely delete these files.
 
 ### DtriosCombine - Combine results from Dtrios runs across genomic regions (e.g. per chromosome)
 ```
-Usage: Dsuite DtriosCombine [OPTIONS] DminFile1 DminFile2 DminFile3 ....
-Combine the BBAA, ABBA, and BABA counts from multiple files (e.g per-chromosome) and output the overall Dmin stats
-also the D stats for the trio arrangement where the BBAA is the most common pattern
+Combine the BBAA, ABBA, and BABA counts from multiple files (e.g per-chromosome) and output the overall D stats,
+p-values and f4-ratio values
 
--h, --help                              display this help and exit
--n, --run-name                          run-name will be included in the output file name
--s , --subset=start,length              (optional) only process a subset of the trios
+       -h, --help                              display this help and exit
+       -n, --run-name                          run-name will be included in the output file name
+       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species
+                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix
+       -s , --subset=start,length              (optional) only process a subset of the trios
 ```
-###  Dinvestigate - Follow up analyses for trios with significantly elevated D: calculates the f4 statistic, and also f_d and f_dM in windows along the genome
+#### Output:
+As for `Dtrios`, there are output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used). They contain the overall combined results: the D statistics, unadjusted p-values, and the f4-ratios (f_G). 
+
+###  Dinvestigate - Follow up analyses for trios with significantly elevated D: calculates D, f_d and f_dM in windows along the genome
 ```
-Usage: Dsuite Dinvestigate [OPTIONS] INPUT_FILE.vcf.gz SETS.txt test_trios.txt
-Calculate the admixture proportion estimates f_G, f_d (Martin et al. 2014 MBE), and f_dM (Malinsky et al., 2015)
-Also outputs f_d and f_dM in genomic windows
+Outputs D, f_d (Martin et al. 2014 MBE), and f_dM (Malinsky et al., 2015) in genomic windows
 The SETS.txt file should have two columns: SAMPLE_ID    POPULATION_ID
 The test_trios.txt should contain names of three populations for which the statistics will be calculated:
 POP1   POP2    POP3
 There can be multiple lines and then the program generates multiple ouput files, named like POP1_POP2_POP3_localFstats_SIZE_STEP.txt
 
--h, --help                              display this help and exit
--w SIZE, --window=SIZE,STEP             (required) D, f_D, and f_dM statistics for windows containing SIZE useable SNPs, moving by STEP (default: 50,25)
--n, --run-name                          run-name will be included in the output file name
+       -h, --help                              display this help and exit
+       -w SIZE,STEP --window=SIZE,STEP         (required) D, f_D, and f_dM statistics for windows containing SIZE useable SNPs, moving by STEP (default: 50,25)
+       -n, --run-name                          run-name will be included in the output file name
 ```
 
+###  Fbranch - A heuristic approach designed to aid the interpretation of many correlated f4-ratio results 
+```
+Usage: Dsuite Fbranch [OPTIONS] TREE_FILE.nwk FVALS_tree.txt
+Implements the 'f-branch' type calculations developed by Hannes Svardal for Malinsky et al., 2018, Nat. Ecol. Evo.
+Uses the f4-ratio (f_G) values produced by Dsuite Dtrios (or DtriosCombine) with the --tree option; this is the output of Dtrios with the "_tree.txt" suffix
+
+       -h, --help                              display this help and exit
+```
+#### Output:
+Details TBA
+
+
+## Change log:
+
+```
+Selected updates (full update history is accessible on gitHub):
+v0.3 r21:   Automatic estimation of Jackknife window size to get a desired number of blocks
+            Progress update in %
+            f4-ratios are calculated by default by Dtrios 
+            Updated documentation
+v0.2 r20:   Subset option returns to DtriosCombine
+v0.2 r19:   Fixed a bug in Fbranch where P1 and P2 positions where A in P2 positions and B in P1 positions were not considered
+v0.2 r18:   Full implementation of D and f4-ratio in line with the Patterson et al. 2012 definitions 
+            (affects only analyses where the outgroup allele is not fixed)
+v0.2 r15:   Ironed bugs in Dinvestigate, truly useable from this point  
+v0.2 r6:    First Fbranch version
+v0.1 r1:    First workable Dsuite release 8th May 2019    
+
+```

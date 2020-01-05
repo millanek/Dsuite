@@ -14,13 +14,13 @@
 
 static const char *DMINCOMBINE_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] DminFile1 DminFile2 DminFile3 ....\n"
-"Combine the BBAA, ABBA, and BABA counts from multiple files (e.g per-chromosome) and output the overall Dmin stats\n"
-"also the D stats for the trio arrangement where the BBAA is the most common pattern\n"
+"Combine the BBAA, ABBA, and BABA counts from multiple files (e.g per-chromosome) and output the overall D stats,\n"
+"p-values and f4-ratio values\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
 "       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
-"                                               D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix\n"
+"                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix\n"
 "       -s , --subset=start,length              (optional) only process a subset of the trios\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";

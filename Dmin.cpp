@@ -14,29 +14,32 @@
 
 static const char *DMIN_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] INPUT_FILE.vcf SETS.txt\n"
-"Calculate the Dmin-statistic - the ABBA/BABA stat for all trios of species in the dataset (the outgroup being fixed)\n"
-"the calculation is as definded in Durand et al. 2011\n"
+"Calculate the D (ABBA/BABA) and f4-ratio (f_G) statistics for all trios of species in the dataset (the outgroup being fixed)\n"
+"the results are as definded in Patterson et al. 2012 (equivalent to Durand et al. 2011 when the Outgroup is fixed for the ancestral allele)\n"
 "The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID\n"
 "The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
-"       -j, --JKwindow                          (default=1000) Jackknife block size in SNPs\n"
-"       -r , --region=start,length              (optional) only process a subset of the VCF file\n"
-"       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
-"                                               D values for trios arranged according to these relationships will be output in a file with _tree.txt suffix\n"
+"       -k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset\n"
+"       -j, --JKwindow                          (default=NA) Jackknife block size in number of informative SNPs (as used in v0.2)\n"
+"                                               when specified, this is used in place of the --JKnum option\n"
+"       -r, --region=start,length               (optional) only process a subset of the VCF file\n"
+"       -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
+"                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix\n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
-"       -f, --f-stats                           (optional) also calculate the f4, f_d, and f_dM statistics\n"
+//"       -f, --f-stats                           (optional) also calculate the f4-ratio\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
-static const char* shortopts = "hr:n:t:j:fp";
+static const char* shortopts = "hr:n:t:j:fpk:";
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
     { "region",   required_argument, NULL, 'r' },
     { "tree",   required_argument, NULL, 't' },
     { "JKwindow",   required_argument, NULL, 'j' },
+    { "JKnum",   required_argument, NULL, 'k' },
     { "help",   no_argument, NULL, 'h' },
     { "f-stats",   no_argument, NULL, 'f' },
     { NULL, 0, NULL, 0 }
@@ -48,10 +51,11 @@ namespace opt
     static string setsFile;
     static string treeFile = "";
     static string runName = "";
-    int jkWindowSize = 1000;
+    int jkWindowSize = 0;
+    int jkNum = 20;
     int regionStart = -1;
     int regionLength = -1;
-    bool fStats = false;
+    bool fStats = true;
     bool Patterson = true;
 }
 
@@ -81,6 +85,16 @@ int DminMain(int argc, char** argv) {
         outFileTree = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_tree.txt");
         getline(*treeFile, line);
         assignTreeLevelsAndLinkToTaxa(line,treeTaxonNamesToLoc,treeLevels);
+    }
+    
+    int VCFlineCount;
+    { // Block to find the number of lines in the VCF file
+        std::istream* vcfFile = createReader(opt::vcfFile.c_str());
+        // See how big is the VCF file
+        vcfFile->unsetf(std::ios_base::skipws); // new lines will be skipped unless we stop it from happening:
+        // count the newlines with an algorithm specialized for counting:
+        VCFlineCount = (int)std::count(std::istream_iterator<char>(*vcfFile),std::istream_iterator<char>(),'\n');
+        //std::cout << "VCF Lines: " << VCFlineCount << "\n";
     }
     
     std::istream* vcfFile = createReader(opt::vcfFile.c_str());
@@ -125,7 +139,7 @@ int DminMain(int argc, char** argv) {
         }
     } std::cerr << "There are " << species.size() << " sets (excluding the Outgroup)" << std::endl;
     int nCombinations = nChoosek((int)species.size(),3);
-    std::cerr << "Going to calculate " << nCombinations << " Dmin values" << std::endl;
+    std::cerr << "Going to calculate D and f4-ratio values for " << nCombinations << " trios" << std::endl;
     if (opt::treeFile != "") { // Chack that the tree contains all the populations/species
         for (int i = 0; i != species.size(); i++) {
             try {
@@ -176,12 +190,16 @@ int DminMain(int argc, char** argv) {
     else reportProgressEvery = 1000;
     clock_t start; clock_t startGettingCounts; clock_t startCalculation;
     double durationOverall; double durationGettingCounts; double durationCalculation;
+    int JKblockSizeBasedOnNum = 0;
     
     while (getline(*vcfFile, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
-        if (line[0] == '#' && line[1] == '#')
-            continue;
-        else if (line[0] == '#' && line[1] == 'C') {
+        if (line[0] == '#' && line[1] == '#') {
+            VCFlineCount--; continue;
+        } else if (line[0] == '#' && line[1] == 'C') {
+            VCFlineCount--; JKblockSizeBasedOnNum = (VCFlineCount/opt::jkNum)-1;
+            std::cout << "The VCF contains " << VCFlineCount << " variants\n";
+            if (opt::jkWindowSize == 0) std::cout << "Going to use block size of " << JKblockSizeBasedOnNum << " variants to get " << opt::jkNum << " Jackknife blocks\n";
             fields = split(line, '\t');
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
             // print_vector_stream(sampleNames, std::cerr);
@@ -215,9 +233,14 @@ int DminMain(int argc, char** argv) {
                     std::cerr << "DONE" << std::endl; break;
                 }
             }
+            if (totalVariantNumber % JKblockSizeBasedOnNum == 0 && opt::jkWindowSize != 0) {
+                for (int i = 0; i != trios.size(); i++) {
+                    trioInfos[i].addRegionDs(P3isTrios2); trioInfos[i].addRegionDs(P3isTrios1); trioInfos[i].addRegionDs(P3isTrios0);
+                }
+            }
             if (totalVariantNumber % reportProgressEvery == 0) {
                 durationOverall = ( clock() - start ) / (double) CLOCKS_PER_SEC;
-                std::cerr << "Processed " << totalVariantNumber << " variants in " << durationOverall << "secs" << std::endl;
+                std::cerr << "Processed " << totalVariantNumber << " variants (" << ((double)totalVariantNumber/VCFlineCount)*100 << "%) in " << durationOverall << "secs" << std::endl;
                 //std::cerr << "GettingCounts " << durationGettingCounts << " calculation " << durationCalculation << "secs" << std::endl;
             }
             fields = split(line, '\t');
@@ -355,11 +378,14 @@ int DminMain(int argc, char** argv) {
                     }
                     
                 }
+                
                 // std::cerr << "trioInfos[i].localD1num" << trioInfos[i].localD1denom << std::endl;
-                if (trioInfos[i].usedVars[0] == opt::jkWindowSize) { trioInfos[i].addRegionDs(P3isTrios2); }
-                if (trioInfos[i].usedVars[1] == opt::jkWindowSize) { trioInfos[i].addRegionDs(P3isTrios1); }
-                if (trioInfos[i].usedVars[2] == opt::jkWindowSize) { trioInfos[i].addRegionDs(P3isTrios0); }
-                // }
+                if (opt::jkWindowSize > 0) {
+                    if (trioInfos[i].usedVars[0] == opt::jkWindowSize) { trioInfos[i].addRegionDs(P3isTrios2); }
+                    if (trioInfos[i].usedVars[1] == opt::jkWindowSize) { trioInfos[i].addRegionDs(P3isTrios1); }
+                    if (trioInfos[i].usedVars[2] == opt::jkWindowSize) { trioInfos[i].addRegionDs(P3isTrios0); }
+                }
+                // } */
             }
             durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
         }
@@ -380,7 +406,8 @@ int DminMain(int argc, char** argv) {
             if (exceptionCount <= 10) {
                 std::cerr << msg << std::endl;
                 std::cerr << "Could not calculate p-values for the trio: " << trios[i][0] << " " << trios[i][1] << " " << trios[i][2] << std::endl;
-                std::cerr << "You should probably decrease the the jackknife block size (-j option)" << std::endl;
+                if (opt::jkWindowSize > 0) std::cerr << "You should probably decrease the the jackknife block size (-j option)" << std::endl;
+                else std::cerr << "it looks like there aren't enough ABBA-BABA informative variants for this trio" << std::endl;
                 std::cerr << std::endl;
             }
             trioInfos[i].D1_p = nan(""); trioInfos[i].D2_p = nan(""); trioInfos[i].D3_p = nan("");
@@ -423,8 +450,9 @@ int DminMain(int argc, char** argv) {
     if (exceptionCount > 10) {
         std::cerr << "..." << std::endl;
         std::cerr << "p-value could not be calculated for " << exceptionCount << " trios" << std::endl;
-        std::cerr << "You should definitely decrease the the jackknife block size!!!" << std::endl;
-        std::cerr << "Or use DtriosCombine if this was a run for a subset of the genome (e.g. one chromosome)" << std::endl;
+        if (opt::jkWindowSize > 0) std::cerr << "You should probably decrease the the jackknife block size (-j option)" << std::endl;
+        else std::cerr << "it looks like there aren't enough ABBA-BABA informative variants for these trios" << std::endl;
+        std::cerr << "If this was a run for a subset of the genome (e.g. one chromosome), you may still get p-values for these trios from DtriosCombine" << std::endl;
         std::cerr << std::endl;
     }
     return 0;
@@ -444,6 +472,7 @@ void parseDminOptions(int argc, char** argv) {
             case 'n': arg >> opt::runName; break;
             case 't': arg >> opt::treeFile; break;
             case 'j': arg >> opt::jkWindowSize; break;
+            case 'k': arg >> opt::jkNum; break;
             case 'f': opt::fStats = true; break;
             case 'p': opt::Patterson = true; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');

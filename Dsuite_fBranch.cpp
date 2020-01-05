@@ -14,7 +14,7 @@
 static const char *BRANCHSCORE_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] TREE_FILE.nwk FVALS_tree.txt\n"
 "Implements the 'f-branch' type calculations developed by Hannes Svardal for Malinsky et al., 2018, Nat. Ecol. Evo.\n"
-"Uses the f_G values produced by Dsuite Dtrios with the -f and --tree options; this is the output of Dtrios with the \"_tree.txt\" suffix\n"
+"Uses the f4-ratio (f_G) values produced by Dsuite Dtrios (or DtriosCombine) with the --tree option; this is the output of Dtrios with the \"_tree.txt\" suffix\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
 "\n"

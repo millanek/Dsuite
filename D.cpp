@@ -14,8 +14,7 @@
 
 static const char *ABBA_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] INPUT_FILE.vcf.gz SETS.txt test_trios.txt\n"
-"Calculate the admixture proportion estimates f_G, f_d (Martin et al. 2014 MBE), and f_dM (Malinsky et al., 2015)\n"
-"Also outputs f_d and f_dM in genomic windows\n"
+"Outputs D, f_d (Martin et al. 2014 MBE), and f_dM (Malinsky et al., 2015) in genomic windows\n"
 "The SETS.txt file should have two columns: SAMPLE_ID    POPULATION_ID\n"
 "The test_trios.txt should contain names of three populations for which the statistics will be calculated:\n"
 "POP1   POP2    POP3\n"
