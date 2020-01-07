@@ -27,11 +27,12 @@ static const char *DMIN_USAGE_MESSAGE =
 "       -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix\n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
-//"       -f, --f-stats                           (optional) also calculate the f4-ratio\n"
+"       --no-f4-ratio                           (optional) don't calculate the f4-ratio\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
+enum { OPT_NO_F4 };
 static const char* shortopts = "hr:n:t:j:fpk:";
 
 static const struct option longopts[] = {
@@ -41,7 +42,7 @@ static const struct option longopts[] = {
     { "JKwindow",   required_argument, NULL, 'j' },
     { "JKnum",   required_argument, NULL, 'k' },
     { "help",   no_argument, NULL, 'h' },
-    { "f-stats",   no_argument, NULL, 'f' },
+    { "no-f4-ratio",   no_argument, NULL, OPT_NO_F4 },
     { NULL, 0, NULL, 0 }
 };
 
@@ -473,7 +474,7 @@ void parseDminOptions(int argc, char** argv) {
             case 't': arg >> opt::treeFile; break;
             case 'j': arg >> opt::jkWindowSize; break;
             case 'k': arg >> opt::jkNum; break;
-            case 'f': opt::fStats = true; break;
+            case OPT_NO_F4: opt::fStats = false; break;
             case 'p': opt::Patterson = true; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
                 opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;

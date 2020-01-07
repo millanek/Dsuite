@@ -26,8 +26,6 @@ static const char *DMINCOMBINE_USAGE_MESSAGE =
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
-enum { OPT_AA_EQ_O }; 
-
 static const char* shortopts = "hn:t:s:";
 
 static const struct option longopts[] = {
