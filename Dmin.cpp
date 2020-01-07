@@ -198,8 +198,8 @@ int DminMain(int argc, char** argv) {
             VCFlineCount--; continue;
         } else if (line[0] == '#' && line[1] == 'C') {
             VCFlineCount--; JKblockSizeBasedOnNum = (VCFlineCount/opt::jkNum)-1;
-            std::cout << "The VCF contains " << VCFlineCount << " variants\n";
-            if (opt::jkWindowSize == 0) std::cout << "Going to use block size of " << JKblockSizeBasedOnNum << " variants to get " << opt::jkNum << " Jackknife blocks\n";
+            std::cerr << "The VCF contains " << VCFlineCount << " variants\n";
+            if (opt::jkWindowSize == 0) std::cerr << "Going to use block size of " << JKblockSizeBasedOnNum << " variants to get " << opt::jkNum << " Jackknife blocks\n";
             fields = split(line, '\t');
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
             // print_vector_stream(sampleNames, std::cerr);
@@ -233,7 +233,7 @@ int DminMain(int argc, char** argv) {
                     std::cerr << "DONE" << std::endl; break;
                 }
             }
-            if (totalVariantNumber % JKblockSizeBasedOnNum == 0 && opt::jkWindowSize != 0) {
+            if (totalVariantNumber % JKblockSizeBasedOnNum == 0 && opt::jkWindowSize == 0) {
                 for (int i = 0; i != trios.size(); i++) {
                     trioInfos[i].addRegionDs(P3isTrios2); trioInfos[i].addRegionDs(P3isTrios1); trioInfos[i].addRegionDs(P3isTrios0);
                 }
