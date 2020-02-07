@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # #START_LICENSE###########################################################
 #
 # Parts of the code used here is modified from the Environment for Tree
@@ -19,7 +21,7 @@
 #
 # #END_LICENSE#############################################################
 
-import copy, os
+import copy, os, sys
 import argparse
 
 import numpy as np
@@ -31,7 +33,7 @@ import random
 import copy
 import itertools
 from collections import deque
-from hashlib import md5
+#from hashlib import md5
 from functools import cmp_to_key
 
 #import six
@@ -2425,29 +2427,29 @@ class TreeNode(object):
                 n.delete(prevent_nondicotomic=True,
                          preserve_branch_length=preserve_branch_length)
 
-    def get_topology_id(self, attr="name"):
-        '''
-        .. versionadded:: 2.3
-
-        Returns the unique ID representing the topology of the current tree. Two
-        trees with the same topology will produce the same id. If trees are
-        unrooted, make sure that the root node is not binary or use the
-        tree.unroot() function before generating the topology id.
-
-        This is useful to detect the number of unique topologies over a bunch of
-        trees, without requiring full distance methods.
-
-        The id is, by default, calculated based on the terminal node's names. Any
-        other node attribute could be used instead.
-
-
-        '''
-        edge_keys = []
-        for s1, s2 in self.get_edges():
-            k1 = sorted([getattr(e, attr) for e in s1])
-            k2 = sorted([getattr(e, attr) for e in s2])
-            edge_keys.append(sorted([k1, k2]))
-        return md5(str(sorted(edge_keys)).encode('utf-8')).hexdigest()
+    # def get_topology_id(self, attr="name"):
+    #     '''
+    #     .. versionadded:: 2.3
+    #
+    #     Returns the unique ID representing the topology of the current tree. Two
+    #     trees with the same topology will produce the same id. If trees are
+    #     unrooted, make sure that the root node is not binary or use the
+    #     tree.unroot() function before generating the topology id.
+    #
+    #     This is useful to detect the number of unique topologies over a bunch of
+    #     trees, without requiring full distance methods.
+    #
+    #     The id is, by default, calculated based on the terminal node's names. Any
+    #     other node attribute could be used instead.
+    #
+    #
+    #     '''
+    #     edge_keys = []
+    #     for s1, s2 in self.get_edges():
+    #         k1 = sorted([getattr(e, attr) for e in s1])
+    #         k2 = sorted([getattr(e, attr) for e in s2])
+    #         edge_keys.append(sorted([k1, k2]))
+    #     return md5(str(sorted(edge_keys)).encode('utf-8')).hexdigest()
 
     # def get_partitions(self):
     #     """
