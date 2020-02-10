@@ -21,6 +21,18 @@ $ make
 
 The Dsuite executable will be in the Build folder, so to run it type e.g. `./Build/Dsuite`; this will show the available commands. To execute e.g. the Dtrios command, type `./Build/Dsuite Dtrios`.
 
+## [Optional] Installing the python3 Fbranch plotting script
+
+If you want to plot the results of the f-branch calcuation (see below), you will need to install the python script for this using setuptools. You need an internet connection as some python dependencies will be downloaded from `pypi.org`. Exit all python or conda virtual environments.
+
+```console
+$ cd utils
+$ python3 setup.py install --user --prefix=
+```
+
+The above should work on both mac and linux. Note that there is no text (not even whitespace) after the `=` above. If you want to use your own virtual environments, you can alternatively not run setupt.py and just install the dependencies with `pip` or `conda`.
+
+
 ## Input files:
 ### Required files:
 1. A [VCF](http://www.internationalgenome.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-40/) file, which can be compressed with gzip or bgzip. It can contain multiallelic loci and indels, but only biallelic loci will be used.
@@ -109,7 +121,11 @@ Uses the f4-ratio (f_G) values produced by Dsuite Dtrios (or DtriosCombine) with
        -h, --help                              display this help and exit
 ```
 #### Output:
-Details TBA
+The f-branch statistic in matrix-like format. Use the plotting function below to display the f-branch statistic.
+
+###  Plotting Fbranch
+
+TBA
 
 
 ## Change log:
