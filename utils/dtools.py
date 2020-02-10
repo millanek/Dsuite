@@ -3076,346 +3076,11 @@ class HsTree(TreeNode):
 
 
     def plot(tree, ax=None, style='orthogonal',
-                  node_name_fun=None,
-                  node_name_format_fun=None,
-                  leaf_name_fun=None,
-                  leaf_name_format_fun=None,
-                  line_format_fun=None,
-                  migration_arrow_format_fun=None,
-                  xtick_label_format_fun=None):
-        """
-        Plot ete tree.
-        """
-        default_node_format_args = dict(xycoords='data', ha='center',
-                                    xytext=(0,1),
-                                    textcoords='offset points',
-                                    va='bottom',
-                                    bbox=dict(boxstyle="round,pad=0.05", fc="w", alpha=0.5, lw=0),
-                                        size=11)
-        default_leaf_format_args = {'xytext':(5,0),
-                                    'textcoords':'offset points',
-                                    'va':'center'}
-        default_line_format_args = {'color':'k'}
-        default_migration_arrow_format_args = dict(arrowstyle="->, head_length = 0.5, head_width = .5",
-                                                  color='r', linestyle='solid',linewidth=2,
-                                                    zorder=-1)
-
-
-        leaf_order = tree.get_leaf_names()
-
-        if ax is None:
-            fig = plt.figure(figsize=(12,len(leaf_order)*0.3))
-            ax = plt.gca()
-
-        assert style in ['orthogonal', 'diagonal']
-        # don't plot node names if no function given
-        if node_name_fun is None:
-            node_name_fun = lambda node: False
-        if node_name_format_fun is None:
-            node_name_format_fun = lambda node: {}
-        # plot leaf.name as leaf name by default
-        if leaf_name_fun is None:
-            leaf_name_fun = lambda node: node.name
-        if leaf_name_format_fun is None:
-            leaf_name_format_fun = lambda node: {}
-        if line_format_fun is None:
-            line_format_fun = lambda node: {}
-        if migration_arrow_format_fun is None:
-            migration_arrow_format_fun = lambda node: {}
-        if xtick_label_format_fun is None:
-            xtick_label_format_fun = lambda x, p: format(-int(x), ',')
-
-
-        max_dist = max([tree.get_distance(l) for l in tree.get_leaves()])
-
-
-        for i, node in enumerate(tree.traverse('postorder')):
-            time =  node.get_time()
-            if node.is_leaf():
-                node.y = -leaf_order.index(node.name)
-                leaf_name = leaf_name_fun(node)
-                if leaf_name:
-                    leaf_format_args = copy.deepcopy(default_leaf_format_args)
-                    leaf_format_args.update(leaf_name_format_fun(node))
-                    x = ax.annotate(leaf_name, xy=(-time, node.y),
-                                xycoords='data', **leaf_format_args)
-
-            else:
-                l = node.children[0]
-                r = node.children[1]
-                node.y = (l.y+r.y)/2.
-
-                for c in (l,r):
-
-                    line_format_args = copy.deepcopy(default_line_format_args)
-                    line_format_args.update(line_format_fun(c))
-                    if style == 'orthogonal':
-                        ax.hlines(c.y, -time, -c.get_time(), **line_format_args)
-                        ax.vlines(-time,*sorted([c.y,node.y]), **line_format_args)
-
-                    elif style == 'diagonal':
-                        ax.plot([-time,-c.get_time()],[node.y, c.y])
-
-                    if not c.is_leaf():
-                        node_name = node_name_fun(c)
-                        if node_name:
-                            node_format_args = copy.deepcopy(default_node_format_args)
-                            node_format_args.update(node_name_format_fun(c))
-                            ax.annotate(node_name, xy=((-time-c.get_time())/2., c.y),
-                                         **node_format_args)
-                            #if "Haplochromis" in node_name:
-                            #    print 'wtf'
-                            #    return node
-
-        for mm in tree.mass_migrations:
-            #print "plotting migration one", mm.time, mm.source.get_name(), mm.destination.get_name()
-            #ax.plot([-mm.time, -mm.time],sorted([mm.source.y, mm.destination.y]), color='r')
-            #ax.arrow(-mm.time, mm.destination.y, 0 , mm.source.y - mm.destination.y,
-            #                     length_includes_head=True, color='r', linestyle='dashed')
-            migration_arrow_format_args = copy.deepcopy(default_migration_arrow_format_args)
-            migration_arrow_format_args.update(migration_arrow_format_fun(c))
-            ax.annotate("",xytext=(-mm.time, mm.destination.y), xy=(-mm.time,mm.source.y),
-                         arrowprops=migration_arrow_format_args)
-            ax.annotate("{}%".format(int(round(mm.fraction*100))), xy=(-mm.time, (mm.destination.y + mm.source.y)/2.),
-                        ha='right',va='center', xytext=(-3,0),bbox=dict(boxstyle="round,pad=0.1", fc="w", alpha=0.5, lw=0),
-                        textcoords='offset points', color='r')
-
-        ax.spines['left'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.set_yticks([])
-        ax.set_ylabel('')
-        ymin, ymax = ax.get_ylim()
-        ax.set_ylim([ymin-(ymax-ymin)*0.05,ymax+(ymax-ymin)*0.01])
-        ax.xaxis.tick_bottom()
-        ax.get_xaxis().set_major_formatter(
-                mpl.ticker.FuncFormatter(xtick_label_format_fun))
-        return ax
-
-
-    def plot_vertical(tree, ax=None, style='orthogonal',
                       orientation='left_to_right',
                       ax_pos=None,
                       origin=0,
                       use_distances=True,
-                  node_name_fun=None,
-                  node_name_format_fun=None,
-                  leaf_name_fun=None,
-                  leaf_name_format_fun=None,
-                  line_format_fun=None,
-                  migration_arrow_format_fun=None,
-                  tick_label_format_fun=None):
-        """
-        Plot ete tree.
-        """
-
-
-
-
-        default_node_format_args = dict(xycoords='data', ha='center',
-                                    xytext=(0,1),
-                                    textcoords='offset points',
-                                    va='bottom',
-                                    bbox=dict(boxstyle="round,pad=0.05", fc="w", alpha=0.5, lw=0),
-                                        size=11)
-        default_leaf_format_args = {'textcoords':'offset points'}
-                                    #, 'fontname':'monospace'
-        default_line_format_args = {'color':'k'}
-        default_migration_arrow_format_args = dict(arrowstyle="->, head_length = 0.5, head_width = .5",
-                                                  color='r', linestyle='solid',linewidth=2,
-                                                    zorder=-1)
-
-
-
-
-        leaf_order = tree.get_leaf_names()
-
-        if ax is None:
-            fig = plt.figure(figsize=(12,len(leaf_order)*0.3))
-            ax = plt.gca()
-
-
-
-
-
-        assert style in ['orthogonal', 'diagonal']
-        assert orientation in ['left_to_right', 'bottom_to_top',
-                               'top_to_bottom', 'right_to_left']
-
-
-        if orientation == 'left_to_right':
-            specific_default_leaf_format = {'va':'center',
-                                            'ha':'left'}
-            edgeline = ax.hlines
-            orthogonalline = ax.vlines
-            sign = 1
-            order = 1
-            ax_pos1 = 'bottom'
-
-        elif orientation == 'bottom_to_top':
-            specific_default_leaf_format = {'va': 'bottom',
-                                            'ha': 'center',
-                                            'rotation': 90}
-            edgeline = ax.vlines
-            orthogonalline = ax.hlines
-            sign = 1
-            order = -1
-            ax_pos1 = 'right'
-
-        elif orientation == 'top_to_bottom':
-            specific_default_leaf_format = {'va':'top',
-                                        'ha': 'center',
-                                            'rotation':90}
-            edgeline = ax.vlines
-            orthogonalline = ax.hlines
-            sign = -1
-            order = -1
-            ax_pos1 = 'right'
-
-        elif orientation == 'right_to_left':
-            specific_default_leaf_format = {'va': 'center',
-                                            'ha': 'right'}
-            edgeline = ax.hlines
-            orthogonalline = ax.vlines
-            sign = -1
-            order = 1
-            ax_pos1 = 'bottom'
-
-
-        if ax_pos is None:
-            ax_pos = ax_pos1
-
-        default_leaf_format_args.update(specific_default_leaf_format)
-
-        default_leaf_format_args.update({'xytext': (sign * 5, 0)[::order]})
-
-
-        # don't plot node names if no function given
-        if node_name_fun is None:
-            node_name_fun = lambda node: False
-        if node_name_format_fun is None:
-            node_name_format_fun = lambda node: {}
-        # plot leaf.name as leaf name by default
-        if leaf_name_fun is None:
-            leaf_name_fun = lambda node: node.name
-        if leaf_name_format_fun is None:
-            leaf_name_format_fun = lambda node: {}
-        if line_format_fun is None:
-            line_format_fun = lambda node: {}
-        if migration_arrow_format_fun is None:
-            migration_arrow_format_fun = lambda node: {}
-        if tick_label_format_fun is None:
-            tick_label_format_fun = lambda x, p: format(-sign * int(x), ',')
-
-
-        #max_dist = max([tree.get_distance(l) for l in tree.get_leaves()])
-
-
-        for i, node in enumerate(tree.traverse('postorder')):
-            time =  node.get_time()
-            if node.is_leaf():
-                node.y = origin -leaf_order.index(node.name)
-
-                leaf_name = leaf_name_fun(node)
-                if leaf_name:
-                    leaf_format_args = copy.deepcopy(default_leaf_format_args)
-                    leaf_format_args.update(leaf_name_format_fun(node))
-                    x = ax.annotate(leaf_name, xy=(-sign * time , sign* node.y)[::order],
-                                xycoords='data', **leaf_format_args)
-
-
-            else:
-                l = node.children[0]
-                r = node.children[1]
-                node.y =  (l.y+r.y)/2.
-
-                for c in (l,r):
-
-                    line_format_args = copy.deepcopy(default_line_format_args)
-                    line_format_args.update(line_format_fun(c))
-                    if style == 'orthogonal':
-
-                        edgeline(sign * c.y, -sign * time, -sign * c.get_time(), **line_format_args)
-                        orthogonalline(-sign * time, *sorted([sign * c.y, sign * node.y]), **line_format_args)
-
-                    elif style == 'diagonal':
-                        ax.plot([-time,-c.get_time()],[node.y, c.y])
-
-                    if not c.is_leaf():
-                        node_name = node_name_fun(c)
-                        if node_name:
-                            node_format_args = copy.deepcopy(default_node_format_args)
-                            node_format_args.update(node_name_format_fun(c))
-                            ax.annotate(node_name, xy=((-time-c.get_time())/2., c.y),
-                                         **node_format_args)
-
-
-        for mm in tree.mass_migrations:
-            #print "plotting migration one", mm.time, mm.source.get_name(), mm.destination.get_name()
-            #ax.plot([-mm.time, -mm.time],sorted([mm.source.y, mm.destination.y]), color='r')
-            #ax.arrow(-mm.time, mm.destination.y, 0 , mm.source.y - mm.destination.y,
-            #                     length_includes_head=True, color='r', linestyle='dashed')
-            migration_arrow_format_args = copy.deepcopy(default_migration_arrow_format_args)
-            migration_arrow_format_args.update(migration_arrow_format_fun(c))
-            ax.annotate("",xytext=(-sign * mm.time, sign * mm.destination.y)[::order],
-                        xy=(-sign * mm.time, sign * mm.source.y)[::order],
-                         arrowprops=migration_arrow_format_args)
-
-            ax.annotate("{}%".format(int(round(mm.fraction*100))),
-                        xy=(-sign * mm.time, sign * (mm.destination.y + mm.source.y)/2.)[::order],
-                         xytext=(-sign * 5,0)[::order],#ha='right',va='center',
-                        bbox=dict(boxstyle="round,pad=0.1", fc="w", alpha=0.5, lw=0),
-                        textcoords='offset points', color='r')
-
-
-
-        ax.spines['left'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.spines['bottom'].set_visible(False)
-
-
-
-
-        if ax_pos:
-            ax.spines[ax_pos].set_visible(True)
-        else:
-            ax.set_yticks([])
-            ax.set_xticks([])
-
-
-        if ax_pos in ['top','bottom']:
-            ymin, ymax = ax.get_ylim()
-            ax.set_ylim([ymin - (ymax - ymin) * 0.05, ymax + (ymax - ymin) * 0.01])
-            #ax.xaxis.tick_bottom()
-            ax.set_yticks([])
-            ax.get_xaxis().set_major_formatter(
-            mpl.ticker.FuncFormatter(tick_label_format_fun))
-        elif ax_pos in ['left', 'right']:
-            ymin, ymax = ax.get_xlim()
-            ax.set_xlim([ymin - (ymax - ymin) * 0.05, ymax + (ymax - ymin) * 0.01])
-            ax.yaxis.tick_right()
-            ax.set_xticks([])
-            ax.get_yaxis().set_major_formatter(
-             mpl.ticker.FuncFormatter(tick_label_format_fun))
-
-
-
-        #ymin, ymax = ax.get_ylim()
-        #ax.set_ylim([ymin-(ymax-ymin)*0.05,ymax+(ymax-ymin)*0.01])
-        #ax.xaxis.tick_bottom()
-        #ax.get_xaxis().set_major_formatter(
-        #        mpl.ticker.FuncFormatter(xtick_label_format_fun))
-        #ax.set_xlim([1,10])
-
-
-        return ax
-
-    def plot_node_tree(tree, ax=None, style='orthogonal',
-                      orientation='left_to_right',
-                      ax_pos=None,
-                      origin=0,
-                      use_distances=True,
+                     leaves_to_present=False,
                       internal_node_to_present=False,
                   node_name_fun=None,
                   node_name_format_fun=None,
@@ -3423,13 +3088,11 @@ class HsTree(TreeNode):
                   leaf_name_format_fun=None,
                   line_format_fun=None,
                   migration_arrow_format_fun=None,
-                  tick_label_format_fun=None):
+                  tick_label_format_fun=None,
+                    debug=False):
         """
         Plot ete tree.
         """
-
-
-
 
         default_node_format_args = dict(xycoords='data', ha='center',
                                     xytext=(0,1),
@@ -3444,6 +3107,8 @@ class HsTree(TreeNode):
                                                   color='r', linestyle='solid',linewidth=2,
                                                     zorder=-1)
 
+        if not use_distances:
+            tree = HsTree(tree.write(format=9)[0])
 
 
         if internal_node_to_present:
@@ -3537,7 +3202,7 @@ class HsTree(TreeNode):
             tick_label_format_fun = lambda x, p: format(-sign * int(x), ',')
 
 
-        #max_dist = max([tree.get_distance(l) for l in tree.get_leaves()])
+        max_depth = tree.get_farthest_leaf()[1]
 
 
         max_label_width = 0
@@ -3546,6 +3211,9 @@ class HsTree(TreeNode):
         for i, node in enumerate(tree.traverse('postorder')):
             time =  node.get_time()
             if node.is_leaf():
+                if leaves_to_present:
+                    time = 0
+
                 node.y = origin - leaf_order.index(node.name)
 
                 leaf_name = leaf_name_fun(node)
@@ -3555,16 +3223,6 @@ class HsTree(TreeNode):
                     x = ax.annotate(leaf_name, xy=(-sign * time , sign* node.y)[::order],
                                 xycoords='data', **leaf_format_args)
                     leaf_annots.append(x)
-
-                    #print('y', bb.y0, bb.y1)
-                    #print(inv.transform((bb.x1, bb.y1)))
-                    #print(ax.transData.transform((bb.x1, bb.y1)))
-                    #break
-
-                    #print((bb.width,bb.height))
-                    #print(ax.transData.transform((bb.width,bb.height)))
-
-
 
 
             else:
@@ -3583,8 +3241,12 @@ class HsTree(TreeNode):
                     line_format_args = copy.deepcopy(default_line_format_args)
                     line_format_args.update(line_format_fun(c))
                     if style == 'orthogonal':
+                        if c.is_leaf() and leaves_to_present:
+                            ctime = 0
+                        else:
+                            ctime = c.get_time()
 
-                        edgeline(sign * (c.y), -sign * time, -sign * c.get_time(), **line_format_args)
+                        edgeline(sign * (c.y), -sign * time, -sign * ctime, **line_format_args)
                         orthogonalline(-sign * time, *sorted([sign * c.y , sign * node.y]), **line_format_args)
 
                     elif style == 'diagonal':
@@ -3599,31 +3261,7 @@ class HsTree(TreeNode):
                             ax.annotate(node_name, xy=((-time-c.get_time())/2., c.y),
                                          **node_format_args)
 
-        fig = plt.gcf()
-        renderer = fig.canvas.get_renderer()
-        inv = ax.transData.inverted()
 
-        labeledges = []
-
-        for x in leaf_annots:
-            bb = x.get_window_extent(renderer=renderer)
-            ((x0, y0), (x1, y1)) = inv.transform(bb)
-            labeledges.append(((x0, y0), (x1, y1)) )
-
-
-        labeledges = np.array(labeledges)
-        #print(np.sort(labeledges[:, int((sign + 1) / 2), int((order - 1) / -2)])[::-order])
-
-
-        edgecoord = np.sort(labeledges[:, int((sign + 1) / 2), int((order - 1) / -2)])[::-sign][0]
-        #print(edgecoord)
-
-        if internal_node_to_present:
-            for node in tree.traverse():
-                if not node.is_leaf():
-                    edgeline(sign * node.y, -sign * node.get_time(),
-                         edgecoord,
-                         linestyle='dotted')#dotted
 
 
         for mm in tree.mass_migrations:
@@ -3656,49 +3294,89 @@ class HsTree(TreeNode):
         if ax_pos:
             ax.spines[ax_pos].set_visible(True)
         else:
-            ax.set_yticks([])
-            ax.set_xticks([])
-            plt.tick_params(
-                #axis='x',  # changes apply to the x-axis
-                which='both',  # both major and minor ticks are affected
-                left=False,  # ticks along the bottom edge are off
-                right=False,  # ticks along the top edge are off
-                bottom=False,
-                top=False,
-                labelbottom=False)  # labels along the bottom edge are off
-
+            if not debug:
+                ax.set_yticks([])
+                ax.set_xticks([])
+                plt.tick_params(
+                    #axis='x',  # changes apply to the x-axis
+                    which='both',  # both major and minor ticks are affected
+                    left=False,  # ticks along the bottom edge are off
+                    right=False,  # ticks along the top edge are off
+                    bottom=False,
+                    top=False,
+                    labelbottom=False)  # labels along the bottom edge are off
 
 
         ymin, ymax = ax.get_ylim()
         xmin, xmax = ax.get_xlim()
+        
 
 
         if ax_pos in ['top','bottom']:
             ax.set_ylim([ymin - (ymax - ymin) * 0.05, ymax + (ymax - ymin) * 0.01])
             #ax.xaxis.tick_bottom()
-            ax.set_yticks([])
+            if not debug:
+                ax.set_yticks([])
             ax.get_xaxis().set_major_formatter(
                         mpl.ticker.FuncFormatter(tick_label_format_fun))
 
         elif ax_pos in ['left', 'right']:
 
             ax.set_xlim([ymin - (ymax - ymin) * 0.05, ymax + (ymax - ymin) * 0.01])
-            ax.yaxis.tick_right()
-            ax.set_xticks([])
+            if not debug:
+                ax.yaxis.tick_right()
+                ax.set_xticks([])
             ax.get_yaxis().set_major_formatter(
                         mpl.ticker.FuncFormatter(tick_label_format_fun))
 
+            
+        fig = plt.gcf()
+        renderer = fig.canvas.get_renderer()
+        inv = ax.transData.inverted()
+
+        labeledges = []
+
+        for x in leaf_annots:
+            bb = x.get_window_extent(renderer=renderer)
+            ((x0, y0), (x1, y1)) = inv.transform(bb)
+            labeledges.append(((x0, y0), (x1, y1)) )
 
 
-        if orientation == 'left_to_right':
-            ax.set_xlim(xmin, max(xmax, edgecoord ))
-        elif orientation == 'right_to_left':
-            ax.set_xlim(min(xmin, edgecoord),xmax)
-        elif orientation == 'top_to_bottom':
-            ax.set_ylim(min(ymin, edgecoord), ymax)
-        elif orientation == 'bottom_to_top':
-            ax.set_ylim(ymin, max(ymax, edgecoord ))
+        labeledges = np.array(labeledges)
+        #print(np.sort(labeledges[:, int((sign + 1) / 2), int((order - 1) / -2)])[::-order])
 
+
+        edgecoord = np.sort(labeledges[:, int((sign + 1) / 2), int((order - 1) / -2)])[::-sign][0]
+        #print(edgecoord)
+
+        if internal_node_to_present:
+            for node in tree.traverse():
+                if not node.is_leaf():
+                    edgeline(sign * node.y, -sign * node.get_time(),
+                         edgecoord,
+                         linestyle='dotted')#dotted
+
+             
+        #edgecoord = edgecoord * 1.1
+
+
+        
+        # if orientation == 'left_to_right':
+        #     ec = max(xmax, edgecoord ) + (xmax-xmin)*0.05
+        #     #ax.set_xlim(xmin, ec)
+        #     ax.annotate('Y',xy=(edgecoord, 0),
+        #                ha='left')
+        #     plt.scatter(edgecoord, 0)
+        #     print(labeledges,edgecoord)
+        # elif orientation == 'right_to_left':
+        #     ec = min(xmin, edgecoord) - (xmax-xmin)*0.05
+        #     ax.set_xlim(ec,xmax)
+        # elif orientation == 'top_to_bottom':
+        #     ax.set_ylim(min(ymin, edgecoord), ymax)
+        # elif orientation == 'bottom_to_top':
+        #     ax.set_ylim(ymin, max(ymax, edgecoord ))
+
+        
 
         #ymin, ymax = ax.get_ylim()
         #ax.set_ylim([ymin-(ymax-ymin)*0.05,ymax+(ymax-ymin)*0.01])
@@ -3708,7 +3386,9 @@ class HsTree(TreeNode):
         #ax.set_xlim([1,10])
 
 
-        return ax
+        
+        
+        return ax, leaf_annots
 
 
 
@@ -3771,12 +3451,15 @@ class HsTree(TreeNode):
 
 
 
-def align_fbranch_with_tree(fbranch, tree, outgroup):
+def align_fbranch_with_tree(fbranch, tree, outgroup, ladderize=False):
     tree_no = copy.deepcopy(tree)
     # tree_no.ladderize()
     # remove outgroup
     tree_no.prune([n for n in tree_no.get_leaf_names() if n != outgroup])
     #
+    if ladderize:
+        tree_no.ladderize()
+    
     fb = fbranch.copy()
     fb.index = fb.index.droplevel(0)
     fb = fb.drop(outgroup, axis=1)
@@ -3801,7 +3484,12 @@ def align_fbranch_with_tree(fbranch, tree, outgroup):
     return fb, tree_no
 
 
-def plot_fbranch(fbranch, tree_no_outgroup):
+def plot_fbranch(fbranch, tree_no_outgroup, leaves_to_present=True,
+                 use_distances=False,
+                 debug=False):
+    #print("1706")
+
+    
     n_rows, n_cols = fbranch.shape
 
     plt.rcParams['font.size'] = 12
@@ -3814,25 +3502,36 @@ def plot_fbranch(fbranch, tree_no_outgroup):
 
     fig = plt.figure(figsize=(n_cols, n_rows * 0.5))
 
-    ax0 = plt.subplot2grid((5, 7), (0, 2), rowspan=1, colspan=4)
+    toptree_ax = plt.subplot2grid((5, 7), (0, 2), rowspan=1, colspan=4)
 
-    tree_no_outgroup.plot_node_tree(origin=-0.5, ax=ax0, orientation='top_to_bottom')
-    ax0.axis('off')
+    
+    tree_no_outgroup.plot(origin=-0.5, ax=toptree_ax,
+                          orientation='top_to_bottom',
+                          use_distances=use_distances,
+                          leaves_to_present=leaves_to_present)
+    
+    if not debug:
+        toptree_ax.axis('off')
 
-    ax = plt.subplot2grid((5, 7), (1, 0), rowspan=4, colspan=2)
+    lefttree_ax = plt.subplot2grid((5, 7), (1, 0), rowspan=4, colspan=2)
 
-    tree_no_outgroup.plot_node_tree(origin=fbranch.shape[0] + 0.5, ax=ax, orientation='left_to_right',
+    
+    tree_no_outgroup.plot(origin=fbranch.shape[0] + 0.5, ax=lefttree_ax, orientation='left_to_right',
+                          use_distances=use_distances,
+                                leaves_to_present=leaves_to_present,
                                     internal_node_to_present=True)
-    ax.axis('off')
+    if not debug:
+        lefttree_ax.axis('off')
     # ax = plot_node_tree(tree_no_outgroup, ax=ax, x0=0,y0=len(branch_mat)-0.5,em=0.5,fontsize=12)
 
     # ax.set_xlabel('excess allele sharing with')
-    # ax0.xaxis.set_label_position('top')
+    # toptree_ax.xaxis.set_label_position('top')
 
     # ax.set_xlim([-1,10])
 
-    ax2 = plt.subplot2grid((5, 7), (1, 2), rowspan=4, colspan=4, sharey=ax, sharex=ax0)
+    fbranch_ax = plt.subplot2grid((5, 7), (1, 2), rowspan=4, colspan=4, sharey=lefttree_ax, sharex=toptree_ax)
 
+    
     branch_mat0 = fbranch.copy()
     branch_mat0_masked = np.ma.array(branch_mat0, mask=np.isnan(branch_mat0))
 
@@ -3845,41 +3544,45 @@ def plot_fbranch(fbranch, tree_no_outgroup):
 
     # plt.scatter(zs.index.droplevel(0).values+0.5,zs.index.droplevel(1)+0.43,marker='*',s=10)
 
-    ax2.set_xticks(np.arange(0.5, fbranch.shape[1]))
-    # ax2.set_xticklabels(fbranch.columns,rotation=90)
-    ax2.set_xticklabels([])
-    ax2.set_yticks(np.arange(0.5, fbranch.shape[0]))
-    ax2.set_yticklabels([])
-    ax2.set_facecolor((0.85, 0.85, 0.85))
-    plt.tight_layout()
-    ax2.set_ylim(0, len(fbranch))
-    plt.subplots_adjust(wspace=-0.1)
-    plt.subplots_adjust(hspace=0.05)
-    ax2.xaxis.tick_top()
-    ax2.set_xlim([0, fbranch.shape[1]])
+    fbranch_ax.set_xticks(np.arange(0.5, fbranch.shape[1]))
+    # fbranch_ax.set_xticklabels(fbranch.columns,rotation=90)
+    fbranch_ax.set_xticklabels([])
+    fbranch_ax.set_yticks(np.arange(0.5, fbranch.shape[0]))
+    fbranch_ax.set_yticklabels([])
+    fbranch_ax.set_facecolor((0.85, 0.85, 0.85))
+    #plt.tight_layout()
+    fbranch_ax.set_ylim(0, len(fbranch))
+    #plt.subplots_adjust(wspace=-0.1)
+    #plt.subplots_adjust(hspace=0.05)
+    fbranch_ax.xaxis.tick_top()
+    fbranch_ax.set_xlim([0, fbranch.shape[1]])
 
     for b in range(fbranch.shape[0]):
-        l = ax2.axhline(y=b + 0.04, xmin=0, xmax=1, linewidth=1, color='grey', alpha=0.5)
+        l = fbranch_ax.axhline(y=b + 0.04, xmin=0, xmax=1, linewidth=1, color='grey', alpha=0.5)
 
     for b in range(fbranch.shape[1]):
-        l = ax2.axvline(x=b - 0.02, ymin=0, ymax=1, linewidth=1, color='grey', alpha=0.5)
+        l = fbranch_ax.axvline(x=b - 0.02, ymin=0, ymax=1, linewidth=1, color='grey', alpha=0.5)
 
-    cbaxes = fig.add_axes([ax2.get_position().xmax + 0.02, ax2.get_position().ymin,
-                           0.03, ax2.get_position().ymax - ax2.get_position().ymin])
+    plt.tight_layout()
+
+    cb_ax = fig.add_axes([fbranch_ax.get_position().xmax + 0.02, fbranch_ax.get_position().ymin,
+                           0.03, fbranch_ax.get_position().ymax - fbranch_ax.get_position().ymin])
+
     # plt.subplot2grid((5,7), (1,6), rowspan=4,colspan=1)
     mappable = mpl.cm.ScalarMappable(cmap=mymap)
     mappable.set_array([fmin, fmax])
-    cbar = plt.colorbar(mappable, cax=cbaxes, label='$f_b$')
-    cbar.set_label('$f_b$', size=24)
+    cbar = plt.colorbar(mappable, cax=cb_ax, label='$f_b$')
+    cbar.set_label('$f_b$', size=20*(1+np.log(n_cols/8.)))
     cbar.solids.set_rasterized(True)
+    cbar.ax.tick_params(labelsize=14*(1+np.log(n_cols/8.)))
 
-    plt.axis('tight')
+    #plt.axis('tight')
 
-    plt.subplots_adjust(wspace=0.05)
+    #plt.subplots_adjust(wspace=0.05)
 
-    plt.tight_layout()
-
-    return fig.gca()
+    #plt.tight_layout()
+    
+    return toptree_ax, lefttree_ax, fbranch_ax, cb_ax
 
 def main():
     argparser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -3895,16 +3598,30 @@ def main():
                             help="Base file name for output plots.",default="fbranch")
     argparser.add_argument( "--outgroup", type=str,
                         help="Outgroup name in newick file.",default="Outgroup")
+    argparser.add_argument("--use_distances",
+                           help="Use actual node distances from newick file when plotting tree.",
+                           action='store_true')
+    argparser.add_argument("--ladderize",
+                           help="Ladderize the input tree before plotting.",
+                           action='store_true')
+
 
     args = argparser.parse_args()
     fb = pd.read_csv(args.fbranch, sep='\t',
                   index_col=[0,1])
     tree = HsTree(args.tree.read())
     fb1, tree_no_outgroup = align_fbranch_with_tree(fb, tree,
-                                                     outgroup=args.outgroup)
-    ax = plot_fbranch(fb1, tree_no_outgroup)
+                                                     outgroup=args.outgroup,
+                                                     ladderize=args.ladderize)
+    if args.use_distances:
+        leaves_to_present = False
+    else:
+        leaves_to_present = True
+
+    plot_fbranch(fb1, tree_no_outgroup, use_distances=args.use_distances,
+                 leaves_to_present=leaves_to_present)
     plt.savefig(args.run_name+'.svg', bbox_inches='tight')
-    plt.savefig(args.run_name+'.png', bbox_inches='tight', dpi=300)
+    plt.savefig(args.run_name+'.png', bbox_inches='tight', dpi=150)
 
 if __name__ == "__main__":
     sys.exit(main())
