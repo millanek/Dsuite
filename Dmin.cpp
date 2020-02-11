@@ -140,7 +140,9 @@ int DminMain(int argc, char** argv) {
         }
     } std::cerr << "There are " << species.size() << " sets (excluding the Outgroup)" << std::endl;
     int nCombinations = nChoosek((int)species.size(),3);
-    std::cerr << "Going to calculate D and f4-ratio values for " << nCombinations << " trios" << std::endl;
+    if (opt::fStats) std::cerr << "Going to calculate D and f4-ratio values for " << nCombinations << " trios" << std::endl;
+    else std::cerr << "Going to calculate D values for " << nCombinations << " trios" << std::endl;
+    
     if (opt::treeFile != "") { // Chack that the tree contains all the populations/species
         for (int i = 0; i != species.size(); i++) {
             try {
