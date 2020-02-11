@@ -23,14 +23,14 @@ The Dsuite executable will be in the Build folder, so to run it type e.g. `./Bui
 
 ## [Optional] Installing the python3 Fbranch plotting script
 
-If you want to plot the results of the f-branch calcuation (see below), you will need to install the python script for this using setuptools. You need an internet connection as some python dependencies will be downloaded from `pypi.org`. Exit all python or conda virtual environments.
+If you want to plot the results of the f-branch calcuation (see below), you will need to install the python script for this using setuptools. You need an internet connection as some python dependencies will be downloaded from `pypi.org`. It may be necessary to exit python or conda virtual environments for this to work correctly.
 
 ```console
 $ cd utils
 $ python3 setup.py install --user --prefix=
 ```
 
-The above should work on both mac and linux. Note that there is no text (not even whitespace) after the `=` above. If you want to use your own virtual environments, you can alternatively not run setupt.py and just install the dependencies with `pip` or `conda`.
+The above should work on both mac and linux. Note that there is no text (not even whitespace) after the `=` above. If you want to use your own virtual environments, you can alternatively not run setup.py and just install the dependencies with `pip` or `conda`.
 
 
 ## Input files:
@@ -124,8 +124,32 @@ Uses the f4-ratio (f_G) values produced by Dsuite Dtrios (or DtriosCombine) with
 The f-branch statistic in matrix-like format. Use the plotting function below to display the f-branch statistic.
 
 ###  Plotting Fbranch
+The output of `Dsuite Fbranch` can be plotted with `./utils/dtools.py` (see installation instructions above).
 
-TBA
+```
+usage: dtools.py [-h] [-n RUN_NAME] [--outgroup OUTGROUP] [--use_distances]
+                 [--ladderize]
+                 fbranch tree
+
+Plot f-branch statistic as produced by Dsuite. Produces .png and .svg files.
+
+positional arguments:
+  fbranch               Path to file containing f-branch matrix as produced by
+                        Dsuite Fbranch.
+  tree                  Path to .newick tree file as given to Dsuite Fbranch.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -n RUN_NAME, --run-name RUN_NAME
+                        Base file name for output plots. (default: fbranch)
+  --outgroup OUTGROUP   Outgroup name in newick file. (default: Outgroup)
+  --use_distances       Use actual node distances from newick file when
+                        plotting tree. (default: False)
+  --ladderize           Ladderize the input tree before plotting. (default:
+                        False)
+```
+
+Running `dtools.py` yields a .png and an .svg file of the f-branch statistic along the input tree. You can edit the .svg file in a vector graphics editor (e.g., [inkscape](https://inkscape.org/) to your liking). See [Malinsky et al. 2018](https://www.nature.com/articles/s41559-018-0717-x) Fig. 3 and the Dsuite preprint biorxiv for examples and interpretation of f-branch plots.
 
 
 ## Change log:
