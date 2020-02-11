@@ -114,7 +114,7 @@ There can be multiple lines and then the program generates multiple ouput files,
 
 ###  Fbranch - A heuristic approach designed to aid the interpretation of many correlated f4-ratio results 
 ```
-Usage: Dsuite Fbranch [OPTIONS] TREE_FILE.nwk FVALS_tree.txt
+Usage: Dsuite Fbranch [OPTIONS] TREE_FILE.nwk FVALS_tree.txt > fbranch.txt
 Implements the 'f-branch' type calculations developed by Hannes Svardal for Malinsky et al., 2018, Nat. Ecol. Evo.
 Uses the f4-ratio (f_G) values produced by Dsuite Dtrios (or DtriosCombine) with the --tree option; this is the output of Dtrios with the "_tree.txt" suffix
 
@@ -129,7 +129,7 @@ The output of `Dsuite Fbranch` can be plotted with `./utils/dtools.py` (see inst
 ```
 usage: dtools.py [-h] [-n RUN_NAME] [--outgroup OUTGROUP] [--use_distances]
                  [--ladderize]
-                 fbranch tree
+                 fbranch.txt tree.newick
 
 Plot f-branch statistic as produced by Dsuite. Produces .png and .svg files.
 
