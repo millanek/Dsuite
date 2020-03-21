@@ -86,6 +86,9 @@ int DminMain(int argc, char** argv) {
         outFileTree = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_tree.txt");
         getline(*treeFile, line);
         assignTreeLevelsAndLinkToTaxa(line,treeTaxonNamesToLoc,treeLevels);
+        //for (std::map<string,std::vector<int>>::iterator it = treeTaxonNamesToLoc.begin(); it != treeTaxonNamesToLoc.end(); ++it) {
+        //    std::cout << "{" << it->first << "}\n";
+        // }
     }
     
     int VCFlineCount;
