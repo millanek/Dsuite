@@ -17,12 +17,14 @@ public:
         windowABBAs.resize(windowSize); windowBABAs.resize(windowSize);
         windowF_d_denoms.resize(windowSize); windowF_dM_denoms.resize(windowSize);
         windowInformativeSitesCords.resize(windowSize);
+        window_d_f_nums.resize(windowSize); window_d_f_denoms.resize(windowSize);
         interimF_d_denom = 0; interimF_dM_denom = 0;
 
         usedVars = 0;
         ABBAtotal = 0; BABAtotal = 0;
         F_d_denom = 0; F_dM_denom = 0;
         F_G_denom = 0; F_G_num = 0;
+        
 
     };
     
@@ -30,6 +32,7 @@ public:
     
     std::deque<double> windowABBAs; std::deque<double> windowBABAs;
     std::deque<double> windowF_d_denoms; std::deque<double> windowF_dM_denoms;
+    std::deque<double> window_d_f_nums; std::deque<double> window_d_f_denoms;
     std::deque<int> windowInformativeSitesCords;
     double interimF_d_denom; double interimF_dM_denom;
     //double D1; double D2; double D3; double D1_p; double D2_p; double D3_p;

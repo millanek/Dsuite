@@ -108,7 +108,7 @@ void doAbbaBaba() {
             }
         }
         std::ofstream* outFile = new std::ofstream(threePops[0] + "_" + threePops[1] + "_" + threePops[2]+ "_localFstats_" + opt::runName + "_" + numToString(opt::windowSize) + "_" + numToString(opt::windowStep) + ".txt");
-        *outFile << "chr\twindowStart\twindowEnd\tD\tf_d\tf_dM" << std::endl;
+        *outFile << "chr\twindowStart\twindowEnd\tD\tf_d\tf_dM\td_f" << std::endl;
         outFiles.push_back(outFile);
         testTrios.push_back(threePops);
     }
@@ -190,7 +190,7 @@ void doAbbaBaba() {
                     std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][1] << std::endl; }
                 if (p_S2 == -1) continue;
                 try { p_S3 = c->setDAFs.at(testTrios[i][2]); } catch (const std::out_of_range& oor) {
-                    std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][0] << std::endl; }
+                    std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][2] << std::endl; }
                 if (p_S3 == -1) continue;
                 //if (p_S3 == 0) continue; // XXAA pattern is not informative
                 if (p_S1 == 0 && p_S2 == 0 && p_S3 == 0) continue; // Checking if the SNP is variable in the trio
@@ -241,15 +241,22 @@ void doAbbaBaba() {
                     usedVars_f_G[i]++;
                 } testTrioInfos[i].F_G_denom += F_G_denom; testTrioInfos[i].F_G_num += F_G_num;
                 
+                // d_f
+                double d13 = p_S1 + p_S3 - 2*p_S1*p_S3; double d23 = p_S2 + p_S3 - 2*p_S2*p_S3;
+                double dfNum = p_S2 * d13 - p_S1 * d23;
+                double dfDenom = p_S2 * d13 + p_S1 * d23;
+                
                 double ABBAplusBABA = ABBA + BABA;
                 if (ABBAplusBABA != 0) {
                     testTrioInfos[i].windowABBAs.push_back(ABBA);  testTrioInfos[i].windowBABAs.push_back(BABA);
                     testTrioInfos[i].windowF_d_denoms.push_back(testTrioInfos[i].interimF_d_denom);
                     testTrioInfos[i].windowF_dM_denoms.push_back(testTrioInfos[i].interimF_dM_denom);
+                    testTrioInfos[i].window_d_f_nums.push_back(dfNum); testTrioInfos[i].window_d_f_denoms.push_back(dfDenom);
                     testTrioInfos[i].windowInformativeSitesCords.push_back(atoi(coord.c_str()));
                     testTrioInfos[i].windowABBAs.pop_front(); testTrioInfos[i].windowBABAs.pop_front();
                     testTrioInfos[i].windowF_d_denoms.pop_front(); testTrioInfos[i].windowF_dM_denoms.pop_front();
                     testTrioInfos[i].windowInformativeSitesCords.pop_front();
+                    testTrioInfos[i].window_d_f_nums.pop_front(); testTrioInfos[i].window_d_f_denoms.pop_front();
                     testTrioInfos[i].interimF_d_denom = 0; testTrioInfos[i].interimF_dM_denom = 0;
                     testTrioInfos[i].usedVars++;
                 
@@ -257,8 +264,10 @@ void doAbbaBaba() {
                         double windowABBAtotal = vector_sum(testTrioInfos[i].windowABBAs); double windowBABAtotal = vector_sum(testTrioInfos[i].windowBABAs);
                         double windowF_d_denom = vector_sum(testTrioInfos[i].windowF_d_denoms); double windowF_dM_denom = vector_sum(testTrioInfos[i].windowF_dM_denoms);
                         double wDnum = windowABBAtotal - windowBABAtotal; double wDdenom = windowABBAtotal + windowBABAtotal;
+                        double w_d_f_num = vector_sum(testTrioInfos[i].window_d_f_nums);
+                        double w_d_f_denom = vector_sum(testTrioInfos[i].window_d_f_denoms);
                         if ((atoi(coord.c_str()) - testTrioInfos[i].windowInformativeSitesCords[0]) > 0) {
-                            *outFiles[i] << std::fixed << chr << "\t" << testTrioInfos[i].windowInformativeSitesCords[0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/windowF_d_denom << "\t" << wDnum/windowF_dM_denom << std::endl;
+                            *outFiles[i] << std::fixed << chr << "\t" << testTrioInfos[i].windowInformativeSitesCords[0] << "\t" << coord << "\t" << wDnum/wDdenom << "\t" << wDnum/windowF_d_denom << "\t" << wDnum/windowF_dM_denom << "\t" << w_d_f_num/w_d_f_denom << std::endl;
                         }
                     }
                 }
