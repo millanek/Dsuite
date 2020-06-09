@@ -72,7 +72,7 @@ class median_of_empty_list_exception:public std::exception{
 ///(median is undefined for an empty set).
 ///
 ///The numbers must be convertible to double.
-template<class RandAccessIter> double median(RandAccessIter begin, RandAccessIter end) throw(median_of_empty_list_exception) {
+template<class RandAccessIter> double median(RandAccessIter begin, RandAccessIter end) {
   if(begin == end){ throw median_of_empty_list_exception(); }
   std::size_t size = end - begin;
   std::size_t middleIdx = size/2;
@@ -378,7 +378,7 @@ public:
     
     
     
-    void calculateFinalDs() throw(const char*) {
+    void calculateFinalDs() {
         double* Ds = calculateThreeDs(ABBAtotal, BABAtotal, BBAAtotal);
         D1 = Ds[0]; D2 = Ds[1]; D3 = Ds[2];
         
