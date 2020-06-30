@@ -13,8 +13,6 @@ import argparse
 import logging
 
 
-#if sys.version_info[0] < 3:
-#    from __future__ import (print_function, unicode_literals, division)
 
 logger = logging.getLogger()
 logging.basicConfig(format='%(levelname)-8s %(asctime)s  %(message)s')
@@ -29,15 +27,21 @@ def get_n_snps(vcf_fn):
     """
     vcf_ext = os.path.splitext(vcf_fn)[-1]
     catfun = 'gzip -dc' if vcf_ext in ['.gz','.bz'] else 'cat'
+    
+    logging.info("Checking number of variants in {vcf_fn}".format(vcf_fn=vcf_fn))
+
     command = '{catfun} {vcf_fn} | grep -v "^#" | wc -l'.format(catfun=catfun, vcf_fn=vcf_fn)
     p = subprocess.Popen(command,
                      shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     n_snps, err = p.communicate(b"input data that is passed to subprocess' stdin")
-    
     if p.returncode:
         logging.error('{e}'.format(e=e))
         raise subprocess.CalledProcessError(p.returncode, command)
-    return int(n_snps)
+
+    n_snps = int(n_snps)
+    logging.info("{n_snps} variants in vcf.".format(n_snps=n_snps))
+
+    return n_snps
         
     
 def dsuite_dtrios(vcf_fn, sets_fn, run_name, n_cores, tree_fn=None,JKnum=None,
@@ -49,6 +53,9 @@ def dsuite_dtrios(vcf_fn, sets_fn, run_name, n_cores, tree_fn=None,JKnum=None,
     
     
     lines_per_core = int(n_snps*1./ n_cores) + 1
+    
+    logging.info("Parallelizing across {n_cores} cores. Regions of {lines_per_core} variants per core.".format(n_cores=n_cores, lines_per_core=lines_per_core))
+    
     starts = range(1, n_snps, lines_per_core)
 
 

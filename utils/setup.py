@@ -10,9 +10,7 @@ setup(
    scripts=['dtools.py'],
     install_requires=[
         'matplotlib>=3.0.2',
-       'pandas>=0.23.4',
-       'jupyter>=1.0.0'
-    ],
+       'pandas>=0.23.4'],
     platforms=[
     'linux-x86_64',
     'macosx-10.10-x86_64'
