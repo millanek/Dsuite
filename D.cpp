@@ -242,7 +242,7 @@ void doAbbaBaba() {
                 } testTrioInfos[i].F_G_denom += F_G_denom; testTrioInfos[i].F_G_num += F_G_num;
                 
                 // d_f
-                double d13 = p_S1 + p_S3 - 2*p_S1*p_S3; double d23 = p_S2 + p_S3 - 2*p_S2*p_S3;
+                double d13 = p_S1 + p_S3 - (2*p_S1*p_S3); double d23 = p_S2 + p_S3 - (2*p_S2*p_S3);
                 double dfNum = p_S2 * d13 - p_S1 * d23;
                 double dfDenom = p_S2 * d13 + p_S1 * d23;
                 

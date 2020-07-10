@@ -15,9 +15,15 @@
 static const char *DMIN_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] INPUT_FILE.vcf SETS.txt\n"
 "Calculate the D (ABBA/BABA) and f4-ratio (f_G) statistics for all trios of species in the dataset (the outgroup being fixed)\n"
-"the results are as definded in Patterson et al. 2012 (equivalent to Durand et al. 2011 when the Outgroup is fixed for the ancestral allele)\n"
+"The results are as definded in Patterson et al. 2012 (equivalent to Durand et al. 2011 when the Outgroup is fixed for the ancestral allele)\n"
 "The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID\n"
 "The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID\n"
+"\n"
+"Use 'stdin' for the VCF file when piping from another program into Dsuite via standard input\n"
+"in this case it is necessary to provide the number of lines in the filtered VCF via the -l option\n"
+"For example, to filter the VCF for overall mimimum depth of at least 1000 across all samples:\n"
+"bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf | wc -l  # to get NUMLINES\n"
+"bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf | Dsuite Dtrios -l NUMLINES stdin SETS.txt\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
 "       -k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset\n"
@@ -28,12 +34,13 @@ static const char *DMIN_USAGE_MESSAGE =
 "                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix\n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
 "       --no-f4-ratio                           (optional) don't calculate the f4-ratio\n"
+"       -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
 enum { OPT_NO_F4 };
-static const char* shortopts = "hr:n:t:j:fpk:";
+static const char* shortopts = "hr:n:t:j:fpk:l:";
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
@@ -56,6 +63,7 @@ namespace opt
     int jkNum = 20;
     int regionStart = -1;
     int regionLength = -1;
+    int providedNumLines = -1;
     bool fStats = true;
     bool Patterson = true;
 }
@@ -92,6 +100,9 @@ int DminMain(int argc, char** argv) {
     }
     
     int VCFlineCount;
+    if (opt::providedNumLines > 0) {
+        VCFlineCount = opt::providedNumLines;
+    } else
     { // Block to find the number of lines in the VCF file
         std::istream* vcfFile = createReader(opt::vcfFile.c_str());
         // See how big is the VCF file
@@ -101,7 +112,12 @@ int DminMain(int argc, char** argv) {
         //std::cout << "VCF Lines: " << VCFlineCount << "\n";
     }
     
-    std::istream* vcfFile = createReader(opt::vcfFile.c_str());
+    std::istream* vcfFile;
+    if (opt::vcfFile == "stdin") {
+        vcfFile = &std::cin;
+    } else {
+        vcfFile = createReader(opt::vcfFile.c_str());
+    }
     std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
     if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl; exit(1);}
     
@@ -481,6 +497,7 @@ void parseDminOptions(int argc, char** argv) {
             case 'k': arg >> opt::jkNum; break;
             case OPT_NO_F4: opt::fStats = false; break;
             case 'p': opt::Patterson = true; break;
+            case 'l': arg >> opt::providedNumLines; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
                 opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;
             case 'h':
@@ -507,5 +524,16 @@ void parseDminOptions(int argc, char** argv) {
     // Parse the input filenames
     opt::vcfFile = argv[optind++];
     opt::setsFile = argv[optind++];
+    
+    if (opt::vcfFile == "stdin" && opt::providedNumLines <= 0) {
+        std::cerr << "If you want to read the VCF via a pipe, you need to specify the number of lines in the input via the -l option\n";
+        std::cerr << "See the example above\n";
+        die = true;
+    }
+    
+    if (die) {
+        std::cout << "\n" << DMIN_USAGE_MESSAGE;
+        exit(EXIT_FAILURE);
+    }
 }
 
