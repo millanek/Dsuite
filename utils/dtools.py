@@ -3486,19 +3486,21 @@ def align_fbranch_with_tree(fbranch, tree, outgroup, ladderize=False):
 
 def plot_fbranch(fbranch, tree_no_outgroup, leaves_to_present=True,
                  use_distances=False,
-                 debug=False):
+                 debug=False, tree_label_size=14, max_color_cutoff=None):
     #print("1706")
 
+    if max_color_cutoff is None:
+        max_color_cutoff = fbranch.max().max()
     
     n_rows, n_cols = fbranch.shape
 
-    plt.rcParams['font.size'] = 12
+    plt.rcParams['font.size'] = tree_label_size
 
     # depth = tree_sd2_1_ete.get_farthest_leaf(topology_only=True)[1] +2
 
     # visited = []
 
-    # fig = plt.figure(figsize=(18,20))
+    #fig = plt.figure(figsize=(18,20))
 
     fig = plt.figure(figsize=(n_cols, n_rows * 0.5))
 
@@ -3537,7 +3539,7 @@ def plot_fbranch(fbranch, tree_no_outgroup, leaves_to_present=True,
 
     fmax = branch_mat0.max().max()
     fmin = branch_mat0.min().min()
-    colors = np.concatenate([[[1, 1, 1, 1]], plt.cm.Reds(np.linspace(0., 1 * fmax / 0.15, 256))])
+    colors = np.concatenate([[[1, 1, 1, 1]], plt.cm.Reds(np.linspace(0., 1 * fmax / max_color_cutoff, 256))])
     mymap = mpl.colors.LinearSegmentedColormap.from_list('my_colormap', colors)
 
     plt.pcolormesh(branch_mat0_masked, cmap=mymap, rasterized=True)  # ,cmap=jet
@@ -3604,11 +3606,25 @@ def main():
     argparser.add_argument("--ladderize",
                            help="Ladderize the input tree before plotting.",
                            action='store_true')
+    argparser.add_argument("--color-cutoff",
+                           help="Set the darkest red to this f_branch value.",
+                           type=float)
+    argparser.add_argument("--tree-label-size",
+                           help="Set the font size of the tree leaf names.",
+                           type=float, default=14)
 
+    argparser.add_argument("--dpi",
+                           help="Set the dpi for the output .png.",
+                           type=float, default=150)
 
     args = argparser.parse_args()
     fb = pd.read_csv(args.fbranch, sep='\t',
                   index_col=[0,1])
+    #this fixes some bug where f_b sometimes is negative still
+    fb[fb<0] = 0
+
+    print("Reading tree...")
+
     tree = HsTree(args.tree.read())
     fb1, tree_no_outgroup = align_fbranch_with_tree(fb, tree,
                                                      outgroup=args.outgroup,
@@ -3617,11 +3633,22 @@ def main():
         leaves_to_present = False
     else:
         leaves_to_present = True
-
+    
+    print("Plotting fbranch...")
+    
     plot_fbranch(fb1, tree_no_outgroup, use_distances=args.use_distances,
-                 leaves_to_present=leaves_to_present)
+                 leaves_to_present=leaves_to_present, tree_label_size=args.tree_label_size, max_color_cutoff=args.color_cutoff)
+    
+    print("Saving plots...")
+    
     plt.savefig(args.run_name+'.svg', bbox_inches='tight')
-    plt.savefig(args.run_name+'.png', bbox_inches='tight', dpi=150)
+    
+    if fb.shape[1] > 100:
+        print("png output not supported for more than 100 populations. Only .svg output.")
+    else:
+        plt.savefig(args.run_name+'.png', bbox_inches='tight', dpi=args.dpi)
+
+    return 0 
 
 if __name__ == "__main__":
     sys.exit(main())

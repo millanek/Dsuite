@@ -199,14 +199,18 @@ def dsuite_combine(sets_fn, run_name, starts, lines_per_core, tree_fn=None,
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=("This python script automates parallelisation of Dsuite Dtrios/ Dsuite DtriosCombine. "
+                                                  "The usage is analogous to Dsuite Dtrios but computation is performed "
+                                                  " on multiple cores (default: number of available CPUs). "
+                                                  "It should run on most systems with a standard python installation "
+                                                  "(tested with python 2.7 and 3.6)."))
     parser.add_argument("vcf_fn", metavar="INPUT_FILE.vcf")
     parser.add_argument("sets_fn", metavar="SETS.txt",
                         help=("The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID\n"
                         "The outgroup (can be multiple samples) should be specified by using the "
                         "keyword Outgroup in place of the SPECIES_ID"))
     parser.add_argument("--cores", type=int,
-                                help=("(default=CPU count) Number of Dsuite Dtrios processes run in parallel. Default=CPU count"),
+                                help=("(default=CPU count) Number of Dsuite Dtrios processes run in parallel."),
                                                         default=None)     
     parser.add_argument("-k", "--JKnum", type=int,
                                 help=("(default=20) the number of Jackknife blocks to divide the dataset into;"
