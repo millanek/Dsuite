@@ -336,24 +336,6 @@ int DminMain(int argc, char** argv) {
                 
                 if (opt::fStats) {
                     
-                    /*
-                    // f_d
-                    trioInfos[i].F_d_denom1 += Fd_Denom_perVariant(p_S1, p_S2, p_S3, p_O);
-                    trioInfos[i].F_d_denom1_reversed += Fd_Denom_perVariant(p_S2, p_S1, p_S3, p_O); // reverse p1 and p2
-                    trioInfos[i].F_d_denom2 += Fd_Denom_perVariant(p_S1, p_S3, p_S2, p_O);
-                    trioInfos[i].F_d_denom2_reversed += Fd_Denom_perVariant(p_S3, p_S1, p_S2, p_O); // reverse p1 and p2
-                    trioInfos[i].F_d_denom3 += Fd_Denom_perVariant(p_S3, p_S2, p_S1, p_O);
-                    trioInfos[i].F_d_denom3_reversed += Fd_Denom_perVariant(p_S3, p_S2, p_S1, p_O); // reverse p1 and p2
-                    
-                    // f_dM
-                    trioInfos[i].F_dM_denom1 += FdM_Denom_perVariant(p_S1, p_S2, p_S3, p_O);
-                    trioInfos[i].F_dM_denom1_reversed += FdM_Denom_perVariant(p_S2, p_S1, p_S3, p_O);
-                    trioInfos[i].F_dM_denom2 += FdM_Denom_perVariant(p_S1, p_S3, p_S2, p_O);
-                    trioInfos[i].F_dM_denom2_reversed += FdM_Denom_perVariant(p_S3, p_S1, p_S2, p_O);
-                    trioInfos[i].F_dM_denom3 += FdM_Denom_perVariant(p_S3, p_S2, p_S1, p_O);
-                    trioInfos[i].F_dM_denom3_reversed += FdM_Denom_perVariant(p_S2, p_S3, p_S1, p_O);
-                    */
-                    
                     // f_G
                     int c_S1a = 0; int c_S1b = 0; int c_S2a = 0; int c_S2b = 0;int c_S3a = 0; int c_S3b = 0;
                     c_S3a = allSplit1Counts[triosInt[i][2]]; c_S3b = allSplit2Counts[triosInt[i][2]];
@@ -414,7 +396,8 @@ int DminMain(int argc, char** argv) {
     }
     std::cerr << "Done processing VCF. Preparing output files..." << '\n';
     
-    string header = "P1\tP2\tP3\tDstatistic\tp-value"; if (opt::fStats) header += "\tf_G"; // if (opt::fStats) header += "\tf_G\tf_D\tf_dM";
+    string header = "P1\tP2\tP3\tDstatistic\tZ-score\tp-value"; if (opt::fStats) header += "\tf_G"; // if (opt::fStats) header += "\tf_G\tf_D\tf_dM";
+    header += "\tBBAA\tABBA\tBABA";
     *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
     if (opt::treeFile != "") *outFileTree << header << std::endl;
     
@@ -456,10 +439,6 @@ int DminMain(int argc, char** argv) {
         if (opt::fStats) {
             *outFileCombine << "\t" << trioInfos[i].F_G_denom1 << "\t" << trioInfos[i].F_G_denom2 << "\t" << trioInfos[i].F_G_denom3;
             *outFileCombine << "\t" << trioInfos[i].F_G_denom1_reversed << "\t" << trioInfos[i].F_G_denom2_reversed << "\t" << trioInfos[i].F_G_denom3_reversed;
-            //*outFileCombine << "\t" << trioInfos[i].F_d_denom1 << "\t" << trioInfos[i].F_d_denom2 << "\t" << trioInfos[i].F_d_denom3;
-            //*outFileCombine << "\t" << trioInfos[i].F_d_denom1_reversed << "\t" << trioInfos[i].F_d_denom2_reversed << "\t" << trioInfos[i].F_d_denom3_reversed;
-            //*outFileCombine << "\t" << trioInfos[i].F_dM_denom1 << "\t" << trioInfos[i].F_dM_denom2 << "\t" << trioInfos[i].F_dM_denom3;
-            //*outFileCombine << "\t" << trioInfos[i].F_dM_denom1_reversed << "\t" << trioInfos[i].F_dM_denom2_reversed << "\t" << trioInfos[i].F_dM_denom3_reversed;
             *outFileCombine << std::endl;
         } else {
             *outFileCombine << std::endl;

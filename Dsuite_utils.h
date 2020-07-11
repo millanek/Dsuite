@@ -221,7 +221,7 @@ public:
     
     // string P1; string P2; string P3;
     double ABBAtotal; double BABAtotal; double BBAAtotal;
-    double D1; double D2; double D3; double D1_p; double D2_p; double D3_p;
+    double D1; double D2; double D3; double D1_p; double D2_p; double D3_p; double D1_Z; double D2_Z; double D3_Z;
     double F_d_denom1; double F_d_denom1_reversed; double F_dM_denom1; double F_dM_denom1_reversed; double F_G_denom1; double F_G_denom1_reversed;
     double F_d_denom2; double F_d_denom2_reversed; double F_dM_denom2; double F_dM_denom2_reversed; double F_G_denom2; double F_G_denom2_reversed;
     double F_d_denom3; double F_d_denom3_reversed; double F_dM_denom3; double F_dM_denom3_reversed; double F_G_denom3; double F_G_denom3_reversed;
@@ -296,67 +296,66 @@ public:
     
     std::vector<string> makeOutVec(const std::vector<string>& trio, const bool fStats, const int arrangement) {
         
-        std::vector<string> outVec; if (fStats) outVec.resize(6); else outVec.resize(5);
+        std::vector<string> outVec; if (fStats) outVec.resize(10); else outVec.resize(9);
+        int patternsI; if (fStats) patternsI = 7; else patternsI = 6; // Where will be put the BBAA, ABBA, etc. counts
         
         switch (arrangement) {
                 
         case P3isTrios2:
-            outVec[2] = trio[2]; outVec[3] = numToString(std::fabs(D1)); outVec[4] = numToString(D1_p);
+            outVec[2] = trio[2]; outVec[3] = numToString(std::fabs(D1)); outVec[4] = numToString(D1_Z);
+            outVec[5] = numToString(D1_p); outVec[patternsI] = numToString(BBAAtotal);
             if (D1 >= 0) {
                 outVec[0] = trio[0]; outVec[1] = trio[1];
+                outVec[patternsI+1] = numToString(ABBAtotal); outVec[patternsI+2] = numToString(BABAtotal);
                 if (fStats) {
                     double Dnum = ABBAtotal-BABAtotal;
-                    outVec[5] = numToString(Dnum/F_G_denom1);
-                   // outVec[6] = numToString(Dnum/F_d_denom1);
-                   // outVec[7] = numToString(Dnum/F_dM_denom1);
+                    outVec[6] = numToString(Dnum/F_G_denom1);
+                   
                 }
             } else {
                 outVec[0] = trio[1]; outVec[1] = trio[0];
+                outVec[patternsI+1] = numToString(BABAtotal); outVec[patternsI+2] = numToString(ABBAtotal);
                 if (fStats) {
                     double Dnum = BABAtotal-ABBAtotal;
-                    outVec[5] = numToString(Dnum/F_G_denom1_reversed);
-                    //outVec[6] = numToString(Dnum/F_d_denom1_reversed);
-                    //outVec[7] = numToString(Dnum/F_dM_denom1_reversed);
+                    outVec[6] = numToString(Dnum/F_G_denom1_reversed);
                 }
             } break;
                 
         case P3isTrios1:
-            outVec[2] = trio[1]; outVec[3] = numToString(std::fabs(D2)); outVec[4] = numToString(D2_p);
+            outVec[2] = trio[1]; outVec[3] = numToString(std::fabs(D2)); outVec[4] = numToString(D2_Z);
+            outVec[5] = numToString(D2_p); outVec[patternsI] = numToString(BABAtotal);
             if (D2 >= 0) {
                 outVec[0] = trio[0]; outVec[1] = trio[2];
+                outVec[patternsI+1] = numToString(ABBAtotal); outVec[patternsI+2] = numToString(BBAAtotal);
                 if (fStats) {
                     double Dnum = ABBAtotal - BBAAtotal;
-                    outVec[5] = numToString(Dnum/F_G_denom2);
-                   // outVec[6] = numToString(Dnum/F_d_denom2);
-                   // outVec[7] = numToString(Dnum/F_dM_denom2);
+                    outVec[6] = numToString(Dnum/F_G_denom2);
                 }
             } else {
                 outVec[0] = trio[2]; outVec[1] = trio[0];
+                outVec[patternsI+1] = numToString(BBAAtotal); outVec[patternsI+2] = numToString(ABBAtotal);
                 if (fStats) {
                     double Dnum = BBAAtotal - ABBAtotal;
-                    outVec[5] = numToString(Dnum/F_G_denom2_reversed);
-                   // outVec[6] = numToString(Dnum/F_d_denom2_reversed);
-                   // outVec[7] = numToString(Dnum/F_dM_denom2_reversed);
+                    outVec[6] = numToString(Dnum/F_G_denom2_reversed);
                 }
             } break;
                 
         case P3isTrios0:
-            outVec[2] = trio[0]; outVec[3] = numToString(std::fabs(D3)); outVec[4] = numToString(D3_p);
+            outVec[2] = trio[0]; outVec[3] = numToString(std::fabs(D3)); outVec[4] = numToString(D3_Z);
+            outVec[5] = numToString(D3_p); outVec[patternsI] = numToString(ABBAtotal);
             if (D3 >= 0) {
                 outVec[0] = trio[2]; outVec[1] = trio[1];
+                outVec[patternsI+1] = numToString(BBAAtotal); outVec[patternsI+2] = numToString(BABAtotal);
                 if (fStats) {
                     double Dnum = BBAAtotal - BABAtotal;
-                    outVec[5] = numToString(Dnum/F_G_denom3);
-                   // outVec[6] = numToString(Dnum/F_d_denom3);
-                   // outVec[7] = numToString(Dnum/F_dM_denom3);
+                    outVec[6] = numToString(Dnum/F_G_denom3);
                 }
             } else {
                 outVec[0] = trio[1]; outVec[1] = trio[2];
+                outVec[patternsI+1] = numToString(BABAtotal); outVec[patternsI+2] = numToString(BBAAtotal);
                 if (fStats) {
                     double Dnum = BABAtotal - BBAAtotal;
-                    outVec[5] = numToString(Dnum/F_G_denom3_reversed);
-                   // outVec[6] = numToString(Dnum/F_d_denom3_reversed);
-                   // outVec[7] = numToString(Dnum/F_dM_denom3_reversed);
+                    outVec[6] = numToString(Dnum/F_G_denom3_reversed);
                 }
             } break;
                 
@@ -387,8 +386,7 @@ public:
         double D3stdErr = jackknive_std_err(regionDs[2]);
         //std::cerr << "Here: " << regionDs[2][0] << std::endl;
         // Get the Z-scores
-        double D1_Z = std::fabs(D1)/D1stdErr; double D2_Z = std::fabs(D2)/D2stdErr;
-        double D3_Z = std::fabs(D3)/D3stdErr;
+        D1_Z = std::fabs(D1)/D1stdErr; D2_Z = std::fabs(D2)/D2stdErr; D3_Z = std::fabs(D3)/D3stdErr;
         // And p-values
         D1_p = 1 - normalCDF(D1_Z); D2_p = 1 - normalCDF(D2_Z);
         D3_p = 1 - normalCDF(D3_Z);
