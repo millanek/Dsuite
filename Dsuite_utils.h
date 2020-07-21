@@ -25,9 +25,14 @@
 #define PACKAGE_BUGREPORT "milan.malinsky@unibas.ch"
 #define GZIP_EXT ".gz"
 
+#define CHECK_TREE_ERROR_MSG "It seems that this species is in the SETS.txt file but can't be found in the tree. Please check the spelling and completeness of your tree file."
+
 #define P3isTrios2 1
 #define P3isTrios1 2
 #define P3isTrios0 3
+
+#define OutgroupNotRequired 0
+#define OutgroupRequired 1
 
 using std::string;
 // VCF format constant
@@ -127,6 +132,20 @@ inline void copy_except(int i, std::vector<double>& inVec, std::vector<double>& 
     //std::cerr << "copied: " << i << " "; print_vector_stream(outVec, std::cerr);
 }
 
+inline unsigned nChoosek( unsigned n, unsigned k )
+{
+    if (k > n) return 0;
+    if (k * 2 > n) k = n-k;
+    if (k == 0) return 1;
+    
+    int result = n;
+    for( int i = 2; i <= k; ++i ) {
+        result *= (n-i+1);
+        result /= i;
+    }
+    return result;
+}
+
 // jackknive standard error
 template <class T> double jackknive_std_err(T& vector) {
     if (vector.size() < 5) {
@@ -202,7 +221,6 @@ private:
     void getBasicCountsWithSplits(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
 };
 
-
 class TrioDinfo {
 public:
     TrioDinfo() {
@@ -246,40 +264,42 @@ public:
                             // 3 - trios[i][1] and trios[i][2] are P1 and P2
     
     
-    void assignTreeArrangement(const std::vector<int>& treeLevels, const int loc1, const int loc2, const int loc3) {
+    int assignTreeArrangement(const std::vector<int>& treeLevels, const int loc1, const int loc2, const int loc3) {
         int midLoc = std::max(std::min(loc1,loc2), std::min(std::max(loc1,loc2),loc3));
+        int arrangement = 0;
         if (midLoc == loc1) {
             if (loc2 < loc1) {
                 int m1 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc1);
                 int m2 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc3);
-                if (m1 < m2) treeArrangement = 2; else treeArrangement = 1;
+                if (m1 < m2) arrangement = P3isTrios1; else arrangement = P3isTrios2;
             } else {
                 int m1 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc1);
                 int m2 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc2);
-                if (m1 < m2) treeArrangement = 1; else treeArrangement = 2;
+                if (m1 < m2) arrangement = P3isTrios2; else arrangement = P3isTrios1;
             }
         } else if (midLoc == loc2) {
             if (loc1 < loc2) {
                 int m1 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc2);
                 int m2 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc3);
-                if (m1 < m2) treeArrangement = 3; else treeArrangement = 1;
+                if (m1 < m2) arrangement = P3isTrios0; else arrangement = P3isTrios2;
             } else {
                 int m1 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc2);
                 int m2 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc1);
-                if (m1 < m2) treeArrangement = 1; else treeArrangement = 3;
+                if (m1 < m2) arrangement = P3isTrios2; else arrangement = P3isTrios0;
             }
         } else if (midLoc == loc3) {
             if (loc1 < loc3) {
                 int m1 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc3);
                 int m2 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc2);
-                if (m1 < m2) treeArrangement = 3; else treeArrangement = 2;
+                if (m1 < m2) arrangement = P3isTrios0; else arrangement = P3isTrios1;
                 
             } else {
                 int m1 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc3);
                 int m2 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc1);
-                if (m1 < m2) treeArrangement = 2; else treeArrangement = 3;
+                if (m1 < m2) arrangement = P3isTrios1; else arrangement = P3isTrios0;
             }
         }
+        return arrangement;
     }
     
     void assignBBAAarrangement() {
@@ -398,6 +418,125 @@ public:
             case P3isTrios1: if(localD2denom > 0) regionDs[1].push_back(localD2num/localD2denom); localD2num = 0; localD2denom = 0; usedVars[1] = 0; break;
             case P3isTrios0: if(localD3denom > 0) regionDs[2].push_back(localD3num/localD3denom); localD3num = 0; localD3denom = 0; usedVars[2] = 0; break;
         }
+    }
+    
+};
+
+//  P3 \     / P2
+//      -----
+//     /     \ P1
+
+
+/*
+ Quartets are unrooted, so there are three arrangements
+ (P1,P2)(P3,P4)   // BBAA (AABB) highest
+ (P1,P3)(P2,P4)   // BABA (ABAB) highest
+ (P1,P4)(P2,P3)   // ABBA (BAAB) highest
+ 
+ */
+class QuartetDinfo: public TrioDinfo {
+public:
+    
+    int assignQuartetTreeArrangement(const std::vector<int>& treeLevels, const int loc1, const int loc2, const int loc3, const int loc4) {
+        int firstThreeArranged = assignTreeArrangement(treeLevels, loc1, loc2, loc3);
+        int withFourthArranged = 0; int overallTreeArrangment = 0;
+        switch (firstThreeArranged) {
+            case P3isTrios2:
+                withFourthArranged = assignTreeArrangement(treeLevels, loc1, loc2, loc4);
+                switch (withFourthArranged) {
+                    case P3isTrios2: overallTreeArrangment = P3isTrios2; break;
+                    case P3isTrios1: overallTreeArrangment = P3isTrios0; break;
+                    case P3isTrios0: overallTreeArrangment = P3isTrios1; break;
+                } break;
+            case P3isTrios1:
+                withFourthArranged = assignTreeArrangement(treeLevels, loc1, loc3, loc4);
+                switch (withFourthArranged) {
+                    case P3isTrios2: overallTreeArrangment = P3isTrios1; break;
+                    case P3isTrios1: overallTreeArrangment = P3isTrios0; break;
+                    case P3isTrios0: overallTreeArrangment = P3isTrios2; break;
+                } break;
+            case P3isTrios0:
+            withFourthArranged = assignTreeArrangement(treeLevels, loc2, loc3, loc4);
+            switch (withFourthArranged) {
+                case P3isTrios2: overallTreeArrangment = P3isTrios0; break;
+                case P3isTrios1: overallTreeArrangment = P3isTrios1; break;
+                case P3isTrios0: overallTreeArrangment = P3isTrios2; break;
+            } break;
+        }
+        return overallTreeArrangment;
+    }
+    
+    
+    std::vector<string> makeOutVec(const std::vector<string>& quartet, const bool fStats, const int arrangement) {
+        
+        std::vector<string> outVec; if (fStats) outVec.resize(11); else outVec.resize(10);
+        int patternsI; if (fStats) patternsI = 8; else patternsI = 7; // Where will be put the BBAA, ABBA, etc. counts
+        
+        switch (arrangement) {
+                
+        case P3isTrios2:
+            outVec[2] = quartet[2]; outVec[3] = quartet[3];
+            outVec[4] = numToString(std::fabs(D1)); outVec[5] = numToString(D1_Z);
+            outVec[6] = numToString(D1_p); outVec[patternsI] = numToString(BBAAtotal);
+            if (D1 >= 0) {
+                outVec[0] = quartet[0]; outVec[1] = quartet[1];
+                outVec[patternsI+1] = numToString(ABBAtotal); outVec[patternsI+2] = numToString(BABAtotal);
+                if (fStats) {
+                    double Dnum = ABBAtotal-BABAtotal;
+                    outVec[7] = numToString(Dnum/F_G_denom1);
+                   
+                }
+            } else {
+                outVec[0] = quartet[1]; outVec[1] = quartet[0];
+                outVec[patternsI+1] = numToString(BABAtotal); outVec[patternsI+2] = numToString(ABBAtotal);
+                if (fStats) {
+                    double Dnum = BABAtotal-ABBAtotal;
+                    outVec[7] = numToString(Dnum/F_G_denom1_reversed);
+                }
+            } break;
+                
+        case P3isTrios1:
+            outVec[2] = quartet[1]; outVec[3] = quartet[3];
+            outVec[4] = numToString(std::fabs(D2)); outVec[5] = numToString(D2_Z);
+            outVec[6] = numToString(D2_p); outVec[patternsI] = numToString(BABAtotal);
+            if (D2 >= 0) {
+                outVec[0] = quartet[0]; outVec[1] = quartet[2];
+                outVec[patternsI+1] = numToString(ABBAtotal); outVec[patternsI+2] = numToString(BBAAtotal);
+                if (fStats) {
+                    double Dnum = ABBAtotal - BBAAtotal;
+                    outVec[7] = numToString(Dnum/F_G_denom2);
+                }
+            } else {
+                outVec[0] = quartet[2]; outVec[1] = quartet[0];
+                outVec[patternsI+1] = numToString(BBAAtotal); outVec[patternsI+2] = numToString(ABBAtotal);
+                if (fStats) {
+                    double Dnum = BBAAtotal - ABBAtotal;
+                    outVec[7] = numToString(Dnum/F_G_denom2_reversed);
+                }
+            } break;
+                
+        case P3isTrios0:
+            outVec[2] = quartet[0]; outVec[3] = quartet[3];
+            outVec[4] = numToString(std::fabs(D3)); outVec[5] = numToString(D3_Z);
+            outVec[6] = numToString(D3_p); outVec[patternsI] = numToString(ABBAtotal);
+            if (D3 >= 0) {
+                outVec[0] = quartet[2]; outVec[1] = quartet[1];
+                outVec[patternsI+1] = numToString(BBAAtotal); outVec[patternsI+2] = numToString(BABAtotal);
+                if (fStats) {
+                    double Dnum = BBAAtotal - BABAtotal;
+                    outVec[7] = numToString(Dnum/F_G_denom3);
+                }
+            } else {
+                outVec[0] = quartet[1]; outVec[1] = quartet[2];
+                outVec[patternsI+1] = numToString(BABAtotal); outVec[patternsI+2] = numToString(BBAAtotal);
+                if (fStats) {
+                    double Dnum = BABAtotal - BBAAtotal;
+                    outVec[7] = numToString(Dnum/F_G_denom3_reversed);
+                }
+            } break;
+                
+        }
+        return outVec;
     }
     
 };

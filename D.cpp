@@ -7,6 +7,7 @@
 //
 
 #include "D.h"
+#include "Dsuite_common.h"
 #include <deque>
 #define SUBPROGRAM "Dinvestigate"
 
@@ -64,26 +65,12 @@ void doAbbaBaba() {
     if (!testTriosFile->good()) { std::cerr << "The file " << opt::testTriosFile << " could not be opened. Exiting..." << std::endl; exit(EXIT_FAILURE);}
     
     // Get the sample sets
-    std::map<string, std::vector<string>> speciesToIDsMap;
-    std::map<string, string> IDsToSpeciesMap;
-    std::map<string, std::vector<size_t>> speciesToPosMap;
-    std::map<size_t, string> posToSpeciesMap;
+    std::map<string, std::vector<string>> speciesToIDsMap; std::map<string, string> IDsToSpeciesMap;
+    std::map<string, std::vector<size_t>> speciesToPosMap; std::map<size_t, string> posToSpeciesMap;
     
     // Get the sample sets
-    bool outgroupSpecified = false;
-    int l = 0;
-    while (getline(*setsFile, line)) {
-        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
-        l++; if (line == "") { std::cerr << "Please fix the format of the " << opt::setsFile << " file.\nLine " << l << " is empty." << std::endl; exit(EXIT_FAILURE); }
-        // std::cerr << line << std::endl;
-        std::vector<string> ID_Species = split(line, '\t');
-        if (ID_Species.size() != 2) { std::cerr << "Please fix the format of the " << opt::setsFile << " file.\nLine " << l << " does not have two columns separated by a tab." << std::endl; exit(EXIT_FAILURE); }
-        if (ID_Species[1] == "Outgroup") { outgroupSpecified = true; }
-        speciesToIDsMap[ID_Species[1]].push_back(ID_Species[0]);
-        IDsToSpeciesMap[ID_Species[0]] = ID_Species[1];
-        //std::cerr << ID_Species[1] << "\t" << ID_Species[0] << std::endl;
-    }
-    if (!outgroupSpecified) { std::cerr << "The file " << opt::setsFile << " needs to specify the \"Outgroup\"" << std::endl; exit(1); }
+    process_SETS_file(setsFile, opt::setsFile, speciesToIDsMap, IDsToSpeciesMap, OutgroupRequired);
+    
     // Get a vector of set names (usually species)
     std::vector<string> species;
     for(std::map<string,std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {

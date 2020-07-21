@@ -197,7 +197,7 @@ int DminCombineMain(int argc, char** argv) {
             
             if (opt::treeFile != "") {
                 int loc1 = treeTaxonNamesToLoc[s1][0]; int loc2 = treeTaxonNamesToLoc[s2][0]; int loc3 = treeTaxonNamesToLoc[s3][0];
-                info.assignTreeArrangement(treeLevels, loc1, loc2, loc3);
+                info.treeArrangement = info.assignTreeArrangement(treeLevels, loc1, loc2, loc3);
                 std::vector<string> treeOutVec = info.makeOutVec(trio, fIncluded, info.treeArrangement);
                 print_vector(treeOutVec,*outFileTree);
             }
