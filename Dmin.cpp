@@ -372,8 +372,7 @@ int DminMain(int argc, char** argv) {
     }
     std::cerr << "Done processing VCF. Preparing output files..." << '\n';
     
-    string header = "P1\tP2\tP3\tDstatistic\tZ-score\tp-value"; if (opt::fStats) header += "\tf_G"; // if (opt::fStats) header += "\tf_G\tf_D\tf_dM";
-    header += "\tBBAA\tABBA\tBABA";
+    string header = makeHeader(opt::fStats);
     *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
     if (opt::treeFile != "") *outFileTree << header << std::endl;
     

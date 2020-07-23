@@ -31,3 +31,9 @@ void process_SETS_file(std::ifstream* setsFile, const string fName, std::map<str
         std::cerr << "ERROR: The file " << fName << " needs to specify the \"Outgroup\"" << std::endl; exit(1);
     }
 }
+
+string makeHeader(bool includeFstats) {
+    string header = "P1\tP2\tP3\tP4\tDstatistic\tZ-score\tp-value"; if (includeFstats) header += "\tf4-ratio";
+    header += "\tBBAA\tABBA\tBABA";
+    return header;
+}
