@@ -63,12 +63,13 @@ Species1    Species4    Species2
 ```
 ### Piped VCF input:
 It is possible to 'pipe' the genotype data into  `Dsuite Dtrios` or `Dsuite Dquartets` from another program, such as bcftools, allowing custom filtering of the VCF file.  Just use the `stdin` keyword in place of the VCF file name. It is also necessary to provide the number of lines in the filtered VCF via the  `-l` option to the Dsuite programs. For example, to filter a VCF for overall mimimum depth of at least 1000 across all samples, you would use the following commands:
-```NUMLINES=$(bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf.gz | wc -l)  # to get NUMLINES
+```
+NUMLINES=$(bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf.gz | wc -l)  # to get NUMLINES
 bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf.gz | Dsuite Dtrios -l $NUMLINES stdin SETS.txt
 ```
 
 ## Compilation
-
+### Main program:
 To compile you must have a reasonably recent GCC (>=4.9.0) or clang compiler (on mac OS this comes with Command Line Tools) and the zlib compression library (https://www.zlib.net). Both should already be present on most systems. 
 
 ```console
@@ -79,7 +80,7 @@ $ make
 
 The Dsuite executable will be in the Build folder, so to run it type e.g. `./Build/Dsuite`; this will show the available commands. To execute e.g. the Dtrios command, type `./Build/Dsuite Dtrios`.
 
-## [Optional] Installing the python3 Fbranch plotting script
+### [Optional] Installing the python3 Fbranch plotting script
 
 If you want to plot the results of the f-branch calcuation (see below), you will need to install the python script for this using setuptools. You need an internet connection as some python dependencies will be downloaded from `pypi.org`. It may be necessary to exit python or conda virtual environments for this to work correctly.
 
