@@ -37,3 +37,10 @@ string makeHeader(bool includeFstats) {
     header += "\tBBAA\tABBA\tBABA";
     return header;
 }
+
+string prepareOutFileRootString(const string& providedPrefix, const string& runName, const string& setsFileName, const int regionStart, const int regionLength) {
+    string fileNameRootString; string outRoot; if (providedPrefix == "") { outRoot = stripExtension(setsFileName);} else { outRoot = providedPrefix; }
+    if (regionStart == -1) { if (runName != "") fileNameRootString = outRoot + "_" + runName; else fileNameRootString = outRoot; }
+    else fileNameRootString = outRoot+"_"+runName+"_"+numToString(regionStart)+"_"+numToString(regionStart+regionLength);
+    return fileNameRootString;
+}

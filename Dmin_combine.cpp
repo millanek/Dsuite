@@ -19,7 +19,10 @@ static const char *DMINCOMBINE_USAGE_MESSAGE =
 "p-values and f4-ratio values\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
-"       -n, --run-name                          run-name will be included in the output file name\n"
+"       -o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written\n"
+"                                               output will be put in OUT_FILE_PREFIX_combined_BBAA.txt, OUT_FILE_PREFIX_combined_Dmin.txt, OUT_FILE_PREFIX_combined_tree.txt etc.\n"
+"                                               by default, the prefix is \"out\"\n"
+"       -n, --run-name                          (optional) run-name will be included in the output file name after the PREFIX\n"
 "       -t , --tree=TREE_FILE.nwk               (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix\n"
 "       -s , --subset=start,length              (optional) only process a subset of the trios\n"
@@ -27,10 +30,11 @@ static const char *DMINCOMBINE_USAGE_MESSAGE =
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
-static const char* shortopts = "hn:t:s:";
+static const char* shortopts = "hn:t:s:o:";
 
 static const struct option longopts[] = {
     { "subset",   required_argument, NULL, 's' },
+    { "out-prefix",   required_argument, NULL, 'o' },
     { "run-name",   required_argument, NULL, 'n' },
     { "tree",   required_argument, NULL, 't' },
     { "help",   no_argument, NULL, 'h' },
@@ -40,6 +44,7 @@ static const struct option longopts[] = {
 namespace opt
 {
     static std::vector<string> dminFiles;
+    static string providedOutPrefix = "out";
     static string runName = "";
     static string treeFile = "";
     int subsetStart = -1;
@@ -50,6 +55,8 @@ namespace opt
 int DminCombineMain(int argc, char** argv) {
     parseDminCombineOptions(argc, argv);
     string line; // for reading the input files
+    
+    string outFileRoot = prepareOutFileRootString(opt::providedOutPrefix, opt::runName, "", -1, -1);
     
     std::vector<std::istream*> dminstdErrFiles; std::vector<std::istream*> dminBBAAscoreFiles;
     for (int i = 0; i < opt::dminFiles.size(); i++) {
@@ -81,12 +88,12 @@ int DminCombineMain(int argc, char** argv) {
     if (opt::treeFile != "") {
         treeFile = new std::ifstream(opt::treeFile.c_str());
         if (!treeFile->good()) { std::cerr << "The file " << opt::treeFile << " could not be opened. Exiting..." << std::endl; exit(1);}
-        outFileTree = new std::ofstream(opt::runName + "combined_tree.txt");
+        outFileTree = new std::ofstream(outFileRoot + "_combined_tree.txt");
         getline(*treeFile, line);
         assignTreeLevelsAndLinkToTaxa(line,treeTaxonNamesToLoc,treeLevels);
     }
     // Now get the standard error values
-    std::ofstream* outFileBBAA = new std::ofstream(opt::runName + "combined_BBAA.txt"); std::ofstream* outFileDmin = new std::ofstream(opt::runName + "combined_Dmin.txt");
+    std::ofstream* outFileBBAA = new std::ofstream(outFileRoot + "_combined_BBAA.txt"); std::ofstream* outFileDmin = new std::ofstream(outFileRoot + "_combined_Dmin.txt");
     
     std::vector<double> BBAA_local_Ds; std::vector<double> ABBA_local_Ds; std::vector<double> BABA_local_Ds;
     string s1; string s2; string s3;
@@ -229,6 +236,7 @@ void parseDminCombineOptions(int argc, char** argv) {
             case '?': die = true; break;
             case 'n': arg >> opt::runName; break;
             case 't': arg >> opt::treeFile; break;
+            case 'o': arg >> opt::providedOutPrefix; break;
             case 's': arg >> subsetArgString; subsetArgs = split(subsetArgString, ',');
                 opt::subsetStart = (int)stringToDouble(subsetArgs[0]); opt::subsetLength = (int)stringToDouble(subsetArgs[1]);  break;
             case 'h':

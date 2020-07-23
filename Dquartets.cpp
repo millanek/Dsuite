@@ -32,17 +32,21 @@ static const char *DQUARTS_USAGE_MESSAGE =
 "       -r, --region=start,length               (optional) only process a subset of the VCF file\n"
 "       -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix\n"
-"       -n, --run-name                          run-name will be included in the output file name\n"
+"       -o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written\n"
+"                                               output will be put in OUT_FILE_PREFIX_BBAA.txt, OUT_FILE_PREFIX_Dmin.txt, OUT_FILE_PREFIX_tree.txt etc.\n"
+"                                               by default, the prefix is taken from the name of the SETS.txt file\n"
+"       -n, --run-name                          (optional; default=quartets) run-name will be included in the output file name after the PREFIX\n"
 "       --no-f4-ratio                           (optional) don't calculate the f4-ratio\n"
 "       -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 enum { OPT_NO_F4 };
-static const char* shortopts = "hr:n:t:j:fpk:l:";
+static const char* shortopts = "hr:n:t:j:fpk:l:o:";
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
+    { "out-prefix",   required_argument, NULL, 'o' },
     { "region",   required_argument, NULL, 'r' },
     { "tree",   required_argument, NULL, 't' },
     { "JKwindow",   required_argument, NULL, 'j' },
@@ -57,7 +61,8 @@ namespace opt
     static string vcfFile;
     static string setsFile;
     static string treeFile = "";
-    static string runName = "";
+    static string runName = "quartets";
+    static string providedOutPrefix = "";
     static int jkWindowSize = 0;
     static int jkNum = 20;
     static int regionStart = -1;
@@ -70,14 +75,14 @@ namespace opt
 int DquartetsMain(int argc, char** argv) {
     parseDquartetsOptions(argc, argv);
     string line; // for reading the input files
-    string setsFileRoot = stripExtension(opt::setsFile);
+    string outFileRoot = prepareOutFileRootString(opt::providedOutPrefix, opt::runName, opt::setsFile, opt::regionStart, opt::regionLength);
     
     std::istream* treeFile; std::ofstream* outFileTree;
     std::map<string,std::vector<int>> treeTaxonNamesToLoc; std::vector<int> treeLevels;
     if (opt::treeFile != "") {
         treeFile = new std::ifstream(opt::treeFile.c_str());
         if (!treeFile->good()) { std::cerr << "The file " << opt::treeFile << " could not be opened. Exiting..." << std::endl; exit(1);}
-        outFileTree = new std::ofstream(setsFileRoot+ "_" + opt::runName + "_tree.txt");
+        outFileTree = new std::ofstream(outFileRoot+ "_" + opt::runName + "_tree.txt");
         getline(*treeFile, line);
         assignTreeLevelsAndLinkToTaxa(line,treeTaxonNamesToLoc,treeLevels);
         //for (std::map<string,std::vector<int>>::iterator it = treeTaxonNamesToLoc.begin(); it != treeTaxonNamesToLoc.end(); ++it) {
@@ -105,15 +110,10 @@ int DquartetsMain(int argc, char** argv) {
     std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
     if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl; exit(1);}
     
-    std::ofstream* outFileBBAA; std::ofstream* outFileDmin;
-    std::ofstream* outFileCombine; std::ofstream* outFileCombineStdErr;
-    string fileNameString;
-    if (opt::regionStart == -1) fileNameString = setsFileRoot+ "_" + opt::runName;
-    else fileNameString = setsFileRoot+"_"+opt::runName+"_"+numToString(opt::regionStart)+"_"+numToString(opt::regionStart+opt::regionLength);
-    outFileBBAA = new std::ofstream(fileNameString+"_BBAA.txt");
-    outFileDmin = new std::ofstream(fileNameString+"_Dmin.txt");
-    outFileCombine = new std::ofstream(fileNameString+"_combine.txt");
-    outFileCombineStdErr = new std::ofstream(fileNameString+"_combine_stderr.txt");
+    std::ofstream* outFileBBAA = new std::ofstream(outFileRoot+"_BBAA.txt");
+    std::ofstream* outFileDmin = new std::ofstream(outFileRoot+"_Dmin.txt");
+    std::ofstream* outFileCombine = new std::ofstream(outFileRoot+"_combine.txt");
+    std::ofstream* outFileCombineStdErr = new std::ofstream(outFileRoot+"_combine_stderr.txt");
 
     std::map<string, std::vector<string>> speciesToIDsMap; std::map<string, string> IDsToSpeciesMap;
     std::map<string, std::vector<size_t>> speciesToPosMap; std::map<size_t, string> posToSpeciesMap;
@@ -466,6 +466,7 @@ void parseDquartetsOptions(int argc, char** argv) {
             case 't': arg >> opt::treeFile; break;
             case 'j': arg >> opt::jkWindowSize; break;
             case 'k': arg >> opt::jkNum; break;
+            case 'o': arg >> opt::providedOutPrefix; break;
             case OPT_NO_F4: opt::fStats = false; break;
             case 'l': arg >> opt::providedNumLines; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
