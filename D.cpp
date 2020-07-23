@@ -15,14 +15,14 @@
 
 static const char *ABBA_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] INPUT_FILE.vcf.gz SETS.txt test_trios.txt\n"
-"Outputs D, f_d (Martin et al. 2014 MBE), and f_dM (Malinsky et al., 2015) in genomic windows\n"
+"Outputs D, f_d (Martin et al. 2014 MBE), f_dM (Malinsky et al., 2015), and d_f (Pfeifer & Kapan, 2019) in genomic windows\n"
 "The SETS.txt file should have two columns: SAMPLE_ID    POPULATION_ID\n"
 "The test_trios.txt should contain names of three populations for which the statistics will be calculated:\n"
 "POP1   POP2    POP3\n"
 "There can be multiple lines and then the program generates multiple ouput files, named like POP1_POP2_POP3_localFstats_SIZE_STEP.txt\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
-"       -w SIZE,STEP --window=SIZE,STEP         (required) D, f_D, and f_dM statistics for windows containing SIZE useable SNPs, moving by STEP (default: 50,25)\n"
+"       -w SIZE,STEP --window=SIZE,STEP         (required) D, f_D, f_dM, and d_f statistics for windows containing SIZE useable SNPs, moving by STEP (default: 50,25)\n"
 //"       --fJackKnife=WINDOW                     (optional) Calculate jackknife for the f_G statistic from Green et al. Also outputs \n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
 "\n"
