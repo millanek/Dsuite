@@ -1,7 +1,7 @@
 #  Dsuite
 Preprint now on bioRxiv:  
 Dsuite - fast D-statistics and related admixture evidence from VCF files  
-Milan Malinsky, Michael Matschiner,  and Hannes Svardal
+Milan Malinsky, Michael Matschiner,  and Hannes Svardal 
 bioRxiv 634477; doi: https://doi.org/10.1101/634477  
 Malawi cichlid data used in the manuscript:
 [VCF file](http://cichlid.gurdon.cam.ac.uk/Malinsky_et_al_2018_LakeMalawiCichlids_scaffold_0.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/sets.txt)<br>
@@ -93,7 +93,7 @@ The above should work on both mac and linux. Note that there is no text (not eve
 
 
 ## Commands (v0.4):
-### Dsuite Dtrios - Calculate the D (ABBA-BABA) and f4-ratio (f_G) statistics for all possible trios of populations/species
+### Dsuite Dtrios - Calculate the D (ABBA-BABA) and f4-ratio statistics for all possible trios of populations/species
 ```
 Usage: Dsuite Dtrios [OPTIONS] INPUT_FILE.vcf SETS.txt
 
@@ -195,6 +195,27 @@ optional arguments:
 
 Running `dtools.py` yields a .png and an .svg file of the f-branch statistic along the input tree. You can edit the .svg file in a vector graphics editor (e.g., [inkscape](https://inkscape.org/) to your liking). See [Malinsky et al. 2018](https://www.nature.com/articles/s41559-018-0717-x) Fig. 3 and the Dsuite preprint biorxiv for examples and interpretation of f-branch plots.
 
+### (experimental) Dsuite Dquartets - Calculate the D (ABBA-BABA) and f4-ratio statistics for all possible quartets of populations/species (no outgroup)
+```
+Usage: Dsuite Dquartets [OPTIONS] INPUT_FILE.vcf SETS.txt
+Calculate the D (ABBA/BABA) and f4-ratio (f_G) statistics for all quartets of species in the dataset (there is no outgroup)
+The results are as definded in Patterson et al. 2012
+The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID
+
+-h, --help                              display this help and exit
+-k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset
+-j, --JKwindow                          (default=NA) Jackknife block size in number of informative SNPs (as used in v0.2)
+                                        when specified, this is used in place of the --JKnum option
+-r, --region=start,length               (optional) only process a subset of the VCF file
+-t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species
+                                        D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix
+-o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written
+                                        output will be put in OUT_FILE_PREFIX_BBAA.txt, OUT_FILE_PREFIX_Dmin.txt, OUT_FILE_PREFIX_tree.txt etc.
+                                        by default, the prefix is taken from the name of the SETS.txt file
+-n, --run-name                          (optional; default=quartets) run-name will be included in the output file name after the PREFIX
+--no-f4-ratio                           (optional) don't calculate the f4-ratio
+-l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe
+```
 
 ## Change log:
 
