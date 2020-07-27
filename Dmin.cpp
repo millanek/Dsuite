@@ -15,7 +15,7 @@
 
 static const char *DMIN_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] INPUT_FILE.vcf SETS.txt\n"
-"Calculate the D (ABBA/BABA) and f4-ratio (f_G) statistics for all trios of species in the dataset (the outgroup being fixed)\n"
+"Calculate the D (ABBA/BABA) and f4-ratio statistics for all trios of species in the dataset (the outgroup being fixed)\n"
 "The results are as definded in Patterson et al. 2012 (equivalent to Durand et al. 2011 when the Outgroup is fixed for the ancestral allele)\n"
 "The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID\n"
 "The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID\n"

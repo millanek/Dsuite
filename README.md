@@ -22,7 +22,7 @@ Experimental:
            Dquartets               Calculate D (ABBA-BABA) and f4-ratio statistics for all possible quartets of populations/species
                                    (no outgroup specified)
 
-Examples:
+Usage:
 a) Dsuite Dtrios [OPTIONS] INPUT_FILE.vcf SETS.txt
 b) Dsuite Dquartets [OPTIONS] INPUT_FILE.vcf SETS.txt
 c) Dsuite Dinvestigate [OPTIONS] INPUT_FILE.vcf.gz SETS.txt test_trios.txt
@@ -31,7 +31,7 @@ d) Dsuite Fbranch [OPTIONS] TREE_FILE.nwk FVALS_tree.txt
 
 ## Input files:
 ### Required files:
-1. A [VCF](http://www.internationalgenome.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-40/) file, which can be compressed with gzip or bgzip. It can contain multiallelic loci and indels, but only biallelic loci will be used.
+1. A [VCF](http://www.internationalgenome.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-40/) file, which can be compressed with gzip or bgzip. It can contain multiallelic loci and indels, but only biallelic SNPs will be used.
 2. Population/species map `SETS.txt`: a text file with one individual per row and a tab separating the individual’s name from the name of the species/population it belongs to, as shown below:
 ```
 Ind1    Species1
