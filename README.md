@@ -5,7 +5,7 @@ Milan Malinsky, Michael Matschiner,  and Hannes Svardal
 bioRxiv 634477; doi: https://doi.org/10.1101/634477  
 Malawi cichlid data used in the manuscript:
 [VCF file](http://cichlid.gurdon.cam.ac.uk/Malinsky_et_al_2018_LakeMalawiCichlids_scaffold_0.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/sets.txt)<br>
-Simulated 20-species data used in the manuscript: [VCF file](http://cichlid.gurdon.cam.ac.uk/sim_dsuite_20species_5gene-flowF_all.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/s20_sets.txt); [TREE_FILE.nwk](http://cichlid.gurdon.cam.ac.uk/sim_input_tree_raw_dsuite_20species_5gene-flow_1.newickt) (input tree)
+Simulated 20-species data used in the manuscript: [VCF file](http://cichlid.gurdon.cam.ac.uk/sim_dsuite_20species_5gene-flowF_all.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/s20_sets.txt); [TREE_FILE.nwk](http://cichlid.gurdon.cam.ac.uk/sim_input_tree_raw_dsuite_20species_5gene-flow_1.newick) (input tree)
 
 There is also a very nice and detailed [tutorial](https://github.com/mmatschiner/tutorials/tree/master/analysis_of_introgression_with_snp_data) by [@mmatschiner](https://github.com/mmatschiner).
 
