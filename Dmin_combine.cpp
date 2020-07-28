@@ -102,7 +102,7 @@ int DminCombineMain(int argc, char** argv) {
     
     getline(*dminBBAAscoreFiles[0], line); std::vector<string> patternCounts = split(line, '\t');
     if (patternCounts.size() == 12) fIncluded = true;
-    string header = makeHeader(fIncluded);
+    string header = makeHeader(false,fIncluded);
     *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
     if (opt::treeFile != "") *outFileTree << header << std::endl;
     dminBBAAscoreFiles[0]->seekg(0, dminBBAAscoreFiles[0]->beg); // Go back to the beginning of this file
