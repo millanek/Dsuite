@@ -8,9 +8,9 @@
 
 #include "Dsuite_utils.h"
 
-double normalCDF(double x) // Phi(-∞, x) aka N(x)
+long double normalCDF(double x) // Phi(-∞, x) aka N(x)
 {
-    return erfc(-x/std::sqrt(2))/2;
+    return erfcl(-x/std::sqrt(2))/2;
 }
 
 double Fd_Denom_perVariant(double p1, double p2, double p3, double pO) {

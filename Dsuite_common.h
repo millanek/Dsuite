@@ -12,7 +12,7 @@
 #include "Dsuite_utils.h"
 
 void process_SETS_file(std::ifstream* setsFile, const string fName, std::map<string, std::vector<string>>& speciesToIDsMap, std::map<string, string>& IDsToSpeciesMap, int outgroupRequirement);
-string makeHeader(bool includeFstats);
+string makeHeader(bool quartet, bool includeFstats);
 string prepareOutFileRootString(const string& providedPrefix, const string& runName, const string& setsFileName, const int regionStart, const int regionLength);
 
 #endif /* Dsuite_common_h */

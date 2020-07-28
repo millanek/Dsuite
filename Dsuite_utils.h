@@ -43,7 +43,7 @@ double* calculateThreeDs(double ABBAtotal, double BABAtotal, double BBAAtotal);
 double Fd_Denom_perVariant(double p1, double p2, double p3, double pO);
 double fG_Denom_perVariant(double p1, double p3a, double p3b, double pO);
 double FdM_Denom_perVariant(double p1, double p2, double p3, double pO);
-double normalCDF(double x);
+long double normalCDF(double x);
 double stringToDouble(std::string s);
 std::string stripExtension(const std::string& filename);
 std::vector<std::string> split2(std::string s, string delim);
@@ -239,7 +239,7 @@ public:
     
     // string P1; string P2; string P3;
     double ABBAtotal; double BABAtotal; double BBAAtotal;
-    double D1; double D2; double D3; double D1_p; double D2_p; double D3_p; double D1_Z; double D2_Z; double D3_Z;
+    double D1; double D2; double D3; long double D1_p; long double D2_p; long double D3_p; double D1_Z; double D2_Z; double D3_Z;
     double F_d_denom1; double F_d_denom1_reversed; double F_dM_denom1; double F_dM_denom1_reversed; double F_G_denom1; double F_G_denom1_reversed;
     double F_d_denom2; double F_d_denom2_reversed; double F_dM_denom2; double F_dM_denom2_reversed; double F_G_denom2; double F_G_denom2_reversed;
     double F_d_denom3; double F_d_denom3_reversed; double F_dM_denom3; double F_dM_denom3_reversed; double F_G_denom3; double F_G_denom3_reversed;

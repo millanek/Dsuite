@@ -372,7 +372,7 @@ int DminMain(int argc, char** argv) {
     }
     std::cerr << "Done processing VCF. Preparing output files..." << '\n';
     
-    string header = makeHeader(opt::fStats);
+    string header = makeHeader(false, opt::fStats);
     *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
     if (opt::treeFile != "") *outFileTree << header << std::endl;
     
