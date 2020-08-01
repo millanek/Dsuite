@@ -39,12 +39,14 @@ static const char *DMIN_USAGE_MESSAGE =
 "       -n, --run-name                          (optional) run-name will be included in the output file name after the PREFIX\n"
 "       --no-f4-ratio                           (optional) don't calculate the f4-ratio\n"
 "       -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe\n"
+"       -g, --use-genotype-probabilities        (optional) use probabilities (GP tag) or calculate them from likelihoods (GL or PL tags) using a Hardy-Weinberg prior\n"
+"                                               the probabilities are used to estimate allele frequencies in each population/species\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
 enum { OPT_NO_F4 };
-static const char* shortopts = "hr:n:t:j:fpk:l:o:";
+static const char* shortopts = "hr:n:t:j:fpk:l:o:g";
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
@@ -55,6 +57,7 @@ static const struct option longopts[] = {
     { "JKnum",   required_argument, NULL, 'k' },
     { "help",   no_argument, NULL, 'h' },
     { "no-f4-ratio",   no_argument, NULL, OPT_NO_F4 },
+    { "use-genotype-probabilities", no_argument, NULL, 'g'},
     { NULL, 0, NULL, 0 }
 };
 
@@ -72,6 +75,7 @@ namespace opt
     static int providedNumLines = -1;
     static bool fStats = true;
     static bool Patterson = true;
+    static bool useGenotypeProbabilities = false;
 }
 
 
@@ -256,27 +260,61 @@ int DminMain(int argc, char** argv) {
             if (opt::fStats)  {
                 GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(speciesToPosMap, (int)genotypes.size());
                 c->getSplitCounts(genotypes, posToSpeciesMap);
+                if (opt::useGenotypeProbabilities) {
+                    int likelihoodsOrProbabilitiesTagPosition = c->checkForGenotypeLikelihoodsOrProbabilities(fields);
+                    c->getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
+                }
                 p_O = c->setDAFs.at("Outgroup"); if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
-                for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                if (opt::useGenotypeProbabilities) {
+                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
                     try {
-                        allPs[i] = c->setDAFs.at(species[i]);
-                        allSplit1Ps[i] = c->setAAFsplit1.at(species[i]);
-                        allSplit2Ps[i] = c->setAAFsplit2.at(species[i]);
-                        allSplit1Counts[i] = c->setAlleleCountsSplit1.at(species[i]);
-                        allSplit2Counts[i] = c->setAlleleCountsSplit2.at(species[i]);
+                            allPs[i] = c->setDAFsFromLikelihoods.at(species[i]);
+                            allSplit1Ps[i] = c->setDAFsplit1fromLikelihoods.at(species[i]);
+                            allSplit2Ps[i] = c->setDAFsplit2fromLikelihoods.at(species[i]);
+                            allSplit1Counts[i] = c->setAlleleCountsSplit1fromLikelihoods.at(species[i]);
+                            allSplit2Counts[i] = c->setAlleleCountsSplit2fromLikelihoods.at(species[i]);
+                    } catch (const std::out_of_range& oor) {
+                    std::cerr << "Counts are missing some info for " << species[i] << std::endl;
+                    }
+                    }
+                   // print_vector(allPs, std::cerr);
+                } else {
+                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                    try {
+                        //} else {
+                            allPs[i] = c->setDAFs.at(species[i]);
+                            allSplit1Ps[i] = c->setDAFsplit1.at(species[i]);
+                            allSplit2Ps[i] = c->setDAFsplit2.at(species[i]);
+                            allSplit1Counts[i] = c->setAlleleCountsSplit1.at(species[i]);
+                            allSplit2Counts[i] = c->setAlleleCountsSplit2.at(species[i]);
+                        //}
                     } catch (const std::out_of_range& oor) {
                         std::cerr << "Counts are missing some info for " << species[i] << std::endl;
-                    }
+                    }}
+                    //print_vector(allPs, std::cerr);
                 }
                 delete c;
             } else {
-                GeneralSetCounts* c = (GeneralSetCountsWithSplits*) new GeneralSetCounts(speciesToPosMap, (int)genotypes.size());
-                c->getSetVariantCounts(genotypes, posToSpeciesMap);
-                p_O = c->setDAFs.at("Outgroup"); if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
-                for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
-                    allPs[i] = c->setDAFs.at(species[i]);
+                GeneralSetCounts* c2 = (GeneralSetCountsWithSplits*) new GeneralSetCounts(speciesToPosMap, (int)genotypes.size());
+                c2->getSetVariantCounts(genotypes, posToSpeciesMap);
+                if (opt::useGenotypeProbabilities) {
+                    int likelihoodsOrProbabilitiesTagPosition = c2->checkForGenotypeLikelihoodsOrProbabilities(fields);
+                    c2->getAFsFromGenotypeLikelihoodsOrProbabilities(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
                 }
-                delete c;
+                p_O = c2->setDAFs.at("Outgroup"); if (p_O == -1) { delete c2; continue; } // We need to make sure that the outgroup is defined
+                if (opt::useGenotypeProbabilities) {
+                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                            allPs[i] = c2->setDAFsFromLikelihoods.at(species[i]);
+                    }
+                 // print_vector(allPs, std::cerr);
+                } else {
+                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                            allPs[i] = c2->setDAFs.at(species[i]);
+                    }
+                //print_vector(allPs, std::cerr);
+                //exit(1);
+                }
+                delete c2;
             }
             genotypes.clear(); genotypes.shrink_to_fit();
             durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
@@ -451,6 +489,7 @@ void parseDminOptions(int argc, char** argv) {
             case 'k': arg >> opt::jkNum; break;
             case OPT_NO_F4: opt::fStats = false; break;
             case 'p': opt::Patterson = true; break;
+            case 'g': opt::useGenotypeProbabilities = true; break;
             case 'l': arg >> opt::providedNumLines; break;
             case 'o': arg >> opt::providedOutPrefix; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');

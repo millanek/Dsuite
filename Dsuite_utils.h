@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <time.h>
 #include <regex>
+#include <algorithm>
 #include "gzstream.h"
 
 #define PROGRAM_BIN "Dsuite"
@@ -34,6 +35,15 @@
 #define OutgroupNotRequired 0
 #define OutgroupRequired 1
 
+#define LikelihoodsProbabilitiesAbsent 0
+#define LikelihoodsProbabilitiesGP 1
+#define LikelihoodsProbabilitiesGL 2
+#define LikelihoodsProbabilitiesPL 3
+
+#define AncestralAlleleMissing -1
+#define AncestralAlleleRef 0
+#define AncestralAlleleAlt 1
+
 using std::string;
 // VCF format constant
 static const int NUM_NON_GENOTYPE_COLUMNS=9;  // 8 mendatory columns + 1 column with definition of the genotype columns
@@ -48,6 +58,7 @@ double stringToDouble(std::string s);
 std::string stripExtension(const std::string& filename);
 std::vector<std::string> split2(std::string s, string delim);
 std::vector<std::string> split(const std::string &s, char delim);
+std::vector<double> splitToDouble(const std::string &s, char delim);
 std::vector<size_t> locateSet(std::vector<std::string>& sample_names, const std::vector<std::string>& set);
 std::istream* createReader(const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
 std::ostream* createWriter(const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
@@ -171,11 +182,14 @@ template <class T> double jackknive_std_err(T& vector) {
 
 class GeneralSetCounts {
 public:
-    GeneralSetCounts(const std::map<string, std::vector<size_t>>& setsToPosMap, const int nSamples) : overall(0) {
+    GeneralSetCounts(const std::map<string, std::vector<size_t>>& setsToPosMap, const int nSamples) : overall(0), averageAAF(-1.0), averageDAF(-1.0),  likelihoodsProbabilitiesType(LikelihoodsProbabilitiesAbsent), AAint(AncestralAlleleMissing) {
         for(std::map<string, std::vector<size_t>>::const_iterator it = setsToPosMap.begin(); it != setsToPosMap.end(); ++it) {
-            setAltCounts[it->first] = 0; setAlleleCounts[it->first] = 0;
+            setAltCounts[it->first] = 0; setAlleleCounts[it->first] = 0; setAlleleProbCounts[it->first] = 0;
             setAAFs[it->first] = -1.0; setDAFs[it->first] = -1.0;
+            setAAFsFromLikelihoods[it->first] = -1.0; setDAFsFromLikelihoods[it->first] = -1.0;
             setSizes.push_back(it->second.size());
+            setHWEpriorsFromAAFfromGT[it->first].assign(3, -1.0);
+            setHWEpriorsFromDAFfromGT[it->first].assign(3, -1.0);
         }
         individualsWithVariant.assign(nSamples, 0);
     };
@@ -183,18 +197,34 @@ public:
     void getSetVariantCountsSimple(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
     void getSetVariantCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
     
-    int overall;
+    int checkForGenotypeLikelihoodsOrProbabilities(const std::vector<std::string>& vcfLineFields);
+    void getAFsFromGenotypeLikelihoodsOrProbabilities(const std::vector<std::string>& genotypeFields, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition);
+    
+    int overall; int AAint;
     std::map<string,int> setAltCounts;
     std::map<string,int> setAlleleCounts; // The number of non-missing alleles for this set
+    std::map<string,int> setAlleleProbCounts; // The number of non-missing alleles for this set in terms of likelihoods/probabilities
     std::vector<size_t> setSizes;
-    std::map<string,double> setAAFs; // Allele frequencies - alternative allele
-    std::map<string,double> setDAFs; // Allele frequencies - derived allele
+    std::map<string,double> setAAFs; double averageAAF; // Allele frequencies - alternative allele
+    std::map<string,double> setDAFs; double averageDAF;// Allele frequencies - derived allele
+    std::map<string,double> setAAFsFromLikelihoods; double averageAAFFromLikelihoods; // Allele frequencies - alternative allele
+    std::map<string,double> setDAFsFromLikelihoods; double averageDAFFromLikelihoods;// Allele frequencies - derived allele
     std::vector<int> individualsWithVariant; // 0 homRef, 1 het, 2 homAlt
+    int likelihoodsProbabilitiesType;
     // std::vector<int> set1individualsWithVariant; std::vector<int> set2individualsWithVariant;
     // std::vector<int> set3individualsWithVariant; std::vector<int> set4individualsWithVariant;
     
+
+    int returnFormatTagPosition(std::vector<std::string>& format, const std::string& tag);
+    void setHWEpriorsFromAFfromGT();
+    std::vector<double> probabilitiesFromLikelihoods(const std::vector<double>& thisLikelihoods, const string& species);
+    std::map<string,std::vector<double> > setHWEpriorsFromAAFfromGT;
+    std::map<string,std::vector<double> > setHWEpriorsFromDAFfromGT;
+    
 private:
     void getBasicCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
+    
+    
 };
 
 // Split sets for the f_G statistic
@@ -204,6 +234,11 @@ public:
         for(std::map<string, std::vector<size_t>>::const_iterator it = setsToPosMap.begin(); it != setsToPosMap.end(); ++it) {
             setAAFsplit1[it->first] = -1.0; setAAFsplit2[it->first] = -1.0; setDAFsplit1[it->first] = -1.0; setDAFsplit2[it->first] = -1.0;
             setAlleleCountsSplit1[it->first] = 0; setAlleleCountsSplit2[it->first] = 0; setAltCountsSplit1[it->first] = 0; setAltCountsSplit2[it->first] = 0;
+            
+            setAAFsplit1fromLikelihoods[it->first] = -1.0; setAAFsplit2fromLikelihoods[it->first] = -1.0; setDAFsplit1fromLikelihoods[it->first] = -1.0;
+            setDAFsplit2fromLikelihoods[it->first] = -1.0; setAlleleCountsSplit1fromLikelihoods[it->first] = 0;
+            setAlleleCountsSplit2fromLikelihoods[it->first] = 0; 
+
         }
     }
     std::map<string,int> setAltCountsSplit1;
@@ -215,6 +250,15 @@ public:
     std::map<string,int> setAlleleCountsSplit1; // The number of non-missing alleles for the complement of this set
     std::map<string,int> setAlleleCountsSplit2;
     
+
+    std::map<string,double> setAAFsplit1fromLikelihoods; // Allele frequencies - alternative allele
+    std::map<string,double> setAAFsplit2fromLikelihoods; //
+    std::map<string,double> setDAFsplit1fromLikelihoods; // Allele frequencies - derived allele, in the complement of the set
+    std::map<string,double> setDAFsplit2fromLikelihoods;
+    std::map<string,int> setAlleleCountsSplit1fromLikelihoods; // The number of non-missing alleles for the complement of this set
+    std::map<string,int> setAlleleCountsSplit2fromLikelihoods;
+    
+    void getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(const std::vector<std::string>& genotypeFields, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition);
     void getSplitCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
 
 private:

@@ -215,9 +215,9 @@ void doAbbaBaba() {
                 double F_G_denom = 0; double F_G_num = 0;
                 if (c_S3a > 0 && c_S3b > 0) {
                     //std::cerr << "Here" << std::endl;
-                    double p_S3a; try { p_S3a = c->setAAFsplit1.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
+                    double p_S3a; try { p_S3a = c->setDAFsplit1.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
                     { std::cerr << "Counts don't contain derived allele frequency for split 1 of " << testTrios[i][2] << std::endl; }
-                    double p_S3b; try { p_S3b = c->setAAFsplit2.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
+                    double p_S3b; try { p_S3b = c->setDAFsplit2.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
                     { std::cerr << "Counts don't contain derived allele frequency for split 2 of " << testTrios[i][2] << std::endl; }
                     F_G_num = ABBA - BABA;
                     F_G_denom = ((1-p_S1)*p_S3a*p_S3b*(1-p_O)) - (p_S1*(1-p_S3a)*p_S3b*(1-p_O));
