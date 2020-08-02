@@ -360,7 +360,7 @@ public:
     
     std::vector<string> makeOutVec(const std::vector<string>& trio, const bool fStats, const int arrangement) {
         
-        std::vector<string> outVec; if (fStats) outVec.resize(10); else outVec.resize(9);
+        std::vector<string> outVec; if (fStats) outVec.resize(10); else outVec.resize(9); double f4ratio;
         int patternsI; if (fStats) patternsI = 7; else patternsI = 6; // Where will be put the BBAA, ABBA, etc. counts
         
         switch (arrangement) {
@@ -372,16 +372,14 @@ public:
                 outVec[0] = trio[0]; outVec[1] = trio[1];
                 outVec[patternsI+1] = numToString(ABBAtotal); outVec[patternsI+2] = numToString(BABAtotal);
                 if (fStats) {
-                    double Dnum = ABBAtotal-BABAtotal;
-                    outVec[6] = numToString(Dnum/F_G_denom1);
+                    double Dnum = ABBAtotal-BABAtotal; f4ratio = Dnum/F_G_denom1;
                    
                 }
             } else {
                 outVec[0] = trio[1]; outVec[1] = trio[0];
                 outVec[patternsI+1] = numToString(BABAtotal); outVec[patternsI+2] = numToString(ABBAtotal);
                 if (fStats) {
-                    double Dnum = BABAtotal-ABBAtotal;
-                    outVec[6] = numToString(Dnum/F_G_denom1_reversed);
+                    double Dnum = BABAtotal-ABBAtotal; f4ratio = Dnum/F_G_denom1_reversed;
                 }
             } break;
                 
@@ -392,17 +390,16 @@ public:
                 outVec[0] = trio[0]; outVec[1] = trio[2];
                 outVec[patternsI+1] = numToString(ABBAtotal); outVec[patternsI+2] = numToString(BBAAtotal);
                 if (fStats) {
-                    double Dnum = ABBAtotal - BBAAtotal;
-                    outVec[6] = numToString(Dnum/F_G_denom2);
+                    double Dnum = ABBAtotal - BBAAtotal; f4ratio = Dnum/F_G_denom2;
                 }
             } else {
                 outVec[0] = trio[2]; outVec[1] = trio[0];
                 outVec[patternsI+1] = numToString(BBAAtotal); outVec[patternsI+2] = numToString(ABBAtotal);
                 if (fStats) {
-                    double Dnum = BBAAtotal - ABBAtotal;
-                    outVec[6] = numToString(Dnum/F_G_denom2_reversed);
+                    double Dnum = BBAAtotal - ABBAtotal; f4ratio = Dnum/F_G_denom2_reversed;
                 }
-            } break;
+            }
+        break;
                 
         case P3isTrios0:
             outVec[2] = trio[0]; outVec[3] = numToString(std::fabs(D3)); outVec[4] = numToString(D3_Z);
@@ -411,19 +408,18 @@ public:
                 outVec[0] = trio[2]; outVec[1] = trio[1];
                 outVec[patternsI+1] = numToString(BBAAtotal); outVec[patternsI+2] = numToString(BABAtotal);
                 if (fStats) {
-                    double Dnum = BBAAtotal - BABAtotal;
-                    outVec[6] = numToString(Dnum/F_G_denom3);
+                    double Dnum = BBAAtotal - BABAtotal; f4ratio = Dnum/F_G_denom3;
                 }
             } else {
                 outVec[0] = trio[1]; outVec[1] = trio[2];
                 outVec[patternsI+1] = numToString(BABAtotal); outVec[patternsI+2] = numToString(BBAAtotal);
                 if (fStats) {
-                    double Dnum = BABAtotal - BBAAtotal;
-                    outVec[6] = numToString(Dnum/F_G_denom3_reversed);
+                    double Dnum = BABAtotal - BBAAtotal; f4ratio = Dnum/F_G_denom3_reversed;
                 }
             } break;
                 
         }
+        if (fStats) { if (f4ratio < 0) { f4ratio = 0; }  outVec[6] = numToString(f4ratio); }
         return outVec;
     }
     
