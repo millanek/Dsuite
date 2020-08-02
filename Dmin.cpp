@@ -41,15 +41,18 @@ static const char *DMIN_USAGE_MESSAGE =
 "       -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe\n"
 "       -g, --use-genotype-probabilities        (optional) use probabilities (GP tag) or calculate them from likelihoods (GL or PL tags) using a Hardy-Weinberg prior\n"
 "                                               the probabilities are used to estimate allele frequencies in each population/species\n"
+"       -c, --no-combine                        (optional) do not output the \"_combine.txt\" and \"_combine_stderr.txt\" files\n"
+"                                               these are needed only for DtriosCombine\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
 enum { OPT_NO_F4 };
-static const char* shortopts = "hr:n:t:j:fpk:l:o:g";
+static const char* shortopts = "hr:n:t:j:fpk:l:o:gc";
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
+    { "no-combine",   required_argument, NULL, 'c' },
     { "out-prefix",   required_argument, NULL, 'o' },
     { "region",   required_argument, NULL, 'r' },
     { "tree",   required_argument, NULL, 't' },
@@ -76,6 +79,7 @@ namespace opt
     static bool fStats = true;
     static bool Patterson = true;
     static bool useGenotypeProbabilities = false;
+    static bool combine = true;
 }
 
 
@@ -120,8 +124,8 @@ int DminMain(int argc, char** argv) {
 
     std::ofstream* outFileBBAA = new std::ofstream(outFileRoot+"_BBAA.txt");
     std::ofstream* outFileDmin = new std::ofstream(outFileRoot+"_Dmin.txt");
-    std::ofstream* outFileCombine = new std::ofstream(outFileRoot+"_combine.txt");
-    std::ofstream* outFileCombineStdErr = new std::ofstream(outFileRoot+"_combine_stderr.txt");
+    std::ofstream* outFileCombine; if (opt::combine) outFileCombine = new std::ofstream(outFileRoot+"_combine.txt");
+    std::ofstream* outFileCombineStdErr; if (opt::combine) outFileCombineStdErr = new std::ofstream(outFileRoot+"_combine_stderr.txt");
 
     std::map<string, std::vector<string>> speciesToIDsMap; std::map<string, string> IDsToSpeciesMap;
     std::map<string, std::vector<size_t>> speciesToPosMap; std::map<size_t, string> posToSpeciesMap;
@@ -448,17 +452,18 @@ int DminMain(int argc, char** argv) {
         }
         
         // Output a simple file that can be used for combining multiple local runs:
-        *outFileCombine << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << trioInfos[i].BBAAtotal << "\t" << trioInfos[i].BABAtotal << "\t" << trioInfos[i].ABBAtotal;
-        if (opt::fStats) {
-            *outFileCombine << "\t" << trioInfos[i].F_G_denom1 << "\t" << trioInfos[i].F_G_denom2 << "\t" << trioInfos[i].F_G_denom3;
-            *outFileCombine << "\t" << trioInfos[i].F_G_denom1_reversed << "\t" << trioInfos[i].F_G_denom2_reversed << "\t" << trioInfos[i].F_G_denom3_reversed;
-            *outFileCombine << std::endl;
-        } else {
-            *outFileCombine << std::endl;
+        if (opt::combine) {
+            *outFileCombine << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << trioInfos[i].BBAAtotal << "\t" << trioInfos[i].BABAtotal << "\t" << trioInfos[i].ABBAtotal;
+            if (opt::fStats) {
+                *outFileCombine << "\t" << trioInfos[i].F_G_denom1 << "\t" << trioInfos[i].F_G_denom2 << "\t" << trioInfos[i].F_G_denom3;
+                *outFileCombine << "\t" << trioInfos[i].F_G_denom1_reversed << "\t" << trioInfos[i].F_G_denom2_reversed << "\t" << trioInfos[i].F_G_denom3_reversed;
+                *outFileCombine << std::endl;
+            } else {
+                *outFileCombine << std::endl;
+            }
+            print_vector(trioInfos[i].regionDs[0], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t"; print_vector(trioInfos[i].regionDs[1], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t";
+            print_vector(trioInfos[i].regionDs[2], *outFileCombineStdErr, ',',false); *outFileCombineStdErr << std::endl;
         }
-        print_vector(trioInfos[i].regionDs[0], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t"; print_vector(trioInfos[i].regionDs[1], *outFileCombineStdErr, ',', false); *outFileCombineStdErr << "\t";
-        print_vector(trioInfos[i].regionDs[2], *outFileCombineStdErr, ',',false); *outFileCombineStdErr << std::endl;
-        
         //std::cerr << trios[i][0] << "\t" << trios[i][1] << "\t" << trios[i][2] << "\t" << D1 << "\t" << D2 << "\t" << D3 << "\t" << BBAAtotals[i] << "\t" << BABAtotals[i] << "\t" << ABBAtotals[i] << std::endl;
     }
     if (exceptionCount > 10) {
@@ -489,6 +494,7 @@ void parseDminOptions(int argc, char** argv) {
             case 'k': arg >> opt::jkNum; break;
             case OPT_NO_F4: opt::fStats = false; break;
             case 'p': opt::Patterson = true; break;
+            case 'c': opt::combine = false; break;
             case 'g': opt::useGenotypeProbabilities = true; break;
             case 'l': arg >> opt::providedNumLines; break;
             case 'o': arg >> opt::providedOutPrefix; break;

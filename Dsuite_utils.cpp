@@ -111,6 +111,13 @@ void transformFromPhred(std::vector<double>& thisLikelihoods) {
     thisLikelihoods[2] = pow(10,-(thisLikelihoods[2]/10.0));
 }
 
+void transformFromGL(std::vector<double>& thisLikelihoods) {
+
+    thisLikelihoods[0] = pow(10,(thisLikelihoods[0]/10.0));
+    thisLikelihoods[1] = pow(10,(thisLikelihoods[1]/10.0));
+    thisLikelihoods[2] = pow(10,(thisLikelihoods[2]/10.0));
+}
+
 std::vector<double> GeneralSetCounts::probabilitiesFromLikelihoods(const std::vector<double>& thisLikelihoods, const string& species) {
     std::vector<double> thisProbabilities; thisProbabilities.assign(3, 0.0);
     double multiple0 = thisLikelihoods[0]*setHWEpriorsFromAAFfromGT[species][0];
@@ -170,7 +177,9 @@ void GeneralSetCounts::getAFsFromGenotypeLikelihoodsOrProbabilities(const std::v
                    // print_vector(thisLikelihoodsOrProbabilities, std::cerr);
                     thisProbabilities = probabilitiesFromLikelihoods(thisLikelihoodsOrProbabilities,species);
                     break;
-                case LikelihoodsProbabilitiesGL: break;
+                case LikelihoodsProbabilitiesGL: transformFromGL(thisLikelihoodsOrProbabilities);
+                    thisProbabilities = probabilitiesFromLikelihoods(thisLikelihoodsOrProbabilities,species);
+                    break;
                 case LikelihoodsProbabilitiesGP:
                     thisProbabilities = thisLikelihoodsOrProbabilities;
                     break;
