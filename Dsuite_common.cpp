@@ -34,7 +34,7 @@ void process_SETS_file(std::ifstream* setsFile, const string fName, std::map<str
 
 string makeHeader(bool quartet, bool includeFstats) {
     string header = "P1\tP2\tP3"; if (quartet) header += "\tP4";
-    header += "\tDstatistic\tZ-score\tp-value"; if (includeFstats) header += "\tf4-ratio";
+    header += "\tDstatistic\tZ-score\tp-value"; if (includeFstats) { header += "\t"; header += F4HEADER; }
     header += "\tBBAA\tABBA\tBABA";
     return header;
 }

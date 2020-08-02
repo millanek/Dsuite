@@ -25,6 +25,7 @@
 #define PROGRAM_BIN "Dsuite"
 #define PACKAGE_BUGREPORT "milan.malinsky@unibas.ch"
 #define GZIP_EXT ".gz"
+#define F4HEADER "f4-ratio"
 
 #define CHECK_TREE_ERROR_MSG "It seems that this species is in the SETS.txt file but can't be found in the tree. Please check the spelling and completeness of your tree file."
 
