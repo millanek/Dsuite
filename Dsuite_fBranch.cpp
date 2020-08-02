@@ -59,7 +59,7 @@ int fBranchMain(int argc, char** argv) {
     std::vector<string> headerVec = split(line, '\t');
     int indexFg = -1; int indexZ = -1;
     if (headerVec[4] == "Z-score") { indexZ = 4; }
-    if (headerVec[5] == F4HEADER) { indexFg = 5; } else if (headerVec[6] == F4HEADER) { indexFg = 6; }
+    if (headerVec[5] == F4HEADER || headerVec[5] == "f_G") { indexFg = 5; } else if (headerVec[6] == F4HEADER || headerVec[6] == "f_G") { indexFg = 6; }
     while (getline(*DvalsFile, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
         l++; if (line == "") { std::cerr << "Please fix the format of the " << opt::DvalsFile << " file.\nLine " << l << " is empty. Exiting..." << std::endl; exit(EXIT_FAILURE); }
