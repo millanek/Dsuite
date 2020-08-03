@@ -86,6 +86,8 @@ int GeneralSetCounts::returnFormatTagPosition(std::vector<std::string>& format, 
 
 int GeneralSetCounts::checkForGenotypeLikelihoodsOrProbabilities(const std::vector<std::string>& vcfLineFields) {
     std::vector<std::string> format = split(vcfLineFields[8], ':');
+    if (format.size() == 1) return LikelihoodsProbabilitiesAbsent; // The GT tag must be present in the first place
+    
     int likelihoodsOrProbabilitiesTagPosition = returnFormatTagPosition(format, "GP");
     if (likelihoodsOrProbabilitiesTagPosition != std::numeric_limits<int>::min()) { likelihoodsProbabilitiesType = LikelihoodsProbabilitiesGP; }
     else {

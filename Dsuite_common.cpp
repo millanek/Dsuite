@@ -45,3 +45,8 @@ string prepareOutFileRootString(const string& providedPrefix, const string& runN
     else fileNameRootString = outRoot+"_"+runName+"_"+numToString(regionStart)+"_"+numToString(regionStart+regionLength);
     return fileNameRootString;
 }
+
+void printMissingLikelihoodsWarning(const string& chr, const string& pos) {
+    std::cerr << "WARNING: Could not fing genotype likelihoods/probabilities (GP, PL, or GL fields) for variant at " << chr << " " << pos << std::endl;
+    std::cerr << "WARNING: Did you really mean to use the -g option? Reverting to using called genotypes." << std::endl;
+}

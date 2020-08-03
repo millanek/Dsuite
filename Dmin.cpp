@@ -196,7 +196,7 @@ int DminMain(int argc, char** argv) {
     else reportProgressEvery = 1000;
     clock_t start; clock_t startGettingCounts; clock_t startCalculation;
     double durationOverall; double durationGettingCounts; double durationCalculation;
-    int JKblockSizeBasedOnNum = 0;
+    int JKblockSizeBasedOnNum = 0; int missingLikelihoodsCount = 0;
     
     while (getline(*vcfFile, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
@@ -266,7 +266,10 @@ int DminMain(int argc, char** argv) {
                 c->getSplitCounts(genotypes, posToSpeciesMap);
                 if (opt::useGenotypeProbabilities) {
                     int likelihoodsOrProbabilitiesTagPosition = c->checkForGenotypeLikelihoodsOrProbabilities(fields);
-                    c->getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
+                    if (likelihoodsOrProbabilitiesTagPosition == LikelihoodsProbabilitiesAbsent) {
+                        printMissingLikelihoodsWarning(fields[0], fields[1]);
+                        opt::useGenotypeProbabilities = false;
+                    } else c->getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
                 }
                 p_O = c->setDAFs.at("Outgroup"); if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
                 if (opt::useGenotypeProbabilities) {
@@ -303,7 +306,10 @@ int DminMain(int argc, char** argv) {
                 c2->getSetVariantCounts(genotypes, posToSpeciesMap);
                 if (opt::useGenotypeProbabilities) {
                     int likelihoodsOrProbabilitiesTagPosition = c2->checkForGenotypeLikelihoodsOrProbabilities(fields);
-                    c2->getAFsFromGenotypeLikelihoodsOrProbabilities(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
+                    if (likelihoodsOrProbabilitiesTagPosition == LikelihoodsProbabilitiesAbsent) {
+                        printMissingLikelihoodsWarning(fields[0], fields[1]);
+                        opt::useGenotypeProbabilities = false;
+                    } else c2->getAFsFromGenotypeLikelihoodsOrProbabilities(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
                 }
                 p_O = c2->setDAFs.at("Outgroup"); if (p_O == -1) { delete c2; continue; } // We need to make sure that the outgroup is defined
                 if (opt::useGenotypeProbabilities) {
