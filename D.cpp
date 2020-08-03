@@ -32,7 +32,7 @@ static const char *ABBA_USAGE_MESSAGE =
 
 //enum { OPT_F_JK };
 
-static const char* shortopts = "hw:n:g:";
+static const char* shortopts = "hw:n:g";
 
 //static const int JK_WINDOW = 5000;
 
