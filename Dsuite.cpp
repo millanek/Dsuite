@@ -12,9 +12,10 @@
 #include "D.h"
 #include "Dmin_combine.h"
 #include "Dsuite_fBranch.h"
+#include "Dquartets.h"
 
 #define AUTHOR "Milan Malinsky"
-#define PACKAGE_VERSION "0.3 r22"
+#define PACKAGE_VERSION "0.4 r34"
 
 
 static const char *VERSION_MESSAGE =
@@ -28,11 +29,15 @@ static const char *USAGE_MESSAGE =
 "Contact: " AUTHOR " [" PACKAGE_BUGREPORT "]\n"
 "Usage: " PROGRAM_BIN " <command> [options]\n\n"
 "Commands:\n"
-"           Dtrios                  Calculate D statistics (ABBA-BABA) for all possible trios of populations/species\n"
+"           Dtrios                  Calculate D (ABBA-BABA) and f4-ratio statistics for all possible trios of populations/species\n"
 "           DtriosCombine           Combine results from Dtrios runs across genomic regions (e.g. per-chromosome)\n"
 "           Dinvestigate            Follow up analyses for trios with significantly elevated D:\n"
-"                                   calculates the f4 statistic, and also f_d and f_dM in windows along the genome\n"
+"                                   calculates f_d, f_dM, and d_f in windows along the genome\n"
 "           Fbranch                 Calculate D and f statistics for branches on a tree that relates the populations/species\n"
+"\n"
+"Experimental:\n"
+"           Dquartets               Calculate D (ABBA-BABA) and f4-ratio statistics for all possible quartets of populations/species\n"
+"                                   (no outgroup specified)\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 int main(int argc, char **argv) {
@@ -64,6 +69,8 @@ int main(int argc, char **argv) {
             DminCombineMain(argc - 1, argv + 1);
         else if (command == "Fbranch")
             fBranchMain(argc - 1, argv + 1);
+        else if (command == "Dquartets")
+            DquartetsMain(argc - 1, argv + 1);
         else
         {
             std::cerr << "Unrecognized command: " << command << "\n";

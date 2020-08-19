@@ -8,9 +8,9 @@
 
 #include "Dsuite_utils.h"
 
-double normalCDF(double x) // Phi(-∞, x) aka N(x)
+long double normalCDF(double x) // Phi(-∞, x) aka N(x)
 {
-    return erfc(-x/std::sqrt(2))/2;
+    return erfcl(-x/std::sqrt(2))/2;
 }
 
 double Fd_Denom_perVariant(double p1, double p2, double p3, double pO) {
@@ -46,26 +46,300 @@ void GeneralSetCounts::getSetVariantCounts(const std::vector<std::string>& genot
     
     // If at least one of the outgroup individuals has non-missing data
     // Find out what is the "ancestral allele" - i.e. the one more common in the outgroup
-    int AAint;
     try {
         if (setAlleleCounts.at("Outgroup") > 0) {
-            if ((double)setAltCounts.at("Outgroup")/setAlleleCounts.at("Outgroup") < 0.5) { AAint = 0; }
-            else { AAint = 1; }
+            if ((double)setAltCounts.at("Outgroup")/setAlleleCounts.at("Outgroup") < 0.5) { AAint = AncestralAlleleRef; }
+            else { AAint = AncestralAlleleAlt; }
         }
-    } catch (std::out_of_range& e) { AAint = -1; }
+    } catch (std::out_of_range& e) { AAint = AncestralAlleleMissing; }
     
     // Now fill in the allele frequencies
+    double totalAAF = 0; double totalDAF = 0; int numNonZeroCounts = 0;
     for(std::map<string,int>::iterator it = setAltCounts.begin(); it != setAltCounts.end(); ++it) {
         if (setAlleleCounts.at(it->first) > 0) {
-            setAAFs[it->first] = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+            numNonZeroCounts++;
+            double thisAAF = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+            setAAFs[it->first] = thisAAF; totalAAF += thisAAF;
             if (AAint == 0) { // Ancestral allele seems to be the ref, so derived is alt
-                setDAFs[it->first] = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+                setDAFs[it->first] = thisAAF; totalDAF += thisAAF;
             } else if (AAint == 1) { // Ancestral allele seems to be alt, so derived is ref
-                setDAFs[it->first] = 1 - ((double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first));
+                setDAFs[it->first] = (1 - thisAAF); totalDAF += (1 - thisAAF);
+            }
+        }
+    }
+    averageAAF = totalAAF/numNonZeroCounts; averageDAF = totalDAF/numNonZeroCounts;
+}
+
+int GeneralSetCounts::returnFormatTagPosition(std::vector<std::string>& format, const std::string& tag) {
+    // Find the position of GQ (genotype quality) in the genotypeData vector below
+    std::vector<std::string>::iterator TAGit; int TAGi = std::numeric_limits<int>::min();
+    TAGit = find (format.begin(), format.end(), tag);
+    if (TAGit == format.end()) {
+        // std::cerr << "This variant hasn't got associated per-sample GQ info" << std::endl;
+    } else {
+        TAGi = (int)std::distance( format.begin(), TAGit );
+        //hasGQ = true;
+    }
+    return TAGi;
+}
+
+
+int GeneralSetCounts::checkForGenotypeLikelihoodsOrProbabilities(const std::vector<std::string>& vcfLineFields) {
+    std::vector<std::string> format = split(vcfLineFields[8], ':');
+    if (format.size() == 1) return LikelihoodsProbabilitiesAbsent; // The GT tag must be present in the first place
+    
+    int likelihoodsOrProbabilitiesTagPosition = returnFormatTagPosition(format, "GP");
+    if (likelihoodsOrProbabilitiesTagPosition != std::numeric_limits<int>::min()) { likelihoodsProbabilitiesType = LikelihoodsProbabilitiesGP; }
+    else {
+        likelihoodsOrProbabilitiesTagPosition = returnFormatTagPosition(format, "GL");
+        if (likelihoodsOrProbabilitiesTagPosition != std::numeric_limits<int>::min()) { likelihoodsProbabilitiesType = LikelihoodsProbabilitiesGL; }
+        else {
+            likelihoodsOrProbabilitiesTagPosition = returnFormatTagPosition(format, "PL");
+            if (likelihoodsOrProbabilitiesTagPosition != std::numeric_limits<int>::min()) { likelihoodsProbabilitiesType = LikelihoodsProbabilitiesPL; }
+        }
+    }
+    return likelihoodsOrProbabilitiesTagPosition;
+}
+
+double getExpectedGenotype(const std::vector<double>& thisProbabilities) {
+    double Egenotype = thisProbabilities[1] + 2*thisProbabilities[2];
+    return Egenotype;
+}
+
+void transformFromPhred(std::vector<double>& thisLikelihoods) {
+
+    thisLikelihoods[0] = pow(10,-(thisLikelihoods[0]/10.0));
+    thisLikelihoods[1] = pow(10,-(thisLikelihoods[1]/10.0));
+    thisLikelihoods[2] = pow(10,-(thisLikelihoods[2]/10.0));
+}
+
+void transformFromGL(std::vector<double>& thisLikelihoods) {
+
+    thisLikelihoods[0] = pow(10,(thisLikelihoods[0]/10.0));
+    thisLikelihoods[1] = pow(10,(thisLikelihoods[1]/10.0));
+    thisLikelihoods[2] = pow(10,(thisLikelihoods[2]/10.0));
+}
+
+std::vector<double> GeneralSetCounts::probabilitiesFromLikelihoods(const std::vector<double>& thisLikelihoods, const string& species) {
+    std::vector<double> thisProbabilities; thisProbabilities.assign(3, 0.0);
+    double multiple0 = thisLikelihoods[0]*setHWEpriorsFromAAFfromGT[species][0];
+    double multiple1 = thisLikelihoods[1]*setHWEpriorsFromAAFfromGT[species][1];
+    double multiple2 = thisLikelihoods[2]*setHWEpriorsFromAAFfromGT[species][2];
+    double sum = multiple0 + multiple1 + multiple2;
+    
+    thisProbabilities[0] = multiple0/sum;
+    thisProbabilities[1] = multiple1/sum;
+    thisProbabilities[2] = multiple2/sum;
+    
+    return thisProbabilities;
+}
+ 
+void GeneralSetCounts::setHWEpriorsFromAFfromGT() {
+    double AF;
+    // Alternative allele frequencies
+    for(std::map<string,double>::iterator it = setAAFs.begin(); it != setAAFs.end(); ++it) {
+        if (it->second >= 0) AF = it->second; else AF = averageAAF; // This should be average of AFs across populations where it is known
+        setHWEpriorsFromAAFfromGT[it->first][0] = pow((1-AF),2);
+        setHWEpriorsFromAAFfromGT[it->first][1] = AF*(1-AF);
+        setHWEpriorsFromAAFfromGT[it->first][2] = pow(AF,2);
+    }
+    // Derived allele frequencies
+    for(std::map<string,double>::iterator it = setDAFs.begin(); it != setDAFs.end(); ++it) {
+        if (it->second >= 0) AF = it->second; else AF = averageDAF; // This should be average of AFs across populations
+        setHWEpriorsFromDAFfromGT[it->first][0] = pow((1-AF),2);
+        setHWEpriorsFromDAFfromGT[it->first][1] = AF*(1-AF);
+        setHWEpriorsFromDAFfromGT[it->first][2] = pow(AF,2);
+    }
+} 
+
+
+
+
+void GeneralSetCounts::getAFsFromGenotypeLikelihoodsOrProbabilities(const std::vector<std::string>& genotypeFields, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition) {
+    if (likelihoodsProbabilitiesType == LikelihoodsProbabilitiesPL || likelihoodsProbabilitiesType == LikelihoodsProbabilitiesGL) {
+        setHWEpriorsFromAFfromGT();
+    }
+    
+    for (std::vector<std::string>::size_type i = 0; i < genotypeFields.size(); i++) {
+        std::string species; try { species = posToSpeciesMap.at(i); } catch (const std::out_of_range& oor) {
+            continue;
+        }
+       // std::cerr << genotypeFields[i] << std::endl;
+        std::string thisLikelihoodsOrProbabilitiesString = split(genotypeFields[i], ':')[likelihoodsOrProbabilitiesTagPosition];
+        if (thisLikelihoodsOrProbabilitiesString == ".") continue;
+        
+        else {
+            setAlleleProbCounts.at(species) += 2;
+            std::vector<double> thisLikelihoodsOrProbabilities = splitToDouble(thisLikelihoodsOrProbabilitiesString,',');
+            std::vector<double> thisProbabilities;
+            switch (likelihoodsProbabilitiesType)
+            {
+                case LikelihoodsProbabilitiesPL:
+                    transformFromPhred(thisLikelihoodsOrProbabilities);
+                   // print_vector(thisLikelihoodsOrProbabilities, std::cerr);
+                    thisProbabilities = probabilitiesFromLikelihoods(thisLikelihoodsOrProbabilities,species);
+                    break;
+                case LikelihoodsProbabilitiesGL: transformFromGL(thisLikelihoodsOrProbabilities);
+                    thisProbabilities = probabilitiesFromLikelihoods(thisLikelihoodsOrProbabilities,species);
+                    break;
+                case LikelihoodsProbabilitiesGP:
+                    thisProbabilities = thisLikelihoodsOrProbabilities;
+                    break;
+            }
+            if (setAAFsFromLikelihoods.at(species) == -1) setAAFsFromLikelihoods.at(species) = 0;
+            setAAFsFromLikelihoods.at(species) += getExpectedGenotype(thisProbabilities);
+        }
+    }
+    
+    for(std::map<string,double>::iterator it = setAAFsFromLikelihoods.begin(); it != setAAFsFromLikelihoods.end(); ++it) {
+        if (setAAFsFromLikelihoods.at(it->first) != -1) {
+            double AF = it->second/setAlleleProbCounts.at(it->first);
+            it->second = AF;
+            if (AAint == AncestralAlleleRef) {
+                setDAFsFromLikelihoods.at(it->first) = AF;
+            } else if (AAint == AncestralAlleleAlt) {
+                setDAFsFromLikelihoods.at(it->first) = (1 - AF);
+            }
+        }
+    }
+     
+}
+
+void GeneralSetCountsWithSplits::getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(const std::vector<std::string>& genotypeFields, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition) {
+ /* if (likelihoodsProbabilitiesType == LikelihoodsProbabilitiesPL || likelihoodsProbabilitiesType == LikelihoodsProbabilitiesGL) {
+      setHWEpriorsFromAFfromGT();
+  }
+  
+  for (std::vector<std::string>::size_type i = 0; i < genotypeFields.size(); i++) {
+      std::string species; try { species = posToSpeciesMap.at(i); } catch (const std::out_of_range& oor) {
+          continue;
+      }
+     // std::cerr << genotypeFields[i] << std::endl;
+      std::string thisLikelihoodsOrProbabilitiesString = split(genotypeFields[i], ':')[likelihoodsOrProbabilitiesTagPosition];
+      if (thisLikelihoodsOrProbabilitiesString == ".") continue;
+      
+      else {
+          setAlleleProbCounts.at(species) += 2;
+          std::vector<double> thisLikelihoodsOrProbabilities = splitToDouble(thisLikelihoodsOrProbabilitiesString,',');
+          std::vector<double> thisProbabilities;
+          switch (likelihoodsProbabilitiesType)
+          {
+              case LikelihoodsProbabilitiesPL:
+                  transformFromPhred(thisLikelihoodsOrProbabilities);
+                 // print_vector(thisLikelihoodsOrProbabilities, std::cerr);
+                  thisProbabilities = probabilitiesFromLikelihoods(thisLikelihoodsOrProbabilities,species);
+                  break;
+              case LikelihoodsProbabilitiesGL: break;
+              case LikelihoodsProbabilitiesGP:
+                  thisProbabilities = thisLikelihoodsOrProbabilities;
+                  break;
+          }
+          if (setAAFsFromLikelihoods.at(species) == -1) setAAFsFromLikelihoods.at(species) = 0;
+          setAAFsFromLikelihoods.at(species) += getExpectedGenotype(thisProbabilities);
+          std::cerr << abs(setAAFsFromLikelihoods.at(species)/setAlleleProbCounts.at(species)) << std::endl;
+          if (abs(setAAFsFromLikelihoods.at(species)/setAlleleProbCounts.at(species)) > 1.0) {
+              std::cerr << "Why is this not printing?" << std::endl;
+              print_vector(thisLikelihoodsOrProbabilities, std::cerr);
+              print_vector(thisProbabilities, std::cerr);
+              print_vector(setHWEpriorsFromAAFfromGT.at(species), std::cerr);
+              std::cerr << "AF from GT: " << setAAFs.at(species) << std::endl;
+          }
+      }
+  }
+  
+  for(std::map<string,double>::iterator it = setAAFsFromLikelihoods.begin(); it != setAAFsFromLikelihoods.end(); ++it) {
+      if (setAAFsFromLikelihoods.at(it->first) != -1) {
+          double AF = it->second/setAlleleProbCounts.at(it->first);
+          if (abs(AF) > 1.0) { std::cerr << "Something funky here: " << AF << std::endl;}
+          it->second = AF;
+          if (AAint == AncestralAlleleRef) {
+              setDAFsFromLikelihoods.at(it->first) = AF;
+          } else if (AAint == AncestralAlleleAlt) {
+              setDAFsFromLikelihoods.at(it->first) = (1 - AF);
+          }
+      }
+  } */
+   
+    
+    if (likelihoodsProbabilitiesType == LikelihoodsProbabilitiesPL || likelihoodsProbabilitiesType == LikelihoodsProbabilitiesGL) {
+        setHWEpriorsFromAFfromGT();
+    }
+    
+    for (std::vector<std::string>::size_type i = 0; i < genotypeFields.size(); i++) {
+        std::string species; try { species = posToSpeciesMap.at(i); } catch (const std::out_of_range& oor) {
+            continue;
+        }
+       // std::cerr << genotypeFields[i] << std::endl;
+        std::string thisLikelihoodsOrProbabilitiesString = split(genotypeFields[i], ':')[likelihoodsOrProbabilitiesTagPosition];
+        if (thisLikelihoodsOrProbabilitiesString == ".") continue;
+        
+        else {
+            setAlleleProbCounts.at(species) += 2;
+            std::vector<double> thisLikelihoodsOrProbabilities = splitToDouble(thisLikelihoodsOrProbabilitiesString,',');
+            std::vector<double> thisProbabilities;
+            switch (likelihoodsProbabilitiesType)
+            {
+                case LikelihoodsProbabilitiesPL:
+                    transformFromPhred(thisLikelihoodsOrProbabilities);
+                 // print_vector(thisLikelihoodsOrProbabilities, std::cerr);
+                    thisProbabilities = probabilitiesFromLikelihoods(thisLikelihoodsOrProbabilities,species);
+                    break;
+                case LikelihoodsProbabilitiesGL: break;
+                case LikelihoodsProbabilitiesGP:
+                    thisProbabilities = thisLikelihoodsOrProbabilities;
+                    break;
+            }
+            if (setAAFsFromLikelihoods.at(species) == -1) setAAFsFromLikelihoods.at(species) = 0;
+            setAAFsFromLikelihoods.at(species) += getExpectedGenotype(thisProbabilities);
+     
+            double r = ((double) rand() / (RAND_MAX));
+            if (r < 0.5) {
+                setAlleleCountsSplit1fromLikelihoods.at(species) += 2;
+                if (setAAFsplit1fromLikelihoods.at(species) == -1) setAAFsplit1fromLikelihoods.at(species) = 0;
+                setAAFsplit1fromLikelihoods.at(species) += getExpectedGenotype(thisProbabilities);
+            } else {
+                setAlleleCountsSplit2fromLikelihoods.at(species) += 2;
+                if (setAAFsplit2fromLikelihoods.at(species) == -1) setAAFsplit2fromLikelihoods.at(species) = 0;
+                setAAFsplit2fromLikelihoods.at(species) += getExpectedGenotype(thisProbabilities);
+            }
+        }
+    } 
+    
+    for(std::map<string,double>::iterator it = setAAFsFromLikelihoods.begin(); it != setAAFsFromLikelihoods.end(); ++it) {
+        if (it->second != -1) {
+            double AF = it->second/setAlleleProbCounts.at(it->first);
+            if (AF > 1) { std::cerr << "Something funky going on: " << it->second << "setAlleleProbCounts.at(it->first): " << setAlleleProbCounts.at(it->first)<< std::endl;}
+            it->second = AF;
+            if (AAint == AncestralAlleleRef) {
+                setDAFsFromLikelihoods.at(it->first) = AF;
+            } else if (AAint == AncestralAlleleAlt) {
+                setDAFsFromLikelihoods.at(it->first) = (1 - AF);
+            }
+            
+            if (setAAFsplit1fromLikelihoods.at(it->first) != -1) {
+                double AFsplit1 = setAAFsplit1fromLikelihoods.at(it->first)/setAlleleCountsSplit1fromLikelihoods.at(it->first);
+                setAAFsplit1fromLikelihoods.at(it->first) = AFsplit1;
+                if (AAint == AncestralAlleleRef) {
+                    setDAFsplit1fromLikelihoods.at(it->first) = AFsplit1;
+                } else if (AAint == AncestralAlleleAlt) {
+                    setDAFsplit1fromLikelihoods.at(it->first) = (1 - AFsplit1);
+                }
+            }
+            
+            if (setAAFsplit2fromLikelihoods.at(it->first) != -1) {
+                double AFsplit2 = setAAFsplit2fromLikelihoods.at(it->first)/setAlleleCountsSplit2fromLikelihoods.at(it->first);
+                setAAFsplit2fromLikelihoods.at(it->first) = AFsplit2;
+                if (AAint == AncestralAlleleRef) {
+                    setDAFsplit2fromLikelihoods.at(it->first) = AFsplit2;
+                } else if (AAint == AncestralAlleleAlt) {
+                    setDAFsplit2fromLikelihoods.at(it->first) = (1 - AFsplit2);
+                }
             }
         }
     }
 }
+
+
 
 // Works only on biallelic markers
 void GeneralSetCounts::getSetVariantCountsSimple(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
@@ -160,22 +434,24 @@ void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& 
     
     // If at least one of the outgroup individuals has non-missing data
     // Find out what is the "ancestral allele" - i.e. the one more common in the outgroup
-    int AAint;
     try {
         if (setAlleleCounts.at("Outgroup") > 0) {
-            if ((double)setAltCounts.at("Outgroup")/setAlleleCounts.at("Outgroup") < 0.5) { AAint = 0; }
-            else { AAint = 1; }
+            if ((double)setAltCounts.at("Outgroup")/setAlleleCounts.at("Outgroup") < 0.5) { AAint = AncestralAlleleRef; }
+            else { AAint = AncestralAlleleAlt; }
         }
     } catch (std::out_of_range& e) { AAint = -1; }
     
     // Now fill in the allele frequencies
+    double totalAAF = 0; int numNonZeroCounts = 0;
     for(std::map<string,int>::iterator it = setAltCounts.begin(); it != setAltCounts.end(); ++it) {
         if (it->first == "") {
             std::cerr << "it->first " << it->first << "\t" << it->second << std::endl;
         }
         if (setAlleleCounts.at(it->first) > 0) {
+            numNonZeroCounts++;
             int nSplit1; int nSplit2;
-            setAAFs[it->first] = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+            double thisAAF = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+            setAAFs[it->first] = thisAAF; totalAAF += thisAAF;
             nSplit1 = setAlleleCountsSplit1.at(it->first); nSplit2 = setAlleleCountsSplit2.at(it->first);
            // std::cerr << "it->first " << it->first << std::endl;
             try {
@@ -183,14 +459,14 @@ void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& 
                 setAAFsplit1[it->first] = (double)setAltCountsSplit1.at(it->first)/nSplit1;
             if (nSplit2 > 0)
                 setAAFsplit2[it->first] = (double)setAltCountsSplit2.at(it->first)/nSplit2;
-            if (AAint == 0) { // Ancestral allele seems to be the ref, so derived is alt
-                setDAFs[it->first] = (double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first);
+            if (AAint == AncestralAlleleRef) { // Ancestral allele seems to be the ref, so derived is alt
+                setDAFs[it->first] = thisAAF;
                 if (nSplit1 > 0)
                     setDAFsplit1[it->first] = (double)setAltCountsSplit1.at(it->first)/nSplit1;
                 if (nSplit2 > 0)
                     setDAFsplit2[it->first] = (double)setAltCountsSplit2.at(it->first)/nSplit2;
-            } else if (AAint == 1) { // Ancestral allele seems to be alt, so derived is ref
-                setDAFs[it->first] = 1 - ((double)setAltCounts.at(it->first)/setAlleleCounts.at(it->first));
+            } else if (AAint == AncestralAlleleAlt) { // Ancestral allele seems to be alt, so derived is ref
+                setDAFs[it->first] = (1 - thisAAF);
                 if (nSplit1 > 0)
                     setDAFsplit1[it->first] = 1 - ((double)setAltCountsSplit1.at(it->first)/nSplit1);
                 if (nSplit2 > 0)
@@ -199,6 +475,9 @@ void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& 
                 } catch (std::out_of_range& e) { std::cerr << "The trouble was here" << it->first << std::endl; }
         }
     }
+    averageAAF = totalAAF/numNonZeroCounts;
+    if (AAint == AncestralAlleleRef) averageDAF = averageAAF;
+    else if (AAint == AncestralAlleleAlt) averageDAF = (1 - averageAAF);
 }
 
 
@@ -257,6 +536,21 @@ void split(const std::string &s, char delim, std::vector<std::string> &elems) {
 std::vector<std::string> split(const std::string &s, char delim) {
     std::vector<std::string> elems;
     split(s, delim, elems);
+    return elems;
+}
+    
+    
+void splitToDouble(const std::string &s, char delim, std::vector<double> &elems) {
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+        elems.push_back(stringToDouble(item));
+    }
+}
+
+std::vector<double> splitToDouble(const std::string &s, char delim) {
+    std::vector<double> elems;
+    splitToDouble(s, delim, elems);
     return elems;
 }
 

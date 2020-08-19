@@ -7,6 +7,7 @@
 //
 
 #include "D.h"
+#include "Dsuite_common.h"
 #include <deque>
 #define SUBPROGRAM "Dinvestigate"
 
@@ -14,15 +15,16 @@
 
 static const char *ABBA_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] INPUT_FILE.vcf.gz SETS.txt test_trios.txt\n"
-"Outputs D, f_d (Martin et al. 2014 MBE), and f_dM (Malinsky et al., 2015) in genomic windows\n"
+"Outputs D, f_d (Martin et al. 2014 MBE), f_dM (Malinsky et al., 2015), and d_f (Pfeifer & Kapan, 2019) in genomic windows\n"
 "The SETS.txt file should have two columns: SAMPLE_ID    POPULATION_ID\n"
 "The test_trios.txt should contain names of three populations for which the statistics will be calculated:\n"
 "POP1   POP2    POP3\n"
 "There can be multiple lines and then the program generates multiple ouput files, named like POP1_POP2_POP3_localFstats_SIZE_STEP.txt\n"
 "\n"
 "       -h, --help                              display this help and exit\n"
-"       -w SIZE,STEP --window=SIZE,STEP         (required) D, f_D, and f_dM statistics for windows containing SIZE useable SNPs, moving by STEP (default: 50,25)\n"
-//"       --fJackKnife=WINDOW                     (optional) Calculate jackknife for the f_G statistic from Green et al. Also outputs \n"
+"       -w SIZE,STEP --window=SIZE,STEP         (required) D, f_D, f_dM, and d_f statistics for windows containing SIZE useable SNPs, moving by STEP (default: 50,25)\n"
+"       -g, --use-genotype-probabilities        (optional) use probabilities (GP tag) or calculate them from likelihoods (GL or PL tags) using a Hardy-Weinberg prior\n"
+"                                               the probabilities are used to estimate allele frequencies in each population/species\n"
 "       -n, --run-name                          run-name will be included in the output file name\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
@@ -30,7 +32,7 @@ static const char *ABBA_USAGE_MESSAGE =
 
 //enum { OPT_F_JK };
 
-static const char* shortopts = "hw:n:";
+static const char* shortopts = "hw:n:g";
 
 //static const int JK_WINDOW = 5000;
 
@@ -38,6 +40,7 @@ static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
     { "window",   required_argument, NULL, 'w' },
     { "help",   no_argument, NULL, 'h' },
+    { "use-genotype-probabilities", no_argument, NULL, 'g'},
     { NULL, 0, NULL, 0 }
 };
 
@@ -50,6 +53,7 @@ namespace opt
     static int minScLength = 0;
     static int windowSize = 50;
     static int windowStep = 25;
+    static bool useGenotypeProbabilities = false;
     //int jkWindowSize = JK_WINDOW;
 }
 
@@ -64,26 +68,12 @@ void doAbbaBaba() {
     if (!testTriosFile->good()) { std::cerr << "The file " << opt::testTriosFile << " could not be opened. Exiting..." << std::endl; exit(EXIT_FAILURE);}
     
     // Get the sample sets
-    std::map<string, std::vector<string>> speciesToIDsMap;
-    std::map<string, string> IDsToSpeciesMap;
-    std::map<string, std::vector<size_t>> speciesToPosMap;
-    std::map<size_t, string> posToSpeciesMap;
+    std::map<string, std::vector<string>> speciesToIDsMap; std::map<string, string> IDsToSpeciesMap;
+    std::map<string, std::vector<size_t>> speciesToPosMap; std::map<size_t, string> posToSpeciesMap;
     
     // Get the sample sets
-    bool outgroupSpecified = false;
-    int l = 0;
-    while (getline(*setsFile, line)) {
-        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
-        l++; if (line == "") { std::cerr << "Please fix the format of the " << opt::setsFile << " file.\nLine " << l << " is empty." << std::endl; exit(EXIT_FAILURE); }
-        // std::cerr << line << std::endl;
-        std::vector<string> ID_Species = split(line, '\t');
-        if (ID_Species.size() != 2) { std::cerr << "Please fix the format of the " << opt::setsFile << " file.\nLine " << l << " does not have two columns separated by a tab." << std::endl; exit(EXIT_FAILURE); }
-        if (ID_Species[1] == "Outgroup") { outgroupSpecified = true; }
-        speciesToIDsMap[ID_Species[1]].push_back(ID_Species[0]);
-        IDsToSpeciesMap[ID_Species[0]] = ID_Species[1];
-        //std::cerr << ID_Species[1] << "\t" << ID_Species[0] << std::endl;
-    }
-    if (!outgroupSpecified) { std::cerr << "The file " << opt::setsFile << " needs to specify the \"Outgroup\"" << std::endl; exit(1); }
+    process_SETS_file(setsFile, opt::setsFile, speciesToIDsMap, IDsToSpeciesMap, OutgroupRequired);
+    
     // Get a vector of set names (usually species)
     std::vector<string> species;
     for(std::map<string,std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {
@@ -118,7 +108,6 @@ void doAbbaBaba() {
     
     // Now go through the vcf and calculate D
     int totalVariantNumber = 0;
-    std::vector<int> usedVars_f_G(testTrios.size(),0); // Will count the number of used variants for each trio
     int reportProgressEvery = 1000; string chr; string coord;
 
    // int lastPrint = 0; int lastWindowVariant = 0;
@@ -169,10 +158,16 @@ void doAbbaBaba() {
             }
             
             startGettingCounts = clock();
-            GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(speciesToPosMap, (int)genotypes.size());
-             
-            try { c->getSplitCounts(genotypes, posToSpeciesMap); } catch (const std::out_of_range& oor) {
+            GeneralSetCounts* c = new GeneralSetCounts(speciesToPosMap, (int)genotypes.size());
+            try { c->getSetVariantCounts(genotypes, posToSpeciesMap); } catch (const std::out_of_range& oor) {
                 std::cerr << "Problems getting splitCounts for " << chr << " " << coord << std::endl; }
+            if (opt::useGenotypeProbabilities) {
+                int likelihoodsOrProbabilitiesTagPosition = c->checkForGenotypeLikelihoodsOrProbabilities(fields);
+                if (likelihoodsOrProbabilitiesTagPosition == LikelihoodsProbabilitiesAbsent) {
+                    printMissingLikelihoodsWarning(fields[0], fields[1]);
+                    opt::useGenotypeProbabilities = false;
+                } else c->getAFsFromGenotypeLikelihoodsOrProbabilities(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
+            }
             genotypes.clear(); genotypes.shrink_to_fit();
             durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
             
@@ -183,13 +178,22 @@ void doAbbaBaba() {
             
             double p_S1; double p_S2; double p_S3; double ABBA; double BABA; double F_d_denom; double F_dM_denom;
             for (int i = 0; i != testTrios.size(); i++) {
-                try { p_S1 = c->setDAFs.at(testTrios[i][0]); } catch (const std::out_of_range& oor) {
+                try {
+                    if (!opt::useGenotypeProbabilities) p_S1 = c->setDAFs.at(testTrios[i][0]);
+                    else p_S1 = c->setDAFsFromLikelihoods.at(testTrios[i][0]);
+                } catch (const std::out_of_range& oor) {
                 std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][0] << std::endl; }
                 if (p_S1 == -1) continue;  // If any member of the trio has entirely missing data, just move on to the next trio
-                try { p_S2 = c->setDAFs.at(testTrios[i][1]); } catch (const std::out_of_range& oor) {
+                try {
+                    if (!opt::useGenotypeProbabilities) p_S2 = c->setDAFs.at(testTrios[i][1]);
+                    else p_S2 = c->setDAFsFromLikelihoods.at(testTrios[i][1]);
+                } catch (const std::out_of_range& oor) {
                     std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][1] << std::endl; }
                 if (p_S2 == -1) continue;
-                try { p_S3 = c->setDAFs.at(testTrios[i][2]); } catch (const std::out_of_range& oor) {
+                try {
+                    if (!opt::useGenotypeProbabilities) p_S3 = c->setDAFs.at(testTrios[i][2]);
+                    else p_S3 = c->setDAFsFromLikelihoods.at(testTrios[i][2]);
+                } catch (const std::out_of_range& oor) {
                     std::cerr << "Counts don't contain derived allele frequency for " << testTrios[i][2] << std::endl; }
                 if (p_S3 == -1) continue;
                 //if (p_S3 == 0) continue; // XXAA pattern is not informative
@@ -221,28 +225,10 @@ void doAbbaBaba() {
                         F_dM_denom = -(((1-p_S3)*p_S2*p_S3*(1-p_O)) - (p_S3*(1-p_S2)*p_S3)*(1-p_O));
                     }
                 } testTrioInfos[i].F_dM_denom += F_dM_denom; testTrioInfos[i].interimF_dM_denom += F_dM_denom;
-                int c_S3a; try { c_S3a = c->setAlleleCountsSplit1.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
-                { std::cerr << "Counts don't contain info for split 1 of " << testTrios[i][2] << std::endl; }
-                int c_S3b; try { c_S3b = c->setAlleleCountsSplit2.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
-                { std::cerr << "Counts don't contain info for split 2 of " << testTrios[i][2] << std::endl; }
-                double F_G_denom = 0; double F_G_num = 0;
-                if (c_S3a > 0 && c_S3b > 0) {
-                    //std::cerr << "Here" << std::endl;
-                    double p_S3a; try { p_S3a = c->setAAFsplit1.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
-                    { std::cerr << "Counts don't contain derived allele frequency for split 1 of " << testTrios[i][2] << std::endl; }
-                    double p_S3b; try { p_S3b = c->setAAFsplit2.at(testTrios[i][2]); } catch (const std::out_of_range& oor)
-                    { std::cerr << "Counts don't contain derived allele frequency for split 2 of " << testTrios[i][2] << std::endl; }
-                    F_G_num = ABBA - BABA;
-                    F_G_denom = ((1-p_S1)*p_S3a*p_S3b*(1-p_O)) - (p_S1*(1-p_S3a)*p_S3b*(1-p_O));
-                    usedVars_f_G[i]++;
-                } else if (p_S3 == 1) {
-                    F_G_num = ABBA - BABA;
-                    F_G_denom = (1-p_S1)*(1-p_O);
-                    usedVars_f_G[i]++;
-                } testTrioInfos[i].F_G_denom += F_G_denom; testTrioInfos[i].F_G_num += F_G_num;
+                
                 
                 // d_f
-                double d13 = p_S1 + p_S3 - 2*p_S1*p_S3; double d23 = p_S2 + p_S3 - 2*p_S2*p_S3;
+                double d13 = p_S1 + p_S3 - (2*p_S1*p_S3); double d23 = p_S2 + p_S3 - (2*p_S2*p_S3);
                 double dfNum = p_S2 * d13 - p_S1 * d23;
                 double dfDenom = p_S2 * d13 + p_S1 * d23;
                 
@@ -281,7 +267,6 @@ void doAbbaBaba() {
     for (int i = 0; i != testTrios.size(); i++) {
         std::cout << testTrios[i][0] << "\t" << testTrios[i][1] << "\t" << testTrios[i][2] << std::endl;
         std::cout << "D=" << (double)(testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal)/(testTrioInfos[i].ABBAtotal+testTrioInfos[i].BABAtotal) << std::endl;
-        std::cout << "f_G=" << (double)testTrioInfos[i].F_G_num/testTrioInfos[i].F_G_denom << "\t" << testTrioInfos[i].F_G_num << "/" << testTrioInfos[i].F_G_denom << std::endl;
         std::cout << "f_d=" << (double)(testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal)/testTrioInfos[i].F_d_denom << "\t" << (testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal) << "/" << testTrioInfos[i].F_d_denom << std::endl;
         std::cout << "f_dM=" << (double)(testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal)/testTrioInfos[i].F_dM_denom << "\t" << (testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal) << "/" << testTrioInfos[i].F_dM_denom << std::endl;
         std::cout << std::endl;
@@ -312,6 +297,7 @@ void parseAbbaBabaOptions(int argc, char** argv) {
                 opt::windowStep = atoi(windowSizeStep[1].c_str());
                 break;
             case 'n': arg >> opt::runName; break;
+            case 'g': opt::useGenotypeProbabilities = true; break;
             case 'h':
                 std::cout << ABBA_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);
