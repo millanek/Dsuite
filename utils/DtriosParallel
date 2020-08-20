@@ -143,7 +143,7 @@ def dsuite_combine(sets_fn, run_name, starts, lines_per_core, tree_fn=None,
     outbases = ['{sets_base}_{run_name}_{s}_{e}'.format(sets_base=sets_base, run_name=run_name,s=s,
                                                         e=s + lines_per_core) for s in starts]
 
-    combine_command = 'cd {sets_dir}; {environment_setup} {dsuite_path}Dsuite DtriosCombine {run_str} {tree_str} '.format(
+    combine_command = 'cd {sets_dir}; {environment_setup} {dsuite_path}Dsuite DtriosCombine --out-prefix out {run_str} {tree_str} '.format(
                         sets_dir=sets_dir,
                         environment_setup=environment_setup, dsuite_path=dsuite_path, run_str=run_str, tree_str=tree_str) \
                         + ' '.join(outbases)
@@ -169,8 +169,8 @@ def dsuite_combine(sets_fn, run_name, starts, lines_per_core, tree_fn=None,
             logging.debug(e)
             logging.info('Successfully combined {} runs into outoput files'
               ' with base {}.'.format(len(starts),
-                                                os.path.join(sets_dir,
-                                                            run_name+'combined')))
+                                                os.path.join(sets_dir,"out_" +
+                                                            run_name+'_combined')))
 
     #print('------------------------------------------------------', file=sys.stderr)
 
