@@ -74,8 +74,11 @@ public:
             string nodeId = "internalNode"+numToString(numberOfInternalNodes)+"X";
             tmpBranchStartNodeId.push_back(nodeId);
             tmpBranchStartNodeId.push_back(nodeId);
-            tmpBranchEndNodeId.push_back(match[1]);
-            tmpBranchEndNodeId.push_back(match[2]);
+            if (std::count(tmpBranchEndNodeId.begin(),tmpBranchEndNodeId.end(),match[1])) { std::cerr << "ERROR: Duplicate value in the tree \"" << match[1] << "\"\n"; std::cerr << "Exiting\n"; exit(1); }
+            else tmpBranchEndNodeId.push_back(match[1]);
+            if (std::count(tmpBranchEndNodeId.begin(),tmpBranchEndNodeId.end(),match[2])) { std::cerr << "ERROR: Duplicate value in the tree " << match[2] << "\"\n"; std::cerr << "Exiting\n"; exit(1); }
+            else tmpBranchEndNodeId.push_back(match[2]);
+            
             workingTreeCopy = std::regex_replace(workingTreeCopy, sistersRegExNoGroups, nodeId, std::regex_constants::format_first_only);
             // std::cout << workingTreeCopy << std::endl;
             numberOfInternalNodes++;
