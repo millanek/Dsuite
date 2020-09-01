@@ -50,3 +50,55 @@ void printMissingLikelihoodsWarning(const string& chr, const string& pos) {
     std::cerr << "WARNING: Could not fing genotype likelihoods/probabilities (GP, PL, or GL fields) for variant at " << chr << " " << pos << std::endl;
     std::cerr << "WARNING: Did you really mean to use the -g option? Reverting to using called genotypes." << std::endl;
 }
+
+void duplicateTreeValueError(const string& duplicate) {
+    std::cerr << "ERROR: Duplicate value in the tree \"" << duplicate << "\"\n";
+    std::cerr << "Exiting\n";
+    exit(1);
+}
+
+
+void assignTreeLevelsAndLinkToTaxa(string& treeLine, std::map<string,std::vector<int>>& taxaToLoc, std::vector<int>& levels) {
+    // First take care of any branch lengths
+    std::regex branchLengths(":.*?(?=,|\\))");
+    treeLine = std::regex_replace(treeLine,branchLengths,"");
+    //std::cerr << line << std::endl;
+
+    // Now process the tree
+    levels.assign(treeLine.length(),0); int currentLevel = 0;
+    std::vector<string> treeTaxonNames;
+    string currentTaxonName = "";
+    int lastBegin = 0;
+    for (int i = 0; i < treeLine.length(); ++i) {
+        if (treeLine[i] == '(') {
+            currentLevel++; levels[i] = currentLevel;
+        } else if (treeLine[i] == ')') {
+            currentLevel--; levels[i] = currentLevel;
+            if (currentTaxonName != "") {
+                if (taxaToLoc.count(currentTaxonName) == 1) { duplicateTreeValueError(currentTaxonName); }
+                treeTaxonNames.push_back(currentTaxonName);
+                taxaToLoc[currentTaxonName].push_back(lastBegin);
+                taxaToLoc[currentTaxonName].push_back(i-1);
+                currentTaxonName = "";
+            }
+        } else if (treeLine[i] == ',') {
+            levels[i] = currentLevel;
+            if (currentTaxonName != "") {
+                treeTaxonNames.push_back(currentTaxonName);
+                taxaToLoc[currentTaxonName].push_back(lastBegin);
+                taxaToLoc[currentTaxonName].push_back(i-1);
+                currentTaxonName = "";
+            }
+        } else {
+            if (currentTaxonName == "")
+                lastBegin = i;
+            levels[i] = currentLevel;
+            currentTaxonName += treeLine[i];
+        }
+    }
+    //print_vector(treeTaxonNames, std::cout,'\n');
+    //print_vector(treeLevels, std::cout,' ');
+    //for (std::map<string,std::vector<int>>::iterator i = treeTaxonNamesToLoc.begin(); i != treeTaxonNamesToLoc.end(); i++) {
+    //    std::cout << i->first << "\t" << i->second[0] << "\t" << i->second[1] << "\t" << treeLevels[i->second[0]] << "\t" << treeLevels[i->second[1]] << std::endl;
+    //}
+}

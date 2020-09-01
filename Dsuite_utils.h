@@ -64,7 +64,6 @@ std::vector<size_t> locateSet(std::vector<std::string>& sample_names, const std:
 std::istream* createReader(const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
 std::ostream* createWriter(const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
 bool file_exists(const std::string& name);
-void assignTreeLevelsAndLinkToTaxa(string& treeLine, std::map<string,std::vector<int>>& taxaToLoc, std::vector<int>& levels);
 void assignSplits01FromAlleleFrequency(const double p, double& splitA, double& splitB);
 
 // Converting numbers (int, double, size_t, and char) to string

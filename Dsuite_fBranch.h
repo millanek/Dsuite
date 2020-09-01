@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include "Dsuite_utils.h"
+#include "Dsuite_common.h"
 
 
 int fBranchMain(int argc, char** argv);
@@ -74,9 +75,9 @@ public:
             string nodeId = "internalNode"+numToString(numberOfInternalNodes)+"X";
             tmpBranchStartNodeId.push_back(nodeId);
             tmpBranchStartNodeId.push_back(nodeId);
-            if (std::count(tmpBranchEndNodeId.begin(),tmpBranchEndNodeId.end(),match[1])) { std::cerr << "ERROR: Duplicate value in the tree \"" << match[1] << "\"\n"; std::cerr << "Exiting\n"; exit(1); }
+            if (std::count(tmpBranchEndNodeId.begin(),tmpBranchEndNodeId.end(),match[1])) duplicateTreeValueError(match[1]);
             else tmpBranchEndNodeId.push_back(match[1]);
-            if (std::count(tmpBranchEndNodeId.begin(),tmpBranchEndNodeId.end(),match[2])) { std::cerr << "ERROR: Duplicate value in the tree " << match[2] << "\"\n"; std::cerr << "Exiting\n"; exit(1); }
+            if (std::count(tmpBranchEndNodeId.begin(),tmpBranchEndNodeId.end(),match[2])) duplicateTreeValueError(match[2]);
             else tmpBranchEndNodeId.push_back(match[2]);
             
             workingTreeCopy = std::regex_replace(workingTreeCopy, sistersRegExNoGroups, nodeId, std::regex_constants::format_first_only);
