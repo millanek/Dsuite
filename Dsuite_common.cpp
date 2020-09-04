@@ -57,6 +57,11 @@ void duplicateTreeValueError(const string& duplicate) {
     exit(1);
 }
 
+void printInitialMessageTriosQuartets(const int regionLengthOpt, const int VCFlineCount, const int JKblockSizeBasedOnNum, const int jkWindowSizeOpt, const int jkNumOpt) {
+    if (regionLengthOpt > 0) { std::cerr << "The VCF region to be analysed contains " << VCFlineCount << " variants\n"; }
+    else { std::cerr << "The VCF contains " << VCFlineCount << " variants\n"; }
+    if (jkWindowSizeOpt == 0) std::cerr << "Going to use block size of " << JKblockSizeBasedOnNum << " variants to get " << jkNumOpt << " Jackknife blocks\n";
+}
 
 void assignTreeLevelsAndLinkToTaxa(string& treeLine, std::map<string,std::vector<int>>& taxaToLoc, std::vector<int>& levels) {
     // First take care of any branch lengths
@@ -101,4 +106,21 @@ void assignTreeLevelsAndLinkToTaxa(string& treeLine, std::map<string,std::vector
     //for (std::map<string,std::vector<int>>::iterator i = treeTaxonNamesToLoc.begin(); i != treeTaxonNamesToLoc.end(); i++) {
     //    std::cout << i->first << "\t" << i->second[0] << "\t" << i->second[1] << "\t" << treeLevels[i->second[0]] << "\t" << treeLevels[i->second[1]] << std::endl;
     //}
+}
+
+int assignNumLinesToAnalyse(const int providedNumLinesOpt, const int regionLengthOpt,const string& vcfFileOpt) {
+    int VCFlineCount;
+    if (providedNumLinesOpt > 0) {
+        VCFlineCount = providedNumLinesOpt;
+    } else if (regionLengthOpt > 0) {
+        VCFlineCount = regionLengthOpt;
+    } else { // Block to find the number of lines in the VCF file
+        std::istream* vcfFile = createReader(vcfFileOpt.c_str());
+        // See how big is the VCF file
+        vcfFile->unsetf(std::ios_base::skipws); // new lines will be skipped unless we stop it from happening:
+        // count the newlines with an algorithm specialized for counting:
+        VCFlineCount = (int)std::count(std::istream_iterator<char>(*vcfFile),std::istream_iterator<char>(),'\n');
+        //std::cout << "VCF Lines: " << VCFlineCount << "\n";
+    }
+    return VCFlineCount;
 }

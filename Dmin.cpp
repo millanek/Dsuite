@@ -100,20 +100,7 @@ int DminMain(int argc, char** argv) {
         // }
     }
     
-    int VCFlineCount;
-    if (opt::providedNumLines > 0) {
-        VCFlineCount = opt::providedNumLines;
-    } else if (opt::regionLength != -1) {
-        VCFlineCount = opt::regionLength;
-    } else {
-        // Block to find the number of lines in the VCF file
-        std::istream* vcfFile = createReader(opt::vcfFile.c_str());
-        // See how big is the VCF file
-        vcfFile->unsetf(std::ios_base::skipws); // new lines will be skipped unless we stop it from happening:
-        // count the newlines with an algorithm specialized for counting:
-        VCFlineCount = (int)std::count(std::istream_iterator<char>(*vcfFile),std::istream_iterator<char>(),'\n');
-        //std::cout << "VCF Lines: " << VCFlineCount << "\n";
-    }
+    int VCFlineCount = assignNumLinesToAnalyse(opt::providedNumLines, opt::regionLength, opt::vcfFile);;
     
     std::istream* vcfFile;
     if (opt::vcfFile == "stdin") {
@@ -206,9 +193,7 @@ int DminMain(int argc, char** argv) {
             VCFlineCount--; continue;
         } else if (line[0] == '#' && line[1] == 'C') {
             VCFlineCount--; JKblockSizeBasedOnNum = (VCFlineCount/opt::jkNum)-1;
-            if (opt::regionLength != -1) { std::cerr << "The VCF region to be analysed contains " << VCFlineCount << " variants\n"; }
-            else { std::cerr << "The VCF contains " << VCFlineCount << " variants\n"; }
-            if (opt::jkWindowSize == 0) std::cerr << "Going to use block size of " << JKblockSizeBasedOnNum << " variants to get " << opt::jkNum << " Jackknife blocks\n";
+            printInitialMessageTriosQuartets(opt::regionLength, VCFlineCount, JKblockSizeBasedOnNum, opt::jkWindowSize, opt::jkNum);
             fields = split(line, '\t');
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
             // print_vector_stream(sampleNames, std::cerr);
