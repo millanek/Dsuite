@@ -1,7 +1,7 @@
 #  Dsuite
 Publication:  
 Malinsky, M., Matschiner, M. and Svardal, H. (2020), Dsuite ‐ fast D‐statistics and related admixture evidence from VCF files. 
-Mol Ecol Resour. Accepted Author Manuscript. https://doi.org/10.1111/1755-0998.13265 
+Mol Ecol Resour. Accepted Author Manuscript. https://doi.org/10.1111/1755-0998.13265   
 older version on [bioRxiv](https://doi.org/10.1101/634477)  
 Malawi cichlid data used in the manuscript:
 [VCF file](http://cichlid.gurdon.cam.ac.uk/Malinsky_et_al_2018_LakeMalawiCichlids_scaffold_0.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/sets.txt)<br>
