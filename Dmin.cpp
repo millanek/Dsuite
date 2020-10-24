@@ -3,7 +3,6 @@
 //  Dsuite
 //
 //  Created by Milan Malinsky on 02/04/2019.
-//  Copyright © 2019 Milan Malinsky. All rights reserved.
 //
 
 #include "Dmin.h"

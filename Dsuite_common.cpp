@@ -3,7 +3,6 @@
 //  DsuiteXcode
 //
 //  Created by Milan Malinsky on 21/07/2020.
-//  Copyright © 2020 Milan Malinsky. All rights reserved.
 //
 
 #include "Dsuite_common.h"

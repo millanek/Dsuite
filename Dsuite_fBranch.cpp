@@ -3,7 +3,6 @@
 //  DsuiteXcode
 //
 //  Created by Milan Malinsky on 11/11/2019.
-//  Copyright © 2019 Milan Malinsky. All rights reserved.
 //
 
 #include "Dsuite_fBranch.h"

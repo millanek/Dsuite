@@ -68,7 +68,7 @@ NUMLINES=$(bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf.gz | wc -l)  # to get 
 bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf.gz | Dsuite Dtrios -l $NUMLINES stdin SETS.txt
 ```
 
-## Compilation
+## Installation
 ### Main program:
 To compile you must have a reasonably recent GCC (>=4.9.0) or clang compiler (on mac OS this comes with Command Line Tools) and the zlib compression library (https://www.zlib.net). Both should already be present on most systems. 
 
