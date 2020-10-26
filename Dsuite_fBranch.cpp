@@ -14,6 +14,7 @@ static const char *BRANCHSCORE_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] TREE_FILE.nwk FVALS_tree.txt\n"
 "Implements the 'f-branch' type calculations developed by Hannes Svardal for Malinsky et al., 2018, Nat. Ecol. Evo.\n"
 "Uses the f4-ratio (f_G) values produced by Dsuite Dtrios (or DtriosCombine) with the --tree option; this is the output of Dtrios with the \"_tree.txt\" suffix\n"
+"To use  Fbranch, the tree in TREE_FILE.nwk must be rooted with the Outgroup.\n"
 "Output to stdout\n"
 "\n"
 "       -p, --pthresh                           (default=0.01) fb scores whose associated p-value is less than \n"
