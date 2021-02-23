@@ -190,9 +190,9 @@ int DminMain(int argc, char** argv) {
     while (getline(*vcfFile, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
         if (line[0] == '#' && line[1] == '#') {
-            VCFlineCount--; continue;
+            if (opt::regionStart == -1) { VCFlineCount--; } continue;
         } else if (line[0] == '#' && line[1] == 'C') {
-            VCFlineCount--; JKblockSizeBasedOnNum = (VCFlineCount/opt::jkNum)-1;
+            if (opt::regionStart == -1) { VCFlineCount--; } JKblockSizeBasedOnNum = (VCFlineCount/opt::jkNum)-1;
             printInitialMessageTriosQuartets(opt::regionLength, VCFlineCount, JKblockSizeBasedOnNum, opt::jkWindowSize, opt::jkNum);
             fields = split(line, '\t');
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
