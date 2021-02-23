@@ -204,10 +204,10 @@ public:
     std::map<string,int> setAlleleCounts; // The number of non-missing alleles for this set
     std::map<string,int> setAlleleProbCounts; // The number of non-missing alleles for this set in terms of likelihoods/probabilities
     std::vector<size_t> setSizes;
-    std::map<string,double> setAAFs; double averageAAF; // Allele frequencies - alternative allele
-    std::map<string,double> setDAFs; double averageDAF;// Allele frequencies - derived allele
-    std::map<string,double> setAAFsFromLikelihoods; double averageAAFFromLikelihoods; // Allele frequencies - alternative allele
-    std::map<string,double> setDAFsFromLikelihoods; double averageDAFFromLikelihoods;// Allele frequencies - derived allele
+    std::map<string,double> setAAFs; double averageAAF;     // Allele frequencies - alternative allele
+    std::map<string,double> setDAFs; double averageDAF;     // Allele frequencies - derived allele
+    std::map<string,double> setAAFsFromLikelihoods; double averageAAFFromLikelihoods;   // Allele frequencies - alternative allele
+    std::map<string,double> setDAFsFromLikelihoods; double averageDAFFromLikelihoods;   // Allele frequencies - derived allele
     std::vector<int> individualsWithVariant; // 0 homRef, 1 het, 2 homAlt
     int likelihoodsProbabilitiesType;
     // std::vector<int> set1individualsWithVariant; std::vector<int> set2individualsWithVariant;

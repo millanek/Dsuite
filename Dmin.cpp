@@ -29,7 +29,8 @@ static const char *DMIN_USAGE_MESSAGE =
 "       -k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset\n"
 "       -j, --JKwindow                          (default=NA) Jackknife block size in number of informative SNPs (as used in v0.2)\n"
 "                                               when specified, this is used in place of the --JKnum option\n"
-"       -r, --region=start,length               (optional) only process a subset of the VCF file\n"
+"       -r, --region=start,length               (optional) only process a subset of the VCF file; both \"start\" and \"length\" indicate variant numbers\n"
+"                                               e.g. --region=20001,10000 will process variants from 20001 to 30000\n"
 "       -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix\n"
 "       -o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written\n"
@@ -91,7 +92,7 @@ int DminMain(int argc, char** argv) {
     if (opt::treeFile != "") {
         treeFile = new std::ifstream(opt::treeFile.c_str());
         if (!treeFile->good()) { std::cerr << "The file " << opt::treeFile << " could not be opened. Exiting..." << std::endl; exit(1);}
-        outFileTree = new std::ofstream(outFileRoot+ "_" + opt::runName + "_tree.txt");
+        outFileTree = new std::ofstream(outFileRoot + "_tree.txt");
         getline(*treeFile, line);
         assignTreeLevelsAndLinkToTaxa(line,treeTaxonNamesToLoc,treeLevels);
         //for (std::map<string,std::vector<int>>::iterator it = treeTaxonNamesToLoc.begin(); it != treeTaxonNamesToLoc.end(); ++it) {
