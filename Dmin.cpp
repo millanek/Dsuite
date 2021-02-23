@@ -493,7 +493,12 @@ void parseDminOptions(int argc, char** argv) {
             case 'l': arg >> opt::providedNumLines; break;
             case 'o': arg >> opt::providedOutPrefix; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
-                opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;
+                if (regionArgs.size() != 2) {
+                    std::cerr << "the --region argument should be two numbers separated by a comma\n";
+                    die = true;
+                } else {
+                    opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;
+                }
             case 'h':
                 std::cout << DMIN_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);
