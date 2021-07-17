@@ -26,12 +26,12 @@ static const char *BRANCHSCORE_USAGE_MESSAGE =
 
 //enum { OPT_F_JK };
 
-static const char* shortopts = "hp:Z:";
+static const char* shortopts = "hp:Z";
 
 //static const int JK_WINDOW = 5000;
 
 static const struct option longopts[] = {
-    { "Zb-matrix",   required_argument, NULL, 'Z' },
+    { "Zb-matrix",   no_argument, NULL, 'Z' },
     { "pthresh",   required_argument, NULL, 'p' },
     { "help",   no_argument, NULL, 'h' },
     { NULL, 0, NULL, 0 }
