@@ -447,8 +447,8 @@ public:
         // Get the Z-scores
         D1_Z = std::fabs(D1)/D1stdErr; D2_Z = std::fabs(D2)/D2stdErr; D3_Z = std::fabs(D3)/D3stdErr;
         // And p-values
-        D1_p = 1 - normalCDF(D1_Z); D2_p = 1 - normalCDF(D2_Z);
-        D3_p = 1 - normalCDF(D3_Z);
+        D1_p = 2 * (1 - normalCDF(D1_Z)); D2_p = 2 * (1 - normalCDF(D2_Z));
+        D3_p = 2 * (1 - normalCDF(D3_Z));
     }
     
     void addRegionDs(const int arrangement) {
