@@ -48,6 +48,7 @@ public:
     Branch* sisterBranch;
     std::vector<double> fbCvals;
     std::vector<double> ZfbCvals;
+    std::vector<double> PfbCvals;
     
     int progeniesComplete;
     bool progenyPassedOn;

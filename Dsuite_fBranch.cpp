@@ -20,6 +20,8 @@ static const char *BRANCHSCORE_USAGE_MESSAGE =
 "       -p, --pthresh                           (default=0.01) fb scores whose associated p-value is less than \n"
 "       -Z, --Zb-matrix                         (optional)  output the equivalent of fb-statistic, but with Z-scores to assess statistical significance\n"
 "                                               this will be printed below the f-branch matrix\n"
+"       -P, --Pb-matrix                         (optional)  output the equivalent of fb-statistic, but with p-values to assess statistical significance\n"
+"                                               this will be printed below the f-branch matrix\n"
 "       -h, --help                              display this help and exit\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
@@ -32,6 +34,7 @@ static const char* shortopts = "hp:Z";
 
 static const struct option longopts[] = {
     { "Zb-matrix",   no_argument, NULL, 'Z' },
+    { "Pb-matrix",   no_argument, NULL, 'P' },
     { "pthresh",   required_argument, NULL, 'p' },
     { "help",   no_argument, NULL, 'h' },
     { NULL, 0, NULL, 0 }
@@ -42,6 +45,7 @@ namespace opt
     static string treeFile;
     static string DvalsFile;
     static bool printZb = false;
+    static bool printPb = false;
     static double pthresh = 0.01;
 }
 
@@ -70,7 +74,7 @@ int fBranchMain(int argc, char** argv) {
             exit(EXIT_FAILURE);
         }
         double f4ratio = stringToDouble(speciesAndVals[indexFg]); double Zscore = stringToDouble(speciesAndVals[indexZ]);
-        double pval = (1 - normalCDF(Zscore));
+        double pval = 2 * (1 - normalCDF(Zscore));
         std::vector<string> bAndValLine;  bAndValLine.push_back(speciesAndVals[1]);
         if (pval < opt::pthresh) bAndValLine.push_back(speciesAndVals[indexFg]); else bAndValLine.push_back("0"); // Set non-significant f4-ratio statistics to 0
         if (indexZ != -1) bAndValLine.push_back(speciesAndVals[indexZ]);
@@ -128,6 +132,7 @@ int fBranchMain(int argc, char** argv) {
                 } */
                 (*b)->fbCvals.push_back(fbC);
                 (*b)->ZfbCvals.push_back(ZfbC);
+                (*b)->PfbCvals.push_back(2 * (1 - normalCDF(ZfbC)));
                // std::cerr << "Here: (*b)->progenyIds: "; print_vector((*b)->progenyIds,std::cerr);
                // std::cerr << "Here: (*b)->ZfbCvals.size() " << (*b)->ZfbCvals.size() << std::endl;
                // std::cerr << "Here: (*b)->ZfbCvals: "; print_vector((*b)->ZfbCvals,std::cerr);
@@ -150,12 +155,23 @@ int fBranchMain(int argc, char** argv) {
     }
     if (indexZ != -1 && opt::printZb) {
         std::cout << "\n";
-        std::cout << "# Zscores:\n";
+        std::cout << "# Z-scores:\n";
         std::cout << "branch\tbranch_descendants\t"; print_vector(testTree->allSpecies, std::cout);
         for (std::vector<Branch*>::iterator b = testTree->branches.begin(); b != testTree->branches.end(); b++) {
             if ((*b)->parentId != "treeOrigin") {
                 std::cout << (*b)->id << "\t"; print_vector((*b)->progenyIds, std::cout, ',', false);
                 std::cout << "\t"; print_vector((*b)->ZfbCvals, std::cout);
+            }
+        }
+    }
+    if (indexZ != -1 && opt::printPb) {
+        std::cout << "\n";
+        std::cout << "# p-values:\n";
+        std::cout << "branch\tbranch_descendants\t"; print_vector(testTree->allSpecies, std::cout);
+        for (std::vector<Branch*>::iterator b = testTree->branches.begin(); b != testTree->branches.end(); b++) {
+            if ((*b)->parentId != "treeOrigin") {
+                std::cout << (*b)->id << "\t"; print_vector((*b)->progenyIds, std::cout, ',', false);
+                std::cout << "\t"; print_vector((*b)->PfbCvals, std::cout);
             }
         }
     }
@@ -174,6 +190,7 @@ void parseFbranchOptions(int argc, char** argv) {
             case '?': die = true; break;
             case 'p': arg >> opt::pthresh; break;
             case 'Z': opt::printZb = true; break;
+            case 'P': opt::printPb = true; break;
             case 'h':
                 std::cout << BRANCHSCORE_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);
