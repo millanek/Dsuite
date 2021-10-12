@@ -19,6 +19,7 @@
 #include <time.h>
 #include <regex>
 #include <algorithm>
+#include <limits>
 #include "gzstream.h"
 
 #define PROGRAM_BIN "Dsuite"
