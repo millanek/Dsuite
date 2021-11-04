@@ -3,7 +3,6 @@
 //  Dsuite
 //
 //  Created by Milan Malinsky on 02/04/2019.
-//  Copyright © 2019 Milan Malinsky. All rights reserved.
 //
 
 #include "Dmin.h"
@@ -30,7 +29,8 @@ static const char *DMIN_USAGE_MESSAGE =
 "       -k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset\n"
 "       -j, --JKwindow                          (default=NA) Jackknife block size in number of informative SNPs (as used in v0.2)\n"
 "                                               when specified, this is used in place of the --JKnum option\n"
-"       -r, --region=start,length               (optional) only process a subset of the VCF file\n"
+"       -r, --region=start,length               (optional) only process a subset of the VCF file; both \"start\" and \"length\" indicate variant numbers\n"
+"                                               e.g. --region=20001,10000 will process variants from 20001 to 30000\n"
 "       -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
 "                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix\n"
 "       -o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written\n"
@@ -92,7 +92,7 @@ int DminMain(int argc, char** argv) {
     if (opt::treeFile != "") {
         treeFile = new std::ifstream(opt::treeFile.c_str());
         if (!treeFile->good()) { std::cerr << "The file " << opt::treeFile << " could not be opened. Exiting..." << std::endl; exit(1);}
-        outFileTree = new std::ofstream(outFileRoot+ "_" + opt::runName + "_tree.txt");
+        outFileTree = new std::ofstream(outFileRoot + "_tree.txt");
         getline(*treeFile, line);
         assignTreeLevelsAndLinkToTaxa(line,treeTaxonNamesToLoc,treeLevels);
         //for (std::map<string,std::vector<int>>::iterator it = treeTaxonNamesToLoc.begin(); it != treeTaxonNamesToLoc.end(); ++it) {
@@ -100,20 +100,7 @@ int DminMain(int argc, char** argv) {
         // }
     }
     
-    int VCFlineCount;
-    if (opt::providedNumLines > 0) {
-        VCFlineCount = opt::providedNumLines;
-    } else if (opt::regionLength) {
-        VCFlineCount = opt::regionLength;
-    } else {
-        // Block to find the number of lines in the VCF file
-        std::istream* vcfFile = createReader(opt::vcfFile.c_str());
-        // See how big is the VCF file
-        vcfFile->unsetf(std::ios_base::skipws); // new lines will be skipped unless we stop it from happening:
-        // count the newlines with an algorithm specialized for counting:
-        VCFlineCount = (int)std::count(std::istream_iterator<char>(*vcfFile),std::istream_iterator<char>(),'\n');
-        //std::cout << "VCF Lines: " << VCFlineCount << "\n";
-    }
+    int VCFlineCount = assignNumLinesToAnalyse(opt::providedNumLines, opt::regionLength, opt::vcfFile);;
     
     std::istream* vcfFile;
     if (opt::vcfFile == "stdin") {
@@ -203,12 +190,10 @@ int DminMain(int argc, char** argv) {
     while (getline(*vcfFile, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
         if (line[0] == '#' && line[1] == '#') {
-            VCFlineCount--; continue;
+            if (opt::regionStart == -1) { VCFlineCount--; } continue;
         } else if (line[0] == '#' && line[1] == 'C') {
-            VCFlineCount--; JKblockSizeBasedOnNum = (VCFlineCount/opt::jkNum)-1;
-            if (opt::regionLength) { std::cerr << "The VCF region to be analysed contains " << VCFlineCount << " variants\n"; }
-            else { std::cerr << "The VCF contains " << VCFlineCount << " variants\n"; }
-            if (opt::jkWindowSize == 0) std::cerr << "Going to use block size of " << JKblockSizeBasedOnNum << " variants to get " << opt::jkNum << " Jackknife blocks\n";
+            if (opt::regionStart == -1) { VCFlineCount--; } JKblockSizeBasedOnNum = (VCFlineCount/opt::jkNum)-1;
+            printInitialMessageTriosQuartets(opt::regionLength, VCFlineCount, JKblockSizeBasedOnNum, opt::jkWindowSize, opt::jkNum);
             fields = split(line, '\t');
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
             // print_vector_stream(sampleNames, std::cerr);
@@ -508,7 +493,12 @@ void parseDminOptions(int argc, char** argv) {
             case 'l': arg >> opt::providedNumLines; break;
             case 'o': arg >> opt::providedOutPrefix; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
-                opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;
+                if (regionArgs.size() != 2) {
+                    std::cerr << "the --region argument should be two numbers separated by a comma\n";
+                    die = true;
+                } else {
+                    opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;
+                }
             case 'h':
                 std::cout << DMIN_USAGE_MESSAGE;
                 exit(EXIT_SUCCESS);

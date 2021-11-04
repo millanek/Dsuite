@@ -3,7 +3,6 @@
 //  DsuiteXcode
 //
 //  Created by Milan Malinsky on 11/11/2019.
-//  Copyright © 2019 Milan Malinsky. All rights reserved.
 //
 
 #ifndef Dsuite_fBranch_h
@@ -11,6 +10,7 @@
 
 #include <stdio.h>
 #include "Dsuite_utils.h"
+#include "Dsuite_common.h"
 
 
 int fBranchMain(int argc, char** argv);
@@ -48,6 +48,7 @@ public:
     Branch* sisterBranch;
     std::vector<double> fbCvals;
     std::vector<double> ZfbCvals;
+    std::vector<double> PfbCvals;
     
     int progeniesComplete;
     bool progenyPassedOn;
@@ -63,8 +64,8 @@ public:
         std::vector<string> tmpBranchEndNodeId;
         std::vector<string> tmpBranchStartNodeId;
         int numberOfInternalNodes = 0;
-        std::regex sistersRegEx("\\(([a-zA-Z0-9_]+),([a-zA-Z0-9_]+)\\)");
-        std::regex sistersRegExNoGroups("\\([a-zA-Z0-9_]+,[a-zA-Z0-9_]+\\)");
+        std::regex sistersRegEx("\\(([a-zA-Z0-9[:s:]_-]+),([a-zA-Z0-9[:s:]_-]+)\\)");
+        std::regex sistersRegExNoGroups("\\([a-zA-Z0-9[:s:]_-]+,[a-zA-Z0-9[:s:]_-]+\\)");
         std::regex comma(",");
         std::smatch match;
         string workingTreeCopy = treeNoBranchLengths;
@@ -74,8 +75,11 @@ public:
             string nodeId = "internalNode"+numToString(numberOfInternalNodes)+"X";
             tmpBranchStartNodeId.push_back(nodeId);
             tmpBranchStartNodeId.push_back(nodeId);
-            tmpBranchEndNodeId.push_back(match[1]);
-            tmpBranchEndNodeId.push_back(match[2]);
+            if (std::count(tmpBranchEndNodeId.begin(),tmpBranchEndNodeId.end(),match[1])) duplicateTreeValueError(match[1]);
+            else tmpBranchEndNodeId.push_back(match[1]);
+            if (std::count(tmpBranchEndNodeId.begin(),tmpBranchEndNodeId.end(),match[2])) duplicateTreeValueError(match[2]);
+            else tmpBranchEndNodeId.push_back(match[2]);
+            
             workingTreeCopy = std::regex_replace(workingTreeCopy, sistersRegExNoGroups, nodeId, std::regex_constants::format_first_only);
             // std::cout << workingTreeCopy << std::endl;
             numberOfInternalNodes++;

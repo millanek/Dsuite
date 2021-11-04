@@ -3,7 +3,6 @@
 //  Dsuite
 //
 //  Created by Milan Malinsky on 02/04/2019.
-//  Copyright © 2019 Milan Malinsky. All rights reserved.
 //
 
 #ifndef Dsuite_utils_h
@@ -20,6 +19,7 @@
 #include <time.h>
 #include <regex>
 #include <algorithm>
+#include <limits>
 #include "gzstream.h"
 
 #define PROGRAM_BIN "Dsuite"
@@ -64,7 +64,6 @@ std::vector<size_t> locateSet(std::vector<std::string>& sample_names, const std:
 std::istream* createReader(const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
 std::ostream* createWriter(const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
 bool file_exists(const std::string& name);
-void assignTreeLevelsAndLinkToTaxa(string& treeLine, std::map<string,std::vector<int>>& taxaToLoc, std::vector<int>& levels);
 void assignSplits01FromAlleleFrequency(const double p, double& splitA, double& splitB);
 
 // Converting numbers (int, double, size_t, and char) to string
@@ -206,10 +205,10 @@ public:
     std::map<string,int> setAlleleCounts; // The number of non-missing alleles for this set
     std::map<string,int> setAlleleProbCounts; // The number of non-missing alleles for this set in terms of likelihoods/probabilities
     std::vector<size_t> setSizes;
-    std::map<string,double> setAAFs; double averageAAF; // Allele frequencies - alternative allele
-    std::map<string,double> setDAFs; double averageDAF;// Allele frequencies - derived allele
-    std::map<string,double> setAAFsFromLikelihoods; double averageAAFFromLikelihoods; // Allele frequencies - alternative allele
-    std::map<string,double> setDAFsFromLikelihoods; double averageDAFFromLikelihoods;// Allele frequencies - derived allele
+    std::map<string,double> setAAFs; double averageAAF;     // Allele frequencies - alternative allele
+    std::map<string,double> setDAFs; double averageDAF;     // Allele frequencies - derived allele
+    std::map<string,double> setAAFsFromLikelihoods; double averageAAFFromLikelihoods;   // Allele frequencies - alternative allele
+    std::map<string,double> setDAFsFromLikelihoods; double averageDAFFromLikelihoods;   // Allele frequencies - derived allele
     std::vector<int> individualsWithVariant; // 0 homRef, 1 het, 2 homAlt
     int likelihoodsProbabilitiesType;
     // std::vector<int> set1individualsWithVariant; std::vector<int> set2individualsWithVariant;
@@ -449,8 +448,8 @@ public:
         // Get the Z-scores
         D1_Z = std::fabs(D1)/D1stdErr; D2_Z = std::fabs(D2)/D2stdErr; D3_Z = std::fabs(D3)/D3stdErr;
         // And p-values
-        D1_p = 1 - normalCDF(D1_Z); D2_p = 1 - normalCDF(D2_Z);
-        D3_p = 1 - normalCDF(D3_Z);
+        D1_p = 2 * (1 - normalCDF(D1_Z)); D2_p = 2 * (1 - normalCDF(D2_Z));
+        D3_p = 2 * (1 - normalCDF(D3_Z));
     }
     
     void addRegionDs(const int arrangement) {

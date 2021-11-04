@@ -1,13 +1,12 @@
 #  Dsuite
-Preprint now on bioRxiv:  
-Dsuite - fast D-statistics and related admixture evidence from VCF files  
-Milan Malinsky, Michael Matschiner,  and Hannes Svardal 
-bioRxiv 634477; doi: https://doi.org/10.1101/634477  
+Publication:  
+Malinsky, M., Matschiner, M. and Svardal, H. (2021) Dsuite ‐ fast D‐statistics and related admixture evidence from VCF files. Molecular Ecology Resources 21, 584–595. doi: [https://doi.org/10.1111/1755-0998.13265](https://doi.org/10.1111/1755-0998.13265)  
+Free to view author [link](https://onlinelibrary.wiley.com/share/author/QNEE6JI7DGUSBA4Y8ZGU?target=10.1111/1755-0998.13265)  
 Malawi cichlid data used in the manuscript:
 [VCF file](http://cichlid.gurdon.cam.ac.uk/Malinsky_et_al_2018_LakeMalawiCichlids_scaffold_0.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/sets.txt)<br>
 Simulated 20-species data used in the manuscript: [VCF file](http://cichlid.gurdon.cam.ac.uk/sim_dsuite_20species_5gene-flowF_all.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/s20_sets.txt); [TREE_FILE.nwk](http://cichlid.gurdon.cam.ac.uk/sim_input_tree_raw_dsuite_20species_5gene-flow_1.newick) (input tree)
 
-There is also a very nice and detailed [tutorial](https://github.com/mmatschiner/tutorials/tree/master/analysis_of_introgression_with_snp_data) by [@mmatschiner](https://github.com/mmatschiner) (Although now slightly outdated as some of the output formats of Dsuite have changed, it is still useful. Please bear with us while we update it.)
+There is also a very detailed [tutorial](https://github.com/millanek/tutorials/tree/master/analysis_of_introgression_with_snp_data) that I prepared with input from [@mmatschiner](https://github.com/mmatschiner).
 
 ## Quickstart:
 ```
@@ -51,7 +50,7 @@ For `Dtrios`, at least one individual needs to be specified to be the outgroup b
 
 All species/populations are treated equally in `Dquartets` - there should not be any outgroup.
 ### Optional files:
-3. A tree in Newick format. The tree should have leaf labels corresponding to the species/population names. Branch lengths can be present but are not used.  
+3. A tree in Newick format. The tree should have leaf labels corresponding to the species/population names. Branch lengths can be present but are not used. To use  `Fbranch`, the tree must be rooted using the Outgroup. 
 Valid examples:  
 `(Species2,(Species1,(Species3,Species4)));`  
 `(Species2:6.0,(Species1:5.0,(Species3:3.0,Species4:4.0)));`
@@ -68,7 +67,7 @@ NUMLINES=$(bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf.gz | wc -l)  # to get 
 bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf.gz | Dsuite Dtrios -l $NUMLINES stdin SETS.txt
 ```
 
-## Compilation
+## Installation
 ### Main program:
 To compile you must have a reasonably recent GCC (>=4.9.0) or clang compiler (on mac OS this comes with Command Line Tools) and the zlib compression library (https://www.zlib.net). Both should already be present on most systems. 
 
@@ -118,7 +117,7 @@ The outgroup (can be multiple samples) should be specified by using the keywork 
 
 ```
 #### Output:
-The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D statistics, Zscore, unadjusted p-values, the f4-ratios, and counts of the BBAA, BABA, and ABBA patterns. Please read the [manuscript](https://www.biorxiv.org/content/biorxiv/early/2019/05/10/634477.full.pdf) for more details. 
+The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D statistics, Zscore, unadjusted p-values, the f4-ratios, and counts of the BBAA, BABA, and ABBA patterns. Please read the [manuscript](https://doi.org/10.1111/1755-0998.13265) for more details. 
 
 The output files with suffixes  `combine.txt` and  `combine_stderr.txt` are used as input to DtriosCombine. If you don't need to use DtriosCombine, you can safely delete these files.
 
@@ -158,12 +157,18 @@ There can be multiple lines and then the program generates multiple ouput files,
 
 ###  Fbranch - A heuristic approach designed to aid the interpretation of many correlated f4-ratio results 
 ```
-Usage: Dsuite Fbranch [OPTIONS] TREE_FILE.nwk FVALS_tree.txt > fbranch.txt
+Usage: Dsuite Fbranch [OPTIONS] TREE_FILE.nwk FVALS_tree.txt
 Implements the 'f-branch' type calculations developed by Hannes Svardal for Malinsky et al., 2018, Nat. Ecol. Evo.
 Uses the f4-ratio (f_G) values produced by Dsuite Dtrios (or DtriosCombine) with the --tree option; this is the output of Dtrios with the "_tree.txt" suffix
+To use  Fbranch, the tree in TREE_FILE.nwk must be rooted with the Outgroup.
+Output to stdout
 
-       -h, --help                              display this help and exit
+      -p, --pthresh                           (default=0.01) fb scores whose associated p-value is less than 
+      -Z, --Zb-matrix                         (optional)  output the equivalent of fb-statistic, but with Z-scores to assess statistical significance
+                                              this will be printed below the f-branch matrix
+      -h, --help                              display this help and exit
 ```
+
 #### Output:
 The f-branch statistic in matrix-like format. Use the plotting function below to display the f-branch statistic.
 
@@ -193,7 +198,7 @@ optional arguments:
                         False)
 ```
 
-Running `dtools.py` yields a .png and an .svg file of the f-branch statistic along the input tree. You can edit the .svg file in a vector graphics editor (e.g., [inkscape](https://inkscape.org/) to your liking). See [Malinsky et al. 2018](https://www.nature.com/articles/s41559-018-0717-x) Fig. 3 and the Dsuite preprint biorxiv for examples and interpretation of f-branch plots.
+Running `dtools.py` yields a .png and an .svg file of the f-branch statistic along the input tree. You can edit the .svg file in a vector graphics editor (e.g., [inkscape](https://inkscape.org/) to your liking). See [Malinsky et al. 2018](https://www.nature.com/articles/s41559-018-0717-x) Fig. 3 and the Dsuite [paper](https://doi.org/10.1111/1755-0998.13265) for examples and interpretation of f-branch plots.
 
 ### (experimental) Dsuite Dquartets - Calculate the D (ABBA-BABA) and f4-ratio statistics for all possible quartets of populations/species (no outgroup)
 ```

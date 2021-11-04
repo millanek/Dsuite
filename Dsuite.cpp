@@ -3,7 +3,6 @@
 //  Dsuite
 //
 //  Created by Milan Malinsky on 02/04/2019.
-//  Copyright © 2019 Milan Malinsky. All rights reserved.
 //
 
 #include <iostream>
@@ -15,7 +14,7 @@
 #include "Dquartets.h"
 
 #define AUTHOR "Milan Malinsky"
-#define PACKAGE_VERSION "0.4 r35"
+#define PACKAGE_VERSION "0.4 r42"
 
 
 static const char *VERSION_MESSAGE =
