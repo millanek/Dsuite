@@ -121,6 +121,65 @@ The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt
 
 The output files with suffixes  `combine.txt` and  `combine_stderr.txt` are used as input to DtriosCombine. If you don't need to use DtriosCombine, you can safely delete these files.
 
+### Wrapper for parallel execution of Dsuite Dtrios
+
+We provide a python script for parallel execution at `<Dsuite_path>/utils/DtriosParallel`. The usage is analogous to Dsuite Dtrios.
+
+```
+$ ./utils/DtriosParallel --help
+usage: DtriosParallel [-h] [--cores CORES] [-k JKNUM] [-j JKWINDOW] [-t TREE]
+                      [-n RUN_NAME] [--keep-intermediate]
+                      [--logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+                      [--dsuite-path DSUITE_PATH]
+                      [--environment-setup ENVIRONMENT_SETUP]
+                      INPUT_FILE.vcf SETS.txt
+
+This python script automates parallelisation of Dsuite Dtrios/ Dsuite
+DtriosCombine. The usage is analogous to Dsuite Dtrios but computation is
+performed on multiple cores (default: number of available CPUs). It should run
+on most systems with a standard python installation (tested with python 2.7
+and 3.6).
+
+positional arguments:
+  INPUT_FILE.vcf
+  SETS.txt              The SETS.txt should have two columns: SAMPLE_ID
+                        SPECIES_ID The outgroup (can be multiple samples)
+                        should be specified by using the keyword Outgroup in
+                        place of the SPECIES_ID
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --cores CORES         (default=CPU count) Number of Dsuite Dtrios processes
+                        run in parallel.
+  -k JKNUM, --JKnum JKNUM
+                        (default=20) the number of Jackknife blocks to divide
+                        the dataset into; should be at least 20 for the whole
+                        dataset
+  -j JKWINDOW, --JKwindow JKWINDOW
+                        Jackknife block size in number of informative SNPs (as
+                        used in v0.2) when specified, this is used in place of
+                        the --JKnum option
+  -t TREE, --tree TREE  a file with a tree in the newick format specifying the
+                        relationships between populations/species D and
+                        f4-ratio values for trios arranged according to the
+                        tree will be output in a file with _tree.txt suffix
+  -n RUN_NAME, --run-name RUN_NAME
+                        run-name will be included in the output file name
+  --keep-intermediate   Keep region-wise Dsuite Dtrios results.
+  --logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}, -l {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Minimun level of logging.
+  --dsuite-path DSUITE_PATH
+                        Explicitly set the path to the directory in which
+                        Dsuite is located. By default the script will first
+                        check whether Dsuite is accessible from $PATH. If not
+                        it will try to locate Dsuite at ../Build/Dsuite.
+  --environment-setup ENVIRONMENT_SETUP
+                        Command that should be run to setup the environment
+                        for Dsuite. E.g., 'module load GCC' or 'conda
+                        activate'
+
+```
+
 ### DtriosCombine - Combine results from Dtrios runs across genomic regions (e.g. per chromosome)
 ```
 Usage: Dsuite DtriosCombine [OPTIONS] DminFile1 DminFile2 DminFile3 ....
