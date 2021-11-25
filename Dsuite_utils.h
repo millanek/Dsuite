@@ -23,7 +23,7 @@
 #include "gzstream.h"
 
 #define PROGRAM_BIN "Dsuite"
-#define PACKAGE_BUGREPORT "milan.malinsky@unibas.ch"
+#define PACKAGE_BUGREPORT "milan.malinsky@iee.unibe.ch"
 #define GZIP_EXT ".gz"
 #define F4HEADER "f4-ratio"
 
