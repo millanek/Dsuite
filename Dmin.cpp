@@ -376,11 +376,6 @@ int DminMain(int argc, char** argv) {
                 if ((ABBA + BBAA) != 0) { trioInfos[i].usedVars[1]++; trioInfos[i].localD2num += ABBA - BBAA; trioInfos[i].localD2denom += ABBA + BBAA; }
                 if ((BBAA + BABA) != 0) { trioInfos[i].usedVars[2]++; trioInfos[i].localD3num += BBAA - BABA; trioInfos[i].localD3denom += BBAA + BABA; }
                 
-                if (trios[i][0] == "29_10" && trios[i][1] == "29_12" && trios[i][2] == "29_4") {
-                    std::cerr << "Ps: " << p_S1 << " " << p_S2 << " " << p_S3 << std::endl;
-                    std::cerr << "trioInfos[i].ABBAtotal: " << trioInfos[i].ABBAtotal << " trioInfos[i].BABAtotal: " << trioInfos[i].BABAtotal << " trioInfos[i].BBAAtotal: " << trioInfos[i].BBAAtotal << std::endl;
-                }
-                
                 
                 if (p_O != 0) {
                     BAAB = p_S1*(1-p_S2)*(1-p_S3)*p_O; trioInfos[i].ABBAtotal += BAAB;
