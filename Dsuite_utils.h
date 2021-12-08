@@ -187,23 +187,32 @@ public:
             setAltCounts[it->first] = 0; setAlleleCounts[it->first] = 0; setAlleleProbCounts[it->first] = 0;
             setAAFs[it->first] = -1.0; setDAFs[it->first] = -1.0;
             setAAFsFromLikelihoods[it->first] = -1.0; setDAFsFromLikelihoods[it->first] = -1.0;
+            setPoolAAFs[it->first] = -1.0; setPoolDAFs[it->first] = -1.0;
             setSizes.push_back(it->second.size());
             setHWEpriorsFromAAFfromGT[it->first].assign(3, -1.0);
             setHWEpriorsFromDAFfromGT[it->first].assign(3, -1.0);
         }
         individualsWithVariant.assign(nSamples, 0);
+        individualPoolAAFs.assign(nSamples, -1.0);
     };
     
     void getSetVariantCountsSimple(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
     void getSetVariantCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
     
     int checkForGenotypeLikelihoodsOrProbabilities(const std::vector<std::string>& vcfLineFields);
+    int findADtagPosition(const std::vector<std::string>& vcfLineFields);
+    
     void getAFsFromGenotypeLikelihoodsOrProbabilities(const std::vector<std::string>& genotypeFields, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition);
+    void getAFsFromADtag(const std::vector<std::string>& genotypeFields, const std::map<string, std::vector<size_t>>& setsToPosMap, const int ADTagPosition, const int minDepth);
     
     int overall; int AAint;
     std::map<string,int> setAltCounts;
     std::map<string,int> setAlleleCounts; // The number of non-missing alleles for this set
     std::map<string,int> setAlleleProbCounts; // The number of non-missing alleles for this set in terms of likelihoods/probabilities
+    std::vector<double> individualPoolAAFs;  // Allele frequency for each individual pool estimated from Allelic Depth (AD tag in VCF) - for pool-seq data
+    std::map<string,double> setPoolAAFs; // The above individual pool values are then averaged if multiple pools form a set (i.e., a population or species)
+    std::map<string,double> setPoolDAFs;
+    
     std::vector<size_t> setSizes;
     std::map<string,double> setAAFs; double averageAAF;     // Allele frequencies - alternative allele
     std::map<string,double> setDAFs; double averageDAF;     // Allele frequencies - derived allele
@@ -237,7 +246,10 @@ public:
             
             setAAFsplit1fromLikelihoods[it->first] = -1.0; setAAFsplit2fromLikelihoods[it->first] = -1.0; setDAFsplit1fromLikelihoods[it->first] = -1.0;
             setDAFsplit2fromLikelihoods[it->first] = -1.0; setAlleleCountsSplit1fromLikelihoods[it->first] = 0;
-            setAlleleCountsSplit2fromLikelihoods[it->first] = 0; 
+            setAlleleCountsSplit2fromLikelihoods[it->first] = 0;
+            
+            setPoolAAFsplit1[it->first] = -1.0; setPoolAAFsplit2[it->first] = -1.0;
+            setPoolDAFsplit1[it->first] = -1.0; setPoolDAFsplit2[it->first] = -1.0;
 
         }
     }
@@ -250,6 +262,7 @@ public:
     std::map<string,int> setAlleleCountsSplit1; // The number of non-missing alleles for the complement of this set
     std::map<string,int> setAlleleCountsSplit2;
     
+    
 
     std::map<string,double> setAAFsplit1fromLikelihoods; // Allele frequencies - alternative allele
     std::map<string,double> setAAFsplit2fromLikelihoods; //
@@ -258,8 +271,17 @@ public:
     std::map<string,int> setAlleleCountsSplit1fromLikelihoods; // The number of non-missing alleles for the complement of this set
     std::map<string,int> setAlleleCountsSplit2fromLikelihoods;
     
-    void getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(const std::vector<std::string>& genotypeFields, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition);
+    std::map<string,double> setPoolAAFsplit1;
+    std::map<string,double> setPoolDAFsplit1;
+    std::map<string,double> setPoolAAFsplit2; 
+    std::map<string,double> setPoolDAFsplit2;
+    
+    
+    
     void getSplitCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
+    
+    void getAFsFromADtagWithSplits(const std::vector<std::string>& genotypeFields, const std::map<string, std::vector<size_t>>& setsToPosMap, const int ADTagPosition, const int minDepth);
+    void getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(const std::vector<std::string>& genotypeFields, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition);
 
 private:
     void getBasicCountsWithSplits(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);

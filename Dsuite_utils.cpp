@@ -6,6 +6,7 @@
 //
 
 #include "Dsuite_utils.h"
+#include <random>
 
 long double normalCDF(double x) // Phi(-∞, x) aka N(x)
 {
@@ -203,6 +204,130 @@ void GeneralSetCounts::getAFsFromGenotypeLikelihoodsOrProbabilities(const std::v
     }
      
 }
+
+void GeneralSetCounts::getAFsFromADtag(const std::vector<std::string>& genotypeFields, const std::map<string, std::vector<size_t>>& setsToPosMap, const int ADTagPosition, const int minDepth) {
+    for (std::vector<std::string>::size_type i = 0; i < genotypeFields.size(); i++) {
+          // std::cerr << genotypeFields[i] << std::endl;
+           std::string thisADstring = split(genotypeFields[i], ':')[ADTagPosition];
+           if (thisADstring == ".") {
+               std::cerr << "The AD tag info appears to be missing: " << thisADstring << " ; Exiting ..." << std::endl;
+               exit(1);
+           }
+           
+           else {
+               std::vector<double> ADs = splitToDouble(thisADstring,',');
+               if (ADs.size() != 2) {
+                   std::cerr << "This AD tag appears malformed: " << thisADstring << " ; Exiting ..." << std::endl;
+                   exit(1);
+               }
+               
+               int overallDepth = ADs[0] + ADs[1];
+               if (overallDepth >= minDepth) {
+                    individualPoolAAFs[i] = ADs[0]/(overallDepth);
+               }
+           }
+       }
+       
+       for(std::map<string, std::vector<size_t>>::const_iterator it = setsToPosMap.begin(); it != setsToPosMap.end(); ++it) {
+           int individualsInThisSet = (int) it->second.size();
+           assert(individualsInThisSet > 0);
+           if (individualsInThisSet == 1) {
+               int pos = (int) it->second[0];
+               setPoolAAFs.at(it->first) = individualPoolAAFs[pos];
+           } else {
+               std::vector<double> thisSetAFs;
+               for (int i = 0; i < individualsInThisSet; i++) {
+                   int pos = (int) it->second[i];
+                   if (individualPoolAAFs[pos] != -1.0) thisSetAFs.push_back(individualPoolAAFs[pos]);
+               }
+               setPoolAAFs.at(it->first) = vector_average(thisSetAFs);
+               
+           }
+           
+           
+           if (AAint == AncestralAlleleRef) {
+               setPoolDAFs.at(it->first) = setPoolAAFs.at(it->first);
+           } else if (AAint == AncestralAlleleAlt && setPoolAAFs.at(it->first) != -1.0) {
+               setPoolDAFs.at(it->first) = (1 - setPoolAAFs.at(it->first));
+           }
+           
+               
+       }
+}
+
+
+void GeneralSetCountsWithSplits::getAFsFromADtagWithSplits(const std::vector<std::string>& genotypeFields, const std::map<string, std::vector<size_t>>& setsToPosMap, const int ADTagPosition, const int minDepth) {
+    
+    
+    for (std::vector<std::string>::size_type i = 0; i < genotypeFields.size(); i++) {
+       // std::cerr << genotypeFields[i] << std::endl;
+        std::string thisADstring = split(genotypeFields[i], ':')[ADTagPosition];
+        if (thisADstring == ".") {
+            std::cerr << "The AD tag info appears to be missing: " << thisADstring << " ; Exiting ..." << std::endl;
+            exit(1);
+        }
+        
+        else {
+            std::vector<double> ADs = splitToDouble(thisADstring,',');
+            if (ADs.size() != 2) {
+                std::cerr << "This AD tag appears malformed: " << thisADstring << " ; Exiting ..." << std::endl;
+                exit(1);
+            }
+            
+            int overallDepth = ADs[0] + ADs[1];
+            if (overallDepth >= minDepth) {
+                 individualPoolAAFs[i] = ADs[0]/(overallDepth);
+            }
+        }
+    }
+    
+    for(std::map<string, std::vector<size_t>>::const_iterator it = setsToPosMap.begin(); it != setsToPosMap.end(); ++it) {
+        int individualsInThisSet = (int) it->second.size();
+        assert(individualsInThisSet > 0);
+        if (individualsInThisSet == 1) {
+            int pos = (int) it->second[0];
+            setPoolAAFs.at(it->first) = individualPoolAAFs[pos];
+            setPoolAAFsplit1.at(it->first) = individualPoolAAFs[pos];
+            setPoolAAFsplit2.at(it->first) = individualPoolAAFs[pos];
+        } else {
+            std::vector<double> thisSetAFs;
+            for (int i = 0; i < individualsInThisSet; i++) {
+                int pos = (int) it->second[i];
+                thisSetAFs.push_back(individualPoolAAFs[pos]);
+            }
+            setPoolAAFs.at(it->first) = vector_average(thisSetAFs);
+            
+            // Take care of the splits by random sampling with replacement:
+            std::random_device rd;     // only used once to initialise (seed) engine
+            std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
+            std::uniform_int_distribution<int> uni(0,(individualsInThisSet - 1)); // guaranteed unbiased
+            
+            std::vector<double> thisSetAFsplit1; std::vector<double> thisSetAFsplit2;
+            for (int i = 0; i < individualsInThisSet; i++) {
+                int random_pos_s1 = uni(rng);
+                int random_pos_s2 = uni(rng);
+                thisSetAFsplit1.push_back(individualPoolAAFs[random_pos_s1]);
+                thisSetAFsplit2.push_back(individualPoolAAFs[random_pos_s2]);
+            }
+            setPoolAAFsplit1.at(it->first) = vector_average(thisSetAFsplit1);
+            setPoolAAFsplit2.at(it->first) = vector_average(thisSetAFsplit2);
+            
+        }
+        
+        if (AAint == AncestralAlleleRef) {
+            setPoolDAFs.at(it->first) = setPoolAAFs.at(it->first);
+            setPoolDAFsplit1.at(it->first) = setPoolAAFsplit1.at(it->first);
+            setPoolDAFsplit2.at(it->first) = setPoolAAFsplit2.at(it->first);
+        } else if (AAint == AncestralAlleleAlt && setPoolAAFs.at(it->first) != -1.0) {
+            setPoolDAFs.at(it->first) = (1 - setPoolAAFs.at(it->first));
+            setPoolDAFsplit1.at(it->first) = (1 - setPoolAAFsplit1.at(it->first));
+            setPoolDAFsplit2.at(it->first) = (1 - setPoolAAFsplit2.at(it->first));
+        }
+            
+    }
+}
+
+
 
 void GeneralSetCountsWithSplits::getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(const std::vector<std::string>& genotypeFields, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition) {
  /* if (likelihoodsProbabilitiesType == LikelihoodsProbabilitiesPL || likelihoodsProbabilitiesType == LikelihoodsProbabilitiesGL) {
@@ -477,6 +602,19 @@ void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& 
     averageAAF = totalAAF/numNonZeroCounts;
     if (AAint == AncestralAlleleRef) averageDAF = averageAAF;
     else if (AAint == AncestralAlleleAlt) averageDAF = (1 - averageAAF);
+}
+
+int GeneralSetCounts::findADtagPosition(const std::vector<std::string>& vcfLineFields) {
+    
+    std::vector<std::string> format = split(vcfLineFields[8], ':');
+    if (format.size() == 1) return LikelihoodsProbabilitiesAbsent; // The GT tag must be present in the first place
+    
+    int ADTagPosition = returnFormatTagPosition(format, "AD");
+    if (ADTagPosition == std::numeric_limits<int>::min()) {
+        std::cerr << "Could not find the AD tag in the VCF file. This tag is requored to use the pool-seq option. Exiting ...." << std::endl;
+        exit(1);
+    }
+    return ADTagPosition;
 }
 
 

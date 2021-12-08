@@ -41,6 +41,9 @@ static const char *DMIN_USAGE_MESSAGE =
 "       -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe\n"
 "       -g, --use-genotype-probabilities        (optional) use probabilities (GP tag) or calculate them from likelihoods (GL or PL tags) using a Hardy-Weinberg prior\n"
 "                                               the probabilities are used to estimate allele frequencies in each population/species\n"
+"       -p, --pool-seq=MIN_DEPTH                (optional) VCF contains pool-seq data; i.e., each 'individual' is a population\n"
+"                                               allele frequencies are then estimated from the AD (Allelic Depth) field, as long as there are MIN_DEPTH reads\n"
+"                                               default MIN_DEPTH=5\n"
 "       -c, --no-combine                        (optional) do not output the \"_combine.txt\" and \"_combine_stderr.txt\" files\n"
 "                                               these are needed only for DtriosCombine\n"
 "\n"
@@ -48,7 +51,7 @@ static const char *DMIN_USAGE_MESSAGE =
 
 
 enum { OPT_NO_F4 };
-static const char* shortopts = "hr:n:t:j:fpk:l:o:gc";
+static const char* shortopts = "hr:n:t:j:fk:l:o:gcp:";
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
@@ -61,6 +64,7 @@ static const struct option longopts[] = {
     { "help",   no_argument, NULL, 'h' },
     { "no-f4-ratio",   no_argument, NULL, OPT_NO_F4 },
     { "use-genotype-probabilities", no_argument, NULL, 'g'},
+    { "pool-seq", required_argument, NULL, 'p'},
     { NULL, 0, NULL, 0 }
 };
 
@@ -77,8 +81,9 @@ namespace opt
     static int regionLength = -1;
     static int providedNumLines = -1;
     static bool fStats = true;
-    static bool Patterson = true;
     static bool useGenotypeProbabilities = false;
+    static bool poolSeq = false;
+    static int poolMinDepth;
     static bool combine = true;
 }
 
@@ -252,6 +257,7 @@ int DminMain(int argc, char** argv) {
             if (opt::fStats)  {
                 GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(speciesToPosMap, (int)genotypes.size());
                 c->getSplitCounts(genotypes, posToSpeciesMap);
+                
                 if (opt::useGenotypeProbabilities) {
                     int likelihoodsOrProbabilitiesTagPosition = c->checkForGenotypeLikelihoodsOrProbabilities(fields);
                     if (likelihoodsOrProbabilitiesTagPosition == LikelihoodsProbabilitiesAbsent) {
@@ -259,33 +265,51 @@ int DminMain(int argc, char** argv) {
                         opt::useGenotypeProbabilities = false;
                     } else c->getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
                 }
+                
+                if (opt::poolSeq) {
+                    int ADtagPos = c->findADtagPosition(fields);
+                    c->getAFsFromADtagWithSplits(genotypes, speciesToPosMap, ADtagPos, opt::poolMinDepth);
+                }
+                
                 p_O = c->setDAFs.at("Outgroup"); if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
+                
                 if (opt::useGenotypeProbabilities) {
                     for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
-                    try {
+                        try {
                             allPs[i] = c->setDAFsFromLikelihoods.at(species[i]);
                             allSplit1Ps[i] = c->setDAFsplit1fromLikelihoods.at(species[i]);
                             allSplit2Ps[i] = c->setDAFsplit2fromLikelihoods.at(species[i]);
                             allSplit1Counts[i] = c->setAlleleCountsSplit1fromLikelihoods.at(species[i]);
                             allSplit2Counts[i] = c->setAlleleCountsSplit2fromLikelihoods.at(species[i]);
-                    } catch (const std::out_of_range& oor) {
-                    std::cerr << "Counts are missing some info for " << species[i] << std::endl;
-                    }
+                        } catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
                     }
                    // print_vector(allPs, std::cerr);
+                } else if (opt::poolSeq) {
+                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                        try {
+                                allPs[i] = c->setPoolDAFs.at(species[i]);
+                               /* if (isnan(allPs[i])) {
+                                    std::cerr << "something problematic here: " << allPs[i] << " ; Exiting ..." << std::endl;
+                                    std::cerr << fields[0] << " " << fields[1] << " species[i]: " << species[i] << " ; Exiting ..." << std::endl;
+                                    std::cerr << genotypes[speciesToPosMap.at(species[i])[0]] << std::endl;
+                                    exit(1);
+                                } */
+                                allSplit1Ps[i] = c->setPoolDAFsplit1.at(species[i]);
+                                allSplit2Ps[i] = c->setPoolDAFsplit2.at(species[i]);
+                                allSplit1Counts[i] = 1; allSplit2Counts[i] = 1;
+                        } catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
+                    }
+                
                 } else {
                     for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
-                    try {
-                        //} else {
-                            allPs[i] = c->setDAFs.at(species[i]);
-                            allSplit1Ps[i] = c->setDAFsplit1.at(species[i]);
-                            allSplit2Ps[i] = c->setDAFsplit2.at(species[i]);
-                            allSplit1Counts[i] = c->setAlleleCountsSplit1.at(species[i]);
-                            allSplit2Counts[i] = c->setAlleleCountsSplit2.at(species[i]);
-                        //}
-                    } catch (const std::out_of_range& oor) {
-                        std::cerr << "Counts are missing some info for " << species[i] << std::endl;
-                    }}
+                        try {
+                                allPs[i] = c->setDAFs.at(species[i]);
+                                allSplit1Ps[i] = c->setDAFsplit1.at(species[i]);
+                                allSplit2Ps[i] = c->setDAFsplit2.at(species[i]);
+                                allSplit1Counts[i] = c->setAlleleCountsSplit1.at(species[i]);
+                                allSplit2Counts[i] = c->setAlleleCountsSplit2.at(species[i]);
+                        } catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
+                    }
                     //print_vector(allPs, std::cerr);
                 }
                 delete c;
@@ -299,15 +323,28 @@ int DminMain(int argc, char** argv) {
                         opt::useGenotypeProbabilities = false;
                     } else c2->getAFsFromGenotypeLikelihoodsOrProbabilities(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
                 }
+                
+                if (opt::poolSeq) {
+                    int ADtagPos = c2->findADtagPosition(fields);
+                    c2->getAFsFromADtag(genotypes,speciesToPosMap,ADtagPos, opt::poolMinDepth);
+                }
+                
                 p_O = c2->setDAFs.at("Outgroup"); if (p_O == -1) { delete c2; continue; } // We need to make sure that the outgroup is defined
                 if (opt::useGenotypeProbabilities) {
                     for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
-                            allPs[i] = c2->setDAFsFromLikelihoods.at(species[i]);
+                        try { allPs[i] = c2->setDAFsFromLikelihoods.at(species[i]); }
+                        catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
                     }
                  // print_vector(allPs, std::cerr);
+                } else if (opt::poolSeq) {
+                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                        try {allPs[i] = c2->setPoolDAFs.at(species[i]); }
+                        catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
+                    }
                 } else {
                     for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
-                            allPs[i] = c2->setDAFs.at(species[i]);
+                        try {allPs[i] = c2->setDAFs.at(species[i]); }
+                        catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
                     }
                 //print_vector(allPs, std::cerr);
                 //exit(1);
@@ -330,6 +367,8 @@ int DminMain(int argc, char** argv) {
                 if (p_S1 == 0 && p_S2 == 0 && p_S3 == 0) continue; // Checking if the SNP is variable in the trio
                 if (p_S1 == 1 && p_S2 == 1 && p_S3 == 1) continue; // Checking if the SNP is variable in the trio
                 
+                
+                
                 ABBA = (1-p_S1)*p_S2*p_S3*(1-p_O); trioInfos[i].ABBAtotal += ABBA;
                 BABA = p_S1*(1-p_S2)*p_S3*(1-p_O); trioInfos[i].BABAtotal += BABA;
                 BBAA = p_S1*p_S2*(1-p_S3)*(1-p_O); trioInfos[i].BBAAtotal += BBAA;
@@ -337,7 +376,13 @@ int DminMain(int argc, char** argv) {
                 if ((ABBA + BBAA) != 0) { trioInfos[i].usedVars[1]++; trioInfos[i].localD2num += ABBA - BBAA; trioInfos[i].localD2denom += ABBA + BBAA; }
                 if ((BBAA + BABA) != 0) { trioInfos[i].usedVars[2]++; trioInfos[i].localD3num += BBAA - BABA; trioInfos[i].localD3denom += BBAA + BABA; }
                 
-                if (opt::Patterson && (p_O != 0)) {
+                if (trios[i][0] == "29_10" && trios[i][1] == "29_12" && trios[i][2] == "29_4") {
+                    std::cerr << "Ps: " << p_S1 << " " << p_S2 << " " << p_S3 << std::endl;
+                    std::cerr << "trioInfos[i].ABBAtotal: " << trioInfos[i].ABBAtotal << " trioInfos[i].BABAtotal: " << trioInfos[i].BABAtotal << " trioInfos[i].BBAAtotal: " << trioInfos[i].BBAAtotal << std::endl;
+                }
+                
+                
+                if (p_O != 0) {
                     BAAB = p_S1*(1-p_S2)*(1-p_S3)*p_O; trioInfos[i].ABBAtotal += BAAB;
                     ABAB = (1-p_S1)*p_S2*(1-p_S3)*p_O; trioInfos[i].BABAtotal += ABAB;
                     AABB = (1-p_S1)*(1-p_S2)*p_S3*p_O; trioInfos[i].BBAAtotal += AABB;
@@ -363,7 +408,7 @@ int DminMain(int argc, char** argv) {
                     } else { assignSplits01FromAlleleFrequency(p_S3, p_S3a, p_S3b); }
                     trioInfos[i].F_G_denom1 += fG_Denom_perVariant(p_S1,p_S3a,p_S3b,p_O);
                     trioInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(p_S2,p_S3a,p_S3b,p_O);
-                    if (opt::Patterson && (p_O != 0)) {
+                    if (p_O != 0) {
                         trioInfos[i].F_G_denom1 += fG_Denom_perVariant(1-p_S1,1-p_S3a,1-p_S3b,1-p_O);
                         trioInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(1-p_S2,1-p_S3a,1-p_S3b,1-p_O);
                     }
@@ -375,7 +420,7 @@ int DminMain(int argc, char** argv) {
                     } else { assignSplits01FromAlleleFrequency(p_S2, p_S2a, p_S2b); }
                     trioInfos[i].F_G_denom2 += fG_Denom_perVariant(p_S1,p_S2a,p_S2b,p_O);
                     trioInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(p_S3,p_S2a,p_S2b,p_O);
-                    if (opt::Patterson && (p_O != 0)) {
+                    if (p_O != 0) {
                         trioInfos[i].F_G_denom2 += fG_Denom_perVariant(1-p_S1,1-p_S2a,1-p_S2b,1-p_O);
                         trioInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(1-p_S3,1-p_S2a,1-p_S2b,1-p_O);
                     }
@@ -388,7 +433,7 @@ int DminMain(int argc, char** argv) {
                     
                     trioInfos[i].F_G_denom3 += fG_Denom_perVariant(p_S3,p_S1a,p_S1b,p_O);
                     trioInfos[i].F_G_denom3_reversed += fG_Denom_perVariant(p_S2,p_S1a,p_S1b,p_O);
-                    if (opt::Patterson && (p_O != 0)) {
+                    if (p_O != 0) {
                         trioInfos[i].F_G_denom3 += fG_Denom_perVariant(1-p_S3,1-p_S1a,1-p_S1b,1-p_O);
                         trioInfos[i].F_G_denom3_reversed += fG_Denom_perVariant(1-p_S2,1-p_S1a,1-p_S1b,1-p_O);
                     }
@@ -487,11 +532,11 @@ void parseDminOptions(int argc, char** argv) {
             case 'j': arg >> opt::jkWindowSize; break;
             case 'k': arg >> opt::jkNum; break;
             case OPT_NO_F4: opt::fStats = false; break;
-            case 'p': opt::Patterson = true; break;
             case 'c': opt::combine = false; break;
             case 'g': opt::useGenotypeProbabilities = true; break;
             case 'l': arg >> opt::providedNumLines; break;
             case 'o': arg >> opt::providedOutPrefix; break;
+            case 'p': opt::poolSeq = true; arg >> opt::poolMinDepth; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
                 if (regionArgs.size() != 2) {
                     std::cerr << "the --region argument should be two numbers separated by a comma\n";
@@ -505,11 +550,18 @@ void parseDminOptions(int argc, char** argv) {
         }
     }
     
-    if (argc - optind < 2) {
+    int maxNumArgs = 2; int minNumArgs = 2; // if (opt::poolSeq) { minNumArgs = 1; }
+    
+    if (opt::poolSeq && opt::useGenotypeProbabilities) {
+        std::cerr << "The -p and -g options are not compatible. Please check your command line. Exiting ....\n";
+        die = true;
+    }
+    
+    if (argc - optind < minNumArgs) {
         std::cerr << "missing arguments\n";
         die = true;
     }
-    else if (argc - optind > 2)
+    else if (argc - optind > maxNumArgs)
     {
         std::cerr << "too many arguments\n";
         die = true;
