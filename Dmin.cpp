@@ -43,7 +43,7 @@ static const char *DMIN_USAGE_MESSAGE =
 "                                               the probabilities are used to estimate allele frequencies in each population/species\n"
 "       -p, --pool-seq=MIN_DEPTH                (optional) VCF contains pool-seq data; i.e., each 'individual' is a population\n"
 "                                               allele frequencies are then estimated from the AD (Allelic Depth) field, as long as there are MIN_DEPTH reads\n"
-"                                               default MIN_DEPTH=5\n"
+"                                               e.g MIN_DEPTH=5 may be reasonable\n"
 "       -c, --no-combine                        (optional) do not output the \"_combine.txt\" and \"_combine_stderr.txt\" files\n"
 "                                               these are needed only for DtriosCombine\n"
 "\n"
