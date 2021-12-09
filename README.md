@@ -91,30 +91,37 @@ $ python3 setup.py install --user --prefix=
 The above should work on both mac and linux. Note that there is no text (not even whitespace) after the `=` above. If you want to use your own virtual environments, you can alternatively not run setup.py and just install the dependencies with `pip` or `conda`.
 
 
-## Commands (v0.4):
+## Commands (v0.4 r43):
 ### Dsuite Dtrios - Calculate the D (ABBA-BABA) and f4-ratio statistics for all possible trios of populations/species
 ```
 Usage: Dsuite Dtrios [OPTIONS] INPUT_FILE.vcf SETS.txt
-
-Calculate the D (ABBA/BABA) and f4-ratio (f_G) statistics for all trios of species in the dataset (the outgroup being fixed)
+Calculate the D (ABBA/BABA) and f4-ratio statistics for all trios of species in the dataset (the outgroup being fixed)
 The results are as definded in Patterson et al. 2012 (equivalent to Durand et al. 2011 when the Outgroup is fixed for the ancestral allele)
 The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID
 The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID
 
-       -h, --help                              display this help and exit
-       -k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset
-       -j, --JKwindow                          (default=NA) Jackknife block size in number of informative SNPs (as used in v0.2)
-                                               when specified, this is used in place of the --JKnum option
-       -r, --region=start,length               (optional) only process a subset of the VCF file
-       -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species
-                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix
-       -o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written
-                                               output will be put in OUT_FILE_PREFIX_BBAA.txt, OUT_FILE_PREFIX_Dmin.txt, OUT_FILE_PREFIX_tree.txt etc.
-                                               by default, the prefix is taken from the name of the SETS.txt file
-       -n, --run-name                          (optional) run-name will be included in the output file name after the PREFIX
-       --no-f4-ratio                           (optional) don't calculate the f4-ratio
-       -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe
 
+      -h, --help                              display this help and exit
+      -k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset
+      -j, --JKwindow                          (default=NA) Jackknife block size in number of informative SNPs (as used in v0.2)
+                                              when specified, this is used in place of the --JKnum option
+      -r, --region=start,length               (optional) only process a subset of the VCF file; both "start" and "length" indicate variant numbers
+                                              e.g. --region=20001,10000 will process variants from 20001 to 30000
+      -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species
+                                              D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix
+      -o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written
+                                              output will be put in OUT_FILE_PREFIX_BBAA.txt, OUT_FILE_PREFIX_Dmin.txt, OUT_FILE_PREFIX_tree.txt etc.
+                                              by default, the prefix is taken from the name of the SETS.txt file
+      -n, --run-name                          (optional) run-name will be included in the output file name after the PREFIX
+      --no-f4-ratio                           (optional) don't calculate the f4-ratio
+      -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe
+      -g, --use-genotype-probabilities        (optional) use probabilities (GP tag) or calculate them from likelihoods (GL or PL tags) using a Hardy-Weinberg prior
+                                              the probabilities are used to estimate allele frequencies in each population/species
+      -p, --pool-seq=MIN_DEPTH                (optional) VCF contains pool-seq data; i.e., each 'individual' is a population
+                                              allele frequencies are then estimated from the AD (Allelic Depth) field, as long as there are MIN_DEPTH reads
+                                              e.g MIN_DEPTH=5 may be reasonable; when there are fewer reads, the allele frequency is set to missing
+      -c, --no-combine                        (optional) do not output the "_combine.txt" and "_combine_stderr.txt" files
+                                              these are needed only for DtriosCombine
 ```
 #### Output:
 The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D statistics, Zscore, unadjusted p-values, the f4-ratios, and counts of the BBAA, BABA, and ABBA patterns. Please read the [manuscript](https://doi.org/10.1111/1755-0998.13265) for more details. 
@@ -222,10 +229,63 @@ The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID
 -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe
 ```
 
+### Parallelisation with DtriosParallel
+
+This python script, included in the `./utils/` subfolder, automates parallel runs of `Dsuite Dtrios` across multiple cores on one computer and automatically combines the results using `Dsuite DtriosCombine`. The usage is analogous to `Dsuite Dtrios` (currently with more limited options) but computation is performed on multiple cores (default: number of available CPUs). It should run on most systems with a standard python installation (tested with python 2.7 and 3.6).
+
+```
+DtriosParallel [-h] [--cores CORES] [-k JKNUM] [-j JKWINDOW] [-t TREE]
+                      [-n RUN_NAME] [--keep-intermediate]
+                      [--logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+                      [--dsuite-path DSUITE_PATH]
+                      [--environment-setup ENVIRONMENT_SETUP]
+                      INPUT_FILE.vcf SETS.txt
+
+
+positional arguments:
+  INPUT_FILE.vcf
+  SETS.txt              The SETS.txt should have two columns: SAMPLE_ID
+                        SPECIES_ID The outgroup (can be multiple samples)
+                        should be specified by using the keyword Outgroup in
+                        place of the SPECIES_ID
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --cores CORES         (default=CPU count) Number of Dsuite Dtrios processes
+                        run in parallel.
+  -k JKNUM, --JKnum JKNUM
+                        (default=20) the number of Jackknife blocks to divide
+                        the dataset into; should be at least 20 for the whole
+                        dataset
+  -j JKWINDOW, --JKwindow JKWINDOW
+                        Jackknife block size in number of informative SNPs (as
+                        used in v0.2) when specified, this is used in place of
+                        the --JKnum option
+  -t TREE, --tree TREE  a file with a tree in the newick format specifying the
+                        relationships between populations/species D and
+                        f4-ratio values for trios arranged according to the
+                        tree will be output in a file with _tree.txt suffix
+  -n RUN_NAME, --run-name RUN_NAME
+                        run-name will be included in the output file name
+  --keep-intermediate   Keep region-wise Dsuite Dtrios results.
+  --logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}, -l {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Minimun level of logging.
+  --dsuite-path DSUITE_PATH
+                        Explicitly set the path to the directory in which
+                        Dsuite is located. By default the script will first
+                        check whether Dsuite is accessible from $PATH. If not
+                        it will try to locate Dsuite at ../Build/Dsuite.
+  --environment-setup ENVIRONMENT_SETUP
+                        Command that should be run to setup the environment
+                        for Dsuite. E.g., 'module load GCC' or 'conda
+                        activate'
+```
+
 ## Change log:
 
 ```
 Selected updates (full update history is accessible on gitHub):
+v0.4 r43:   First implementation of the pool-seq (-p) option in in Dtrios 
 v0.4 r28:   Merged DtriosParallel from https://github.com/feilchenfeldt and refreshed documentation
 v0.3 r27:   Added the -o (--out-prefix) option to allow more flexibility in naming output files
 v0.3 r25:   Added the Dquartets program - D and f4-ratio calculation without any outgroup, for all quartets of populations/species
