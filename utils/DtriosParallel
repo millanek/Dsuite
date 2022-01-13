@@ -46,9 +46,12 @@ def get_n_snps(vcf_fn):
     return n_snps
         
     
-def dsuite_dtrios(vcf_fn, sets_fn, run_name, n_cores, tree_fn=None,JKnum=None,
+def dsuite_dtrios(vcf_fn, sets_fn, run_name, n_cores, tree_fn=None, JKnum=None,
                   JKwindow=None,
-                  n_snps=None, dsuite_path='', environment_setup=''):
+                  n_snps=None, dsuite_path='', environment_setup='',
+                  use_genotype_probabilities=False,
+                  pool_seq=None
+                  ):
     
     if n_snps is None:
         n_snps = get_n_snps(vcf_fn)
@@ -84,15 +87,26 @@ def dsuite_dtrios(vcf_fn, sets_fn, run_name, n_cores, tree_fn=None,JKnum=None,
     else:
         jkwindow_str = "--JKwindow {}".format(JKwindow)
 
+    if use_genotype_probabilities:
+        gt_prob_str = "--use-genotype-probabilities"
+    else:
+        gt_prob_str = ""
+
+    if pool_seq is not None:
+        pool_seq_str = "--pool-seq {}".format(pool_seq)
+    else:
+        pool_seq_str = ""
+
     processes = []
     commands = []
     for start in starts:
         command_str = ('{environment_setup} {dsuite_path}Dsuite Dtrios {run_str} {tree_str} {jknum_str}'
-                       '{jkwindow_str}  --region={start},{lines_per_core} {vcf_fn} {sets_fn}'.format(
+                       '{jkwindow_str} {gt_prob_str} {pool_seq_str} --region={start},{lines_per_core} {vcf_fn} {sets_fn}'.format(
                            environment_setup=environment_setup, dsuite_path=dsuite_path,
                            run_str=run_str, tree_str=tree_str, 
                            jknum_str=jknum_str, jkwindow_str=jkwindow_str, start=start, 
-                           lines_per_core=lines_per_core, vcf_fn=vcf_fn, sets_fn=sets_fn))
+                           lines_per_core=lines_per_core, vcf_fn=vcf_fn, sets_fn=sets_fn,
+                            gt_prob_str=gt_prob_str, pool_seq_str=pool_seq_str))
         logging.info('Starting process: {command_str}'.format(command_str=command_str))
         p = subprocess.Popen(command_str,
                          shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -152,7 +166,7 @@ def dsuite_combine(sets_fn, run_name, starts, lines_per_core, tree_fn=None,
     #print('------------------------------------------------------', file=sys.stderr)
     logging.info('Combining output from {} runs with: '.format(len(starts)) + combine_command)
 
-    p = subprocess.Popen( combine_command,
+    p = subprocess.Popen(combine_command,
                          shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     o, e = p.communicate()
@@ -167,7 +181,7 @@ def dsuite_combine(sets_fn, run_name, starts, lines_per_core, tree_fn=None,
     else:
         if e:
             logging.debug(e)
-            logging.info('Successfully combined {} runs into outoput files'
+            logging.info('Successfully combined {} runs into output files'
               ' with base {}.'.format(len(starts),
                                                 os.path.join(sets_dir,"out_" +
                                                             run_name+'_combined')))
@@ -209,9 +223,9 @@ def main():
                         help=("The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID\n"
                         "The outgroup (can be multiple samples) should be specified by using the "
                         "keyword Outgroup in place of the SPECIES_ID"))
-    parser.add_argument("--cores", type=int,
-                                help=("(default=CPU count) Number of Dsuite Dtrios processes run in parallel."),
-                                                        default=None)     
+
+
+    #DSUITE options
     parser.add_argument("-k", "--JKnum", type=int,
                                 help=("(default=20) the number of Jackknife blocks to divide the dataset into;"
                                       " should be at least 20 for the whole dataset"),
@@ -229,9 +243,30 @@ def main():
     parser.add_argument("-n", "--run-name", type=str,
                         help="run-name will be included in the output file name",
                         required=False)
+
+    parser.add_argument("-l",metavar='NUMLINES', type=int,
+                                help=("(optional) the number of lines (SNPs) in the VCF input - speeds up operation if known"),
+                                                        default=None)
+
+    parser.add_argument("-g", "--use-genotype-probabilities", action='store_true',
+                        help=("(optional) use probabilities (GP tag) or calculate them from "
+                              "likelihoods (GL or PL tags) using a Hardy-Weinberg prior"))
+
+    parser.add_argument("-p", "--pool-seq", metavar="--pool-seq=MIN_DEPTH", type=int,
+                                help=("(default=20) the number of Jackknife blocks to divide the dataset into;"
+                                      " should be at least 20 for the whole dataset"),
+                                                        default=None)
+    parser.add_argument("-c", "--no-combine", action='store_true',
+                        help=("(optional) do not run DtriosCombine to obtain a single combined results file"))
+
+
+    # DtriosParallel specific options
+    parser.add_argument("--cores", type=int,
+                                help=("(default=CPU count) Number of Dsuite Dtrios processes run in parallel."),
+                                                        default=None)
     parser.add_argument( "--keep-intermediate", action='store_true',
                         help="Keep region-wise Dsuite Dtrios results.")
-    parser.add_argument('--logging_level','-l',
+    parser.add_argument('--logging_level','-v',
                                     choices=['DEBUG','INFO','WARNING','ERROR','CRITICAL'],
                                                             default='INFO',
                                                             help='Minimun level of logging.')
@@ -298,16 +333,28 @@ def main():
     vcf_fn = os.path.abspath(args.vcf_fn)
     sets_fn = os.path.abspath(args.sets_fn)
 
-    n_snps = get_n_snps(args.vcf_fn)
-    
+    if args.l is None:
+        n_snps = get_n_snps(args.vcf_fn)
+    else:
+        n_snps = args.l
+
+
     lines_per_core, starts = dsuite_dtrios(vcf_fn, sets_fn, args.run_name, args.cores, tree_fn=args.tree,
                                             n_snps=n_snps, JKnum=args.JKnum, JKwindow=args.JKwindow,dsuite_path=args.dsuite_path,
-                                            environment_setup=args.environment_setup)
-    
-    rc = dsuite_combine(sets_fn, args.run_name, starts, lines_per_core, tree_fn=args.tree,
-                        remove_intermediate_files=not args.keep_intermediate, dsuite_path=args.dsuite_path, 
-                                                                    environment_setup=args.environment_setup)
+                                            environment_setup=args.environment_setup,
+                                           use_genotype_probabilities=args.use_genotype_probabilities,
+                                            pool_seq=args.pool_seq)
 
+    #lines_per_core = int(n_snps * 1. / args.cores) + 1
+    #starts = range(1, n_snps, lines_per_core)
+
+    if not args.no_combine:
+        rc = dsuite_combine(sets_fn, args.run_name, starts, lines_per_core, tree_fn=args.tree,
+                            remove_intermediate_files=not args.keep_intermediate, dsuite_path=args.dsuite_path,
+                                                                        environment_setup=args.environment_setup)
+
+    else:
+        rc = 0
 
     return rc
 
