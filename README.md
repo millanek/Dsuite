@@ -128,6 +128,92 @@ The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt
 
 The output files with suffixes  `combine.txt` and  `combine_stderr.txt` are used as input to DtriosCombine. If you don't need to use DtriosCombine, you can safely delete these files.
 
+### DtriosParallel
+
+We provide a python script for parallel execution at `<Dsuite_path>/utils/DtriosParallel`. The usage is analogous to Dsuite Dtrios, except that the order of `SETS.txt` and `INPUT_FILE.vcf` is swapped in the command line so that the user can optionally provide multiple VCF files (whitespace separated). The script will autmatically call `DtriosCombine` to combine results of all VCF files into a single set of results files.
+
+```
+$ ./utils/DtriosParallel --help
+usage: DtriosParallel [-h] [-k JKNUM] [-j JKWINDOW] [-t TREE] [-n RUN_NAME]
+                      [-l NUMLINES] [-g] [-p --pool-seq=MIN_DEPTH] [-c]
+                      [--cores CORES] [--keep-intermediate]
+                      [--logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+                      [--dsuite-path DSUITE_PATH]
+                      [--environment-setup ENVIRONMENT_SETUP]
+                      SETS.txt INPUT_FILE.vcf [INPUT_FILE.vcf ...]
+
+This python script automates parallelisation of Dsuite Dtrios/ Dsuite
+DtriosCombine. The usage is analogous to Dsuite Dtrios but computation is
+performed on multiple cores (default: number of available CPUs). ATTENTION:
+The order of SETS.txt and INPUT_FILE.vcf is swapped compared to Dsuite Dtrios.
+This is so that multiple VCF input files can be provided. All vcf files should
+have the same samples, (e.g., different chromosomes of the same callset).
+Output_files are placed in the same folder as as the the SETS.txt file and
+named DTParallel_<SETS_basename>_<run_name>_combined_BBAA.txt etc. This script
+should run on most systems with a standard python installation (tested with
+python 2.7 and 3.6).
+
+
+positional arguments:
+  SETS.txt              The SETS.txt should have two columns: SAMPLE_ID
+                        SPECIES_ID The outgroup (can be multiple samples)
+                        should be specified by using the keyword Outgroup in
+                        place of the SPECIES_ID
+  INPUT_FILE.vcf        One or more whitespace separated SNP vcf files.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -k JKNUM, --JKnum JKNUM
+                        (default=20) the number of Jackknife blocks to divide
+                        the dataset into; should be at least 20 for the whole
+                        dataset
+  -j JKWINDOW, --JKwindow JKWINDOW
+                        Jackknife block size in number of informative SNPs (as
+                        used in v0.2) when specified, this is used in place of
+                        the --JKnum option
+  -t TREE, --tree TREE  a file with a tree in the newick format specifying the
+                        relationships between populations/species D and
+                        f4-ratio values for trios arranged according to the
+                        tree will be output in a file with _tree.txt suffix
+  -n RUN_NAME, --run-name RUN_NAME
+                        run-name will be included in the output file name
+  -l NUMLINES           (optional) the number of lines (SNPs) in the VCF
+                        input(s) - speeds up operation if known. If N
+                        INPUT_FILE.vcf files are provided, there must be N
+                        comma-separated integers provided without whitespace
+                        between them.
+  -g, --use-genotype-probabilities
+                        (optional) use probabilities (GP tag) or calculate
+                        them from likelihoods (GL or PL tags) using a Hardy-
+                        Weinberg prior
+  -p --pool-seq=MIN_DEPTH, --pool-seq --pool-seq=MIN_DEPTH
+                        (default=20) the number of Jackknife blocks to divide
+                        the dataset into; should be at least 20 for the whole
+                        dataset
+  -c, --no-combine      (optional) do not run DtriosCombine to obtain a single
+                        combined results file
+  --cores CORES         (default=CPU count) Number of Dsuite Dtrios processes
+                        run in parallel.
+  --keep-intermediate   Keep region-wise Dsuite Dtrios results.
+  --logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}, -v {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Minimun level of logging.
+  --dsuite-path DSUITE_PATH
+                        Explicitly set the path to the directory in which
+                        Dsuite is located. By default the script will first
+                        check whether Dsuite is accessible from $PATH. If not
+                        it will try to locate Dsuite at ../Build/Dsuite.
+  --environment-setup ENVIRONMENT_SETUP
+                        Command that should be run to setup the environment
+                        for Dsuite. E.g., 'module load GCC' or 'conda
+
+
+```
+
+#### Output:
+
+Output are \_BBAA, \_Dmin files analogus to Dtrios/DtriosCombine and are placed in the same folder as as the the `SETS.txt` file and
+named `DTParallel_<SETS_basename>_<run_name>_combined_BBAA.txt` etc.
+
 ### DtriosCombine - Combine results from Dtrios runs across genomic regions (e.g. per chromosome)
 ```
 Usage: Dsuite DtriosCombine [OPTIONS] DminFile1 DminFile2 DminFile3 ....
