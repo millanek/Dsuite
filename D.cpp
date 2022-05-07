@@ -7,7 +7,9 @@
 
 #include "D.h"
 #include "Dsuite_common.h"
+#include "kstest.h"
 #include <deque>
+#include <list>
 #define SUBPROGRAM "Dinvestigate"
 
 #define DEBUG 1
@@ -203,7 +205,13 @@ void doAbbaBaba() {
                 
                 
                 ABBA = ((1-p_S1)*p_S2*p_S3*(1-p_O)); testTrioInfos[i].ABBAtotal += ABBA;
-                BABA = (p_S1*(1-p_S2)*p_S3*(1-p_O)); testTrioInfos[i].BABAtotal += BABA; 
+                if(ABBA > 0.5) {
+                    testTrioInfos[i].ABBAsitePositionsPerChomosome[chr].push_back(atoi(coord.c_str()));
+                }
+                BABA = (p_S1*(1-p_S2)*p_S3*(1-p_O)); testTrioInfos[i].BABAtotal += BABA;
+                if(BABA > 0.5) {
+                    testTrioInfos[i].BABAsitePositionsPerChomosome[chr].push_back(atoi(coord.c_str()));
+                }
                 
                 if (p_S2 > p_S3) {
                     F_d_denom = ((1-p_S1)*p_S2*p_S2*(1-p_O)) - (p_S1*(1-p_S2)*p_S2*(1-p_O));
@@ -259,15 +267,18 @@ void doAbbaBaba() {
             }
             durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
             delete c;
-
         }
     }
     
     for (int i = 0; i != testTrios.size(); i++) {
+        testTrioInfos[i].mergeABBA_BABA_SiteCoordsOverChoms(); testTrioInfos[i].testIfSitesUniformlyDistributed();
+        
         std::cout << testTrios[i][0] << "\t" << testTrios[i][1] << "\t" << testTrios[i][2] << std::endl;
         std::cout << "D=" << (double)(testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal)/(testTrioInfos[i].ABBAtotal+testTrioInfos[i].BABAtotal) << std::endl;
         std::cout << "f_d=" << (double)(testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal)/testTrioInfos[i].F_d_denom << "\t" << (testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal) << "/" << testTrioInfos[i].F_d_denom << std::endl;
         std::cout << "f_dM=" << (double)(testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal)/testTrioInfos[i].F_dM_denom << "\t" << (testTrioInfos[i].ABBAtotal-testTrioInfos[i].BABAtotal) << "/" << testTrioInfos[i].F_dM_denom << std::endl;
+        std::cout << "ABBA_KSpval = " << testTrioInfos[i].ABBA_KSpval << std::endl;
+        std::cout << "BABA_KSpval = " << testTrioInfos[i].BABA_KSpval << std::endl;
         std::cout << std::endl;
     }
 }
@@ -277,6 +288,66 @@ int abbaBabaMain(int argc, char** argv) {
     parseAbbaBabaOptions(argc, argv);
     doAbbaBaba();
     return 0;
+    
+}
+
+void TestTrioInfo::testIfSitesUniformlyDistributed() {
+    // Take care of the splits by random sampling with replacement:
+    std::random_device rd;     // only used once to initialise (seed) engine
+    std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
+    std::uniform_int_distribution<int> uniABBA(0,linearABBApos.back()); // guaranteed unbiased
+    std::uniform_int_distribution<int> uniBABA(0,linearBABApos.back()); // guaranteed unbiased
+    std::list<int64_t> uniABBAvals; std::list<int64_t> uniBABAvals;
+    // uniABBAvals.re(linearABBApos.size()); uniBABAvals.resize(linearBABApos.size());
+    
+    
+    int numUniformSamples = (int)linearABBApos.size(); if (numUniformSamples < 10000) { numUniformSamples = 10000; }
+    for (int i = 0; i < numUniformSamples; i++) {
+        uniABBAvals.push_back(uniABBA(rng));
+    }
+    
+    numUniformSamples = (int)linearBABApos.size(); if (numUniformSamples < 10000) { numUniformSamples = 10000; }
+    for (int i = 0; i < numUniformSamples; i++) {
+        uniBABAvals.push_back(uniBABA(rng));
+    }
+    
+    std::list<int64_t> linearABBAposList(linearABBApos.begin(),linearABBApos.end());
+    std::list<int64_t> linearBABAposList(linearBABApos.begin(),linearBABApos.end());
+    
+    ABBA_KSpval = ks_test(uniABBAvals, linearABBAposList, std::cerr, false);
+    BABA_KSpval = ks_test(uniBABAvals, linearBABAposList, std::cerr, false);
+    
+    //double BABApval = ks_test(uniBABAvals, linearBABApos, std::cerr);
+    
+}
+
+ 
+
+
+void TestTrioInfo::mergeABBA_BABA_SiteCoordsOverChoms() {
+    int totalNumABBAsites = 0;
+    for(std::map<string,std::vector<int>>::iterator it = ABBAsitePositionsPerChomosome.begin(); it != ABBAsitePositionsPerChomosome.end(); it++) {
+        totalNumABBAsites = totalNumABBAsites + (int)it->second.size();
+    } linearABBApos.reserve(totalNumABBAsites);
+    
+    int linearPosSoFar = 0;
+    for(std::map<string,std::vector<int>>::iterator it = ABBAsitePositionsPerChomosome.begin(); it != ABBAsitePositionsPerChomosome.end(); it++) {
+        for (std::vector<int>::size_type i = 0; i < it->second.size(); i++) {
+            linearABBApos.push_back(it->second[i] + linearPosSoFar);
+        }
+    }
+    
+    int totalNumBABAsites = 0;
+    for(std::map<string,std::vector<int>>::iterator it = BABAsitePositionsPerChomosome.begin(); it != BABAsitePositionsPerChomosome.end(); it++) {
+        totalNumBABAsites = totalNumBABAsites + (int)it->second.size();
+    } linearBABApos.reserve(totalNumBABAsites);
+    
+    linearPosSoFar = 0;
+    for(std::map<string,std::vector<int>>::iterator it = BABAsitePositionsPerChomosome.begin(); it != BABAsitePositionsPerChomosome.end(); it++) {
+        for (std::vector<int>::size_type i = 0; i < it->second.size(); i++) {
+            linearBABApos.push_back(it->second[i] + linearPosSoFar);
+        }
+    }
     
 }
 

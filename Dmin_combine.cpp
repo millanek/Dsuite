@@ -53,7 +53,10 @@ namespace opt
 
 int DminCombineMain(int argc, char** argv) {
     parseDminCombineOptions(argc, argv);
+    const bool KStestPossible = false;
+    
     string line; // for reading the input files
+    
     
     string outFileRoot = prepareOutFileRootString(opt::providedOutPrefix, opt::runName, "", -1, -1);
     
@@ -101,7 +104,7 @@ int DminCombineMain(int argc, char** argv) {
     
     getline(*dminBBAAscoreFiles[0], line); std::vector<string> patternCounts = split(line, '\t');
     if (patternCounts.size() == 12) fIncluded = true;
-    string header = makeHeader(false,fIncluded);
+    string header = makeHeader(false,fIncluded,KStestPossible);
     *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
     if (opt::treeFile != "") *outFileTree << header << std::endl;
     dminBBAAscoreFiles[0]->seekg(0, dminBBAAscoreFiles[0]->beg); // Go back to the beginning of this file
@@ -194,18 +197,18 @@ int DminCombineMain(int argc, char** argv) {
             std::vector<string> trio; trio.push_back(s1); trio.push_back(s2); trio.push_back(s3);
             // Find which topology is in agreement with the counts of BBAA, BABA, and ABBA
             info.assignBBAAarrangement();
-            std::vector<string> BBAAoutVec = info.makeOutVec(trio, fIncluded, info.BBAAarrangement);
+            std::vector<string> BBAAoutVec = info.makeOutVec(trio, fIncluded,KStestPossible, info.BBAAarrangement);
             print_vector(BBAAoutVec,*outFileBBAA);
            
             // Find Dmin:
             info.assignDminArrangement();
-            std::vector<string> DminOutVec = info.makeOutVec(trio, fIncluded, info.DminArrangement);
+            std::vector<string> DminOutVec = info.makeOutVec(trio, fIncluded, KStestPossible,info.DminArrangement);
             print_vector(DminOutVec,*outFileDmin);
             
             if (opt::treeFile != "") {
                 int loc1 = treeTaxonNamesToLoc[s1][0]; int loc2 = treeTaxonNamesToLoc[s2][0]; int loc3 = treeTaxonNamesToLoc[s3][0];
                 info.treeArrangement = info.assignTreeArrangement(treeLevels, loc1, loc2, loc3);
-                std::vector<string> treeOutVec = info.makeOutVec(trio, fIncluded, info.treeArrangement);
+                std::vector<string> treeOutVec = info.makeOutVec(trio, fIncluded, KStestPossible, info.treeArrangement);
                 print_vector(treeOutVec,*outFileTree);
             }
         }

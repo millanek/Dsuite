@@ -370,7 +370,7 @@ int DquartetsMain(int argc, char** argv) {
     }
     std::cerr << "Done processing VCF. Preparing output files..." << '\n';
     
-    string header = makeHeader(true, opt::fStats);
+    string header = makeHeader(true, opt::fStats,false);
     *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
     if (opt::treeFile != "") *outFileTree << header << std::endl;
     

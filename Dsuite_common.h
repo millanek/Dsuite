@@ -11,7 +11,7 @@
 #include "Dsuite_utils.h"
 
 void process_SETS_file(std::ifstream* setsFile, const string fName, std::map<string, std::vector<string>>& speciesToIDsMap, std::map<string, string>& IDsToSpeciesMap, int outgroupRequirement);
-string makeHeader(bool quartet, bool includeFstats);
+string makeHeader(bool quartet, bool includeFstats, bool includeKSstats);
 string prepareOutFileRootString(const string& providedPrefix, const string& runName, const string& setsFileName, const int regionStart, const int regionLength);
 void printMissingLikelihoodsWarning(const string& chr, const string& pos);
 void printInitialMessageTriosQuartets(const int regionLengthOpt, const int VCFlineCount, const int JKblockSizeBasedOnNum, const int jkWindowSizeOpt, const int jkNumOpt);

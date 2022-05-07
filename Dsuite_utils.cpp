@@ -6,7 +6,6 @@
 //
 
 #include "Dsuite_utils.h"
-#include <random>
 
 long double normalCDF(double x) // Phi(-∞, x) aka N(x)
 {
@@ -504,6 +503,36 @@ void GeneralSetCounts::getBasicCounts(const std::vector<std::string>& genotypes,
     }
 }
 
+void GeneralSetCountsWithSplits::getBasicCountsWithSplitsNew(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
+    // Go through the genotypes - only biallelic markers are allowed
+    for (std::vector<std::string>::size_type i = 0; i != genotypes.size(); i++) {
+        bool speciesDefined = true;
+        std::string species; try { species = posToSpeciesMap.at(i); } catch (const std::out_of_range& oor) {
+            speciesDefined = false;
+        }
+        
+        if (speciesDefined) {
+            if (genotypes[i][0] == '0' && genotypes[i][2] == '0') {
+                setAlleleCounts[species] += 2; setIndividualAFs[species].push_back(0.0);
+                setGenotypes[species].push_back(0); setGenotypes[species].push_back(0);
+            } else if (genotypes[i][0] == '0' && genotypes[i][2] == '1') {
+                overall++; individualsWithVariant[i]++;
+                setAlleleCounts[species] += 2; setAltCounts[species]++; setIndividualAFs[species].push_back(0.5);
+                setGenotypes[species].push_back(0); setGenotypes[species].push_back(1);
+            } else if (genotypes[i][0] == '1' && genotypes[i][2] == '0') {
+                overall++; individualsWithVariant[i]++;
+                setAlleleCounts[species] += 2; setAltCounts[species]++; setIndividualAFs[species].push_back(0.5);
+                setGenotypes[species].push_back(1); setGenotypes[species].push_back(0);
+            } else if (genotypes[i][0] == '1' && genotypes[i][2] == '1') {
+                overall += 2; individualsWithVariant[i] = 2;
+                setAlleleCounts[species] += 2; setAltCounts[species] += 2; setIndividualAFs[species].push_back(1.0);
+                setGenotypes[species].push_back(1); setGenotypes[species].push_back(1);
+            }
+        }
+    }
+}
+
+
 void GeneralSetCountsWithSplits::getBasicCountsWithSplits(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
     // Go through the genotypes - only biallelic markers are allowed
     for (std::vector<std::string>::size_type i = 0; i != genotypes.size(); i++) {
@@ -515,14 +544,14 @@ void GeneralSetCountsWithSplits::getBasicCountsWithSplits(const std::vector<std:
         if (genotypes[i][0] == '1') { overall++; individualsWithVariant[i]++; }
         if (speciesDefined) {
             if (genotypes[i][0] == '1') {
-                setAltCounts[species]++; setAlleleCounts[species]++;
+                setAltCounts[species]++; setAlleleCounts[species]++; setGenotypes[species].push_back(1);
                 if (r < 0.5) {
                     setAltCountsSplit1[species]++; setAlleleCountsSplit1[species]++;
                 } else {
                     setAltCountsSplit2[species]++; setAlleleCountsSplit2[species]++;
                 }
             } else if (genotypes[i][0] == '0') {
-                setAlleleCounts[species]++;
+                setAlleleCounts[species]++;  setGenotypes[species].push_back(0);
                 if (r < 0.5) {
                     setAlleleCountsSplit1[species]++;
                 } else {
@@ -534,14 +563,14 @@ void GeneralSetCountsWithSplits::getBasicCountsWithSplits(const std::vector<std:
         if (genotypes[i][2] == '1') { overall++; individualsWithVariant[i]++; }
         if (speciesDefined) {
             if (genotypes[i][2] == '1') {
-                setAltCounts[species]++; setAlleleCounts[species]++;
+                setAltCounts[species]++; setAlleleCounts[species]++; setGenotypes[species].push_back(1);
                 if (r < 0.5) {
                     setAltCountsSplit1[species]++; setAlleleCountsSplit1[species]++;
                 } else {
                     setAltCountsSplit2[species]++; setAlleleCountsSplit2[species]++;
                 }
             } else if (genotypes[i][2] == '0') {
-                setAlleleCounts[species]++;
+                setAlleleCounts[species]++; setGenotypes[species].push_back(0);
                 if (r < 0.5) {
                     setAlleleCountsSplit1[species]++;
                 } else {
@@ -551,6 +580,7 @@ void GeneralSetCountsWithSplits::getBasicCountsWithSplits(const std::vector<std:
         }
     }
 }
+
 
 void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
     
@@ -603,6 +633,93 @@ void GeneralSetCountsWithSplits::getSplitCounts(const std::vector<std::string>& 
     if (AAint == AncestralAlleleRef) averageDAF = averageAAF;
     else if (AAint == AncestralAlleleAlt) averageDAF = (1 - averageAAF);
 }
+
+void GeneralSetCountsWithSplits::getSplitCountsNew(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
+    
+    getBasicCountsWithSplitsNew(genotypes, posToSpeciesMap);
+    
+    // If at least one of the outgroup individuals has non-missing data
+    // Find out what is the "ancestral allele" - i.e. the one more common in the outgroup
+    try {
+        if (setAlleleCounts.at("Outgroup") > 0) {
+            if ((double)vector_sum(setGenotypes.at("Outgroup"))/setGenotypes.at("Outgroup").size() < 0.5) { AAint = AncestralAlleleRef; }
+            else { AAint = AncestralAlleleAlt; } 
+        }
+    } catch (std::out_of_range& e) { AAint = -1; }
+    
+    // Now fill in the allele frequencies
+    double totalAAF = 0; int numNonZeroCounts = 0;
+    for(std::map<string,std::vector<int>>::iterator it = setGenotypes.begin(); it != setGenotypes.end(); ++it) {
+        if (it->first == "") {
+            std::cerr << "it->first " << it->first << "\t"; print_vector(it->second, std::cerr); std::cerr << std::endl;
+        }
+        std::vector<int> thisSetGenotypes = setGenotypes.at(it->first);
+        std::vector<double> thisSetIndividualAFs = setIndividualAFs.at(it->first);
+        
+        if (thisSetGenotypes.size() > 0) {
+            numNonZeroCounts++;
+            int nSplit1; int nSplit2;
+            double thisAAF = (double)vector_sum(thisSetGenotypes)/thisSetGenotypes.size();
+            setAAFs[it->first] = thisAAF; totalAAF += thisAAF;
+            nSplit1 = setAlleleCountsSplit1.at(it->first); nSplit2 = setAlleleCountsSplit2.at(it->first);
+            
+            // Take care of the splits by random sampling with replacement:
+            std::random_device rd;     // only used once to initialise (seed) engine
+            std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
+            std::uniform_int_distribution<int> uni(0,(thisSetGenotypes.size() - 1)); // guaranteed unbiased
+            std::uniform_int_distribution<int> uniAFs(0,(thisSetIndividualAFs.size() - 1)); // guaranteed unbiased
+            
+            std::vector<int> thisSetGenotypesSampledSplit1; std::vector<int> thisSetGenotypesSampledSplit2;
+            for (int i = 0; i < thisSetGenotypes.size(); i++) {
+                int random_pos_s1 = uni(rng);
+                int random_pos_s2 = uni(rng);
+                thisSetGenotypesSampledSplit1.push_back(thisSetGenotypes[random_pos_s1]);
+                thisSetGenotypesSampledSplit2.push_back(thisSetGenotypes[random_pos_s2]);
+            }
+            
+            std::vector<double> thisSetIndividualAFsSampledSplit1; std::vector<double> thisSetIndividualAFsSampledSplit2;
+            for (int i = 0; i < thisSetIndividualAFs.size(); i++) {
+                int random_pos_s1 = uniAFs(rng);
+                int random_pos_s2 = uniAFs(rng);
+                thisSetIndividualAFsSampledSplit1.push_back(thisSetIndividualAFs[random_pos_s1]);
+                thisSetIndividualAFsSampledSplit2.push_back(thisSetIndividualAFs[random_pos_s2]);
+            }
+            
+          //  double thisAAFsplit1 = vector_average(thisSetGenotypesSampledSplit1);
+          //  double thisAAFsplit2 = vector_average(thisSetGenotypesSampledSplit2);
+            double thisAAFsplit1 = vector_average(thisSetIndividualAFsSampledSplit1);
+            double thisAAFsplit2 = vector_average(thisSetIndividualAFsSampledSplit2);
+            setAAFsplit1[it->first] = thisAAFsplit1; setAAFsplit2[it->first] = thisAAFsplit2;
+            
+            // Count correction as in admixtools
+            double ya = vector_sum(thisSetGenotypes); double yb = thisSetGenotypes.size() - vector_sum(thisSetGenotypes);
+            double yt = (double)thisSetGenotypes.size();
+            double h = ya * yb / (yt * (yt - 1.0));
+            //std::cerr << "it->first: " << it->first << std::endl;
+            //std::cerr << "ya: " << ya << " ; yb: " << yb << " ; yt: " << yt << std::endl;
+            //std::cerr << "h: " << h << " ; h / yt: " << h / yt << std::endl;
+            
+            setCorrectionFactors[it->first] = h / yt;
+            
+           // std::cerr << "it->first " << it->first << std::endl;
+            try {
+            if (AAint == AncestralAlleleRef) { // Ancestral allele seems to be the ref, so derived is alt
+                setDAFs[it->first] = thisAAF;
+                setDAFsplit1[it->first] = thisAAFsplit1; setDAFsplit2[it->first] = thisAAFsplit2;
+            } else if (AAint == AncestralAlleleAlt) { // Ancestral allele seems to be alt, so derived is ref
+                setDAFs[it->first] = (1 - thisAAF);
+                setDAFsplit1[it->first] = 1 - thisAAFsplit1;
+                setDAFsplit2[it->first] = 1 - thisAAFsplit2;
+            }
+                } catch (std::out_of_range& e) { std::cerr << "The trouble was here" << it->first << std::endl; }
+        }
+    }
+    averageAAF = totalAAF/numNonZeroCounts;
+    if (AAint == AncestralAlleleRef) averageDAF = averageAAF;
+    else if (AAint == AncestralAlleleAlt) averageDAF = (1 - averageAAF);
+}
+
+
 
 int GeneralSetCounts::findADtagPosition(const std::vector<std::string>& vcfLineFields) {
     

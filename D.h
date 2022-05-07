@@ -28,7 +28,8 @@ public:
     };
     
     // string P1; string P2; string P3;
-    
+    std::map<string,std::vector<int>> ABBAsitePositionsPerChomosome; std::vector<int> linearABBApos;
+    std::map<string,std::vector<int>> BABAsitePositionsPerChomosome; std::vector<int> linearBABApos;
     std::deque<double> windowABBAs; std::deque<double> windowBABAs;
     std::deque<double> windowF_d_denoms; std::deque<double> windowF_dM_denoms;
     std::deque<double> window_d_f_nums; std::deque<double> window_d_f_denoms;
@@ -39,8 +40,10 @@ public:
     double ABBAtotal; double BABAtotal;
     double F_d_denom; double F_dM_denom; double F_G_denom; double F_G_num;
     int usedVars;
+    double ABBA_KSpval; double BABA_KSpval; 
     
-    
+    void mergeABBA_BABA_SiteCoordsOverChoms();
+    void testIfSitesUniformlyDistributed();
     
 };
 

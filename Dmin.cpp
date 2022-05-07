@@ -45,12 +45,12 @@ static const char *DMIN_USAGE_MESSAGE =
 "                                               allele frequencies are then estimated from the AD (Allelic Depth) field, as long as there are MIN_DEPTH reads\n"
 "                                               e.g MIN_DEPTH=5 may be reasonable; when there are fewer reads, the allele frequency is set to missing\n"
 "       -c, --no-combine                        (optional) do not output the \"_combine.txt\" and \"_combine_stderr.txt\" files\n"
-"                                               these are needed only for DtriosCombine\n"
+"       --KS-test-for-homoplasy                 (optional) Test whether strong ABBA-informative sites cluster along the genome\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 
-enum { OPT_NO_F4 };
+enum { OPT_NO_F4, OPT_KS_TEST };
 static const char* shortopts = "hr:n:t:j:fk:l:o:gcp:";
 
 static const struct option longopts[] = {
@@ -65,6 +65,7 @@ static const struct option longopts[] = {
     { "no-f4-ratio",   no_argument, NULL, OPT_NO_F4 },
     { "use-genotype-probabilities", no_argument, NULL, 'g'},
     { "pool-seq", required_argument, NULL, 'p'},
+    { "KS-test-for-homoplasy", no_argument, NULL, OPT_KS_TEST},
     { NULL, 0, NULL, 0 }
 };
 
@@ -81,6 +82,7 @@ namespace opt
     static int regionLength = -1;
     static int providedNumLines = -1;
     static bool fStats = true;
+    static bool KStest = false;
     static bool useGenotypeProbabilities = false;
     static bool poolSeq = false;
     static int poolMinDepth;
@@ -181,6 +183,7 @@ int DminMain(int argc, char** argv) {
     std::vector<double> allPs(species.size(),0.0);
     std::vector<double> allSplit1Ps(species.size(),0.0); std::vector<int> allSplit1Counts(species.size(),0);
     std::vector<double> allSplit2Ps(species.size(),0.0); std::vector<int> allSplit2Counts(species.size(),0);
+    std::vector<double> allCorrectionFactors(species.size(),0);
     
     int totalVariantNumber = 0;
     std::vector<string> sampleNames; std::vector<std::string> fields;
@@ -191,6 +194,8 @@ int DminMain(int argc, char** argv) {
     clock_t start; clock_t startGettingCounts; clock_t startCalculation;
     double durationOverall; double durationGettingCounts; double durationCalculation;
     int JKblockSizeBasedOnNum = 0; int missingLikelihoodsCount = 0;
+    
+    int errCount = 0;
     
     while (getline(*vcfFile, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
@@ -220,6 +225,8 @@ int DminMain(int argc, char** argv) {
                 }
                 speciesToPosMap[sp] = spPos;
             }
+            
+            
             start = clock();
             //  std::cerr << " " << std::endl;
             //  std::cerr << "Outgroup at pos: "; print_vector_stream(speciesToPosMap["Outgroup"], std::cerr);
@@ -256,7 +263,7 @@ int DminMain(int argc, char** argv) {
             double p_O;
             if (opt::fStats)  {
                 GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(speciesToPosMap, (int)genotypes.size());
-                c->getSplitCounts(genotypes, posToSpeciesMap);
+                c->getSplitCountsNew(genotypes, posToSpeciesMap);
                 
                 if (opt::useGenotypeProbabilities) {
                     int likelihoodsOrProbabilitiesTagPosition = c->checkForGenotypeLikelihoodsOrProbabilities(fields);
@@ -288,12 +295,6 @@ int DminMain(int argc, char** argv) {
                     for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
                         try {
                                 allPs[i] = c->setPoolDAFs.at(species[i]);
-                               /* if (isnan(allPs[i])) {
-                                    std::cerr << "something problematic here: " << allPs[i] << " ; Exiting ..." << std::endl;
-                                    std::cerr << fields[0] << " " << fields[1] << " species[i]: " << species[i] << " ; Exiting ..." << std::endl;
-                                    std::cerr << genotypes[speciesToPosMap.at(species[i])[0]] << std::endl;
-                                    exit(1);
-                                } */
                                 allSplit1Ps[i] = c->setPoolDAFsplit1.at(species[i]);
                                 allSplit2Ps[i] = c->setPoolDAFsplit2.at(species[i]);
                                 allSplit1Counts[i] = 1; allSplit2Counts[i] = 1;
@@ -308,6 +309,18 @@ int DminMain(int argc, char** argv) {
                                 allSplit2Ps[i] = c->setDAFsplit2.at(species[i]);
                                 allSplit1Counts[i] = c->setAlleleCountsSplit1.at(species[i]);
                                 allSplit2Counts[i] = c->setAlleleCountsSplit2.at(species[i]);
+                                allCorrectionFactors[i] = c->setCorrectionFactors.at(species[i]);
+                            
+                            /*if (isnan(allPs[i])) {
+                                                          std::cerr << "allPs[i]: " << allPs[i] << " ; Exiting ..." << std::endl;
+                                                      std::cerr << "allSplit1Ps[i]: " << allSplit1Ps[i] << " ; Exiting ..." << std::endl;
+                                                      std::cerr << "allSplit2Ps[i]: " << allSplit2Ps[i] << " ; Exiting ..." << std::endl;
+                                                      std::cerr << "allSplit1Counts[i]: " << allSplit1Counts[i] << " ; Exiting ..." << std::endl;
+                                                      std::cerr << "allSplit2Counts[i]: " << allSplit2Counts[i] << " ; Exiting ..." << std::endl;
+                                                        //  std::cerr << fields[0] << " " << fields[1] << " species[i]: " << species[i] << " ; Exiting ..." << std::endl;
+                                                        //  std::cerr << genotypes[speciesToPosMap.at(species[i])[0]] << std::endl;
+                                                        //  exit(1);
+                                                      } */
                         } catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
                     }
                     //print_vector(allPs, std::cerr);
@@ -356,7 +369,8 @@ int DminMain(int argc, char** argv) {
             
             startCalculation = clock();
             // Now calculate the D stats:
-            double p_S1; double p_S2; double p_S3; double ABBA; double BABA; double BBAA; double BAAB; double ABAB; double AABB;
+            double p_S1; double p_S2; double p_S3; double ABBA; double BABA; double BBAA; double BAAB = 0; double ABAB = 0; double AABB = 0;
+            double correctionP3;
             for (int i = 0; i != trios.size(); i++) {
                 p_S1 = allPs[triosInt[i][0]];
                 if (p_S1 == -1) continue;  // If any member of the trio has entirely missing data, just move on to the next trio
@@ -367,72 +381,151 @@ int DminMain(int argc, char** argv) {
                 if (p_S1 == 0 && p_S2 == 0 && p_S3 == 0) continue; // Checking if the SNP is variable in the trio
                 if (p_S1 == 1 && p_S2 == 1 && p_S3 == 1) continue; // Checking if the SNP is variable in the trio
                 
+                // Also no need to calculate anything if the SNP is variable in only one population
+             /* if (p_S1 == 0 && p_S2 == 0 && p_O == 0) continue;
+              if (p_S1 == 1 && p_S2 == 1 && p_O == 1) continue;
+              if (p_S1 == 0 && p_S3 == 0 && p_O == 0) continue;
+              if (p_S1 == 1 && p_S3 == 1 && p_O == 1) continue;
+              if (p_S2 == 0 && p_S3 == 0 && p_O == 0) continue;
+              if (p_S2 == 1 && p_S3 == 1 && p_O == 1) continue; */
+                
+                //std::cerr << "p_S1: " << p_S1 << " ; p_S2: " << p_S2 << " ; p_S3: " << p_S3 << std::endl;
+                //std::cerr << std::endl;
                 
                 
-                ABBA = (1-p_S1)*p_S2*p_S3*(1-p_O); trioInfos[i].ABBAtotal += ABBA;
-                BABA = p_S1*(1-p_S2)*p_S3*(1-p_O); trioInfos[i].BABAtotal += BABA;
-                BBAA = p_S1*p_S2*(1-p_S3)*(1-p_O); trioInfos[i].BBAAtotal += BBAA;
-                if ((ABBA + BABA) != 0) { trioInfos[i].usedVars[0]++; trioInfos[i].localD1num += ABBA - BABA; trioInfos[i].localD1denom += ABBA + BABA; }
-                if ((ABBA + BBAA) != 0) { trioInfos[i].usedVars[1]++; trioInfos[i].localD2num += ABBA - BBAA; trioInfos[i].localD2denom += ABBA + BBAA; }
-                if ((BBAA + BABA) != 0) { trioInfos[i].usedVars[2]++; trioInfos[i].localD3num += BBAA - BABA; trioInfos[i].localD3denom += BBAA + BABA; }
-                
+                ABBA = (1-p_S1)*p_S2*p_S3*(1-p_O);
+                BABA = p_S1*(1-p_S2)*p_S3*(1-p_O);
+                BBAA = p_S1*p_S2*(1-p_S3)*(1-p_O);
                 
                 if (p_O != 0) {
-                    BAAB = p_S1*(1-p_S2)*(1-p_S3)*p_O; trioInfos[i].ABBAtotal += BAAB;
-                    ABAB = (1-p_S1)*p_S2*(1-p_S3)*p_O; trioInfos[i].BABAtotal += ABAB;
-                    AABB = (1-p_S1)*(1-p_S2)*p_S3*p_O; trioInfos[i].BBAAtotal += AABB;
-                    if (BAAB + ABAB != 0)  { trioInfos[i].localD1num += BAAB - ABAB; trioInfos[i].localD1denom += BAAB + ABAB; }
-                    if (BAAB + AABB != 0)  { trioInfos[i].localD2num += BAAB - AABB; trioInfos[i].localD2denom += BAAB + AABB; }
-                    if (AABB + ABAB != 0)  { trioInfos[i].localD3num += AABB - ABAB; trioInfos[i].localD3denom += AABB + ABAB; }
+                    BAAB = p_S1*(1-p_S2)*(1-p_S3)*p_O;
+                    ABAB = (1-p_S1)*p_S2*(1-p_S3)*p_O;
+                    AABB = (1-p_S1)*(1-p_S2)*p_S3*p_O;
+                    
+                    ABBA = ABBA + BAAB; BABA = BABA + ABAB; BBAA = BBAA + AABB;
                 }
+                
+                trioInfos[i].ABBAtotal += ABBA; trioInfos[i].BABAtotal += BABA; trioInfos[i].BBAAtotal += BBAA;
+                
+                if (ABBA > 0.5 && (ABBA + BABA) == 0) {
+                
+                std::cerr << "ABBA : " << ABBA << std::endl;
+                std::cerr << "BABA : " << BABA << std::endl;
+                std::cerr << "(ABBA + BABA): " << (ABBA + BABA) << std::endl;
+                }
+                if ((ABBA + BABA) != 0) { trioInfos[i].usedVars[0]++; trioInfos[i].totalUsedVars[0]++;
+                    trioInfos[i].localD1num += ABBA - BABA; trioInfos[i].localD1denom += ABBA + BABA; }
+                if ((ABBA + BBAA) != 0) { trioInfos[i].usedVars[1]++; trioInfos[i].totalUsedVars[1]++;
+                    trioInfos[i].localD2num += ABBA - BBAA; trioInfos[i].localD2denom += ABBA + BBAA; }
+                if ((BBAA + BABA) != 0) { trioInfos[i].usedVars[2]++; trioInfos[i].totalUsedVars[2]++;
+                    trioInfos[i].localD3num += BBAA - BABA; trioInfos[i].localD3denom += BBAA + BABA; }
+                
+                
+                if (opt::KStest) {
+                    if (ABBA > 0.5) {
+                        trioInfos[i].linearStrongABBApos[0].push_back(trioInfos[i].totalUsedVars[0]);
+                        trioInfos[i].linearStrongABBApos[1].push_back(trioInfos[i].totalUsedVars[1]);
+                    }
+                    if (BABA > 0.5) {
+                        trioInfos[i].linearStrongBABApos[0].push_back(trioInfos[i].totalUsedVars[0]);
+                        trioInfos[i].linearStrongBABApos[2].push_back(trioInfos[i].totalUsedVars[2]);
+                    }
+                    if (BBAA > 0.5) {
+                        trioInfos[i].linearStrongABBApos[2].push_back(trioInfos[i].totalUsedVars[2]);
+                        trioInfos[i].linearStrongBABApos[1].push_back(trioInfos[i].totalUsedVars[1]);
+                    }
+                }
+                
+                
                 
                 if (opt::fStats) {
                     
                     // f_G
-                    int c_S1a = 0; int c_S1b = 0; int c_S2a = 0; int c_S2b = 0;int c_S3a = 0; int c_S3b = 0;
-                    c_S3a = allSplit1Counts[triosInt[i][2]]; c_S3b = allSplit2Counts[triosInt[i][2]];
-                    c_S2a = allSplit1Counts[triosInt[i][1]]; c_S2b = allSplit2Counts[triosInt[i][1]];
-                    c_S1a = allSplit1Counts[triosInt[i][0]]; c_S1b = allSplit2Counts[triosInt[i][0]];
+                 //   int c_S1a = 0; int c_S1b = 0; int c_S2a = 0; int c_S2b = 0;int c_S3a = 0; int c_S3b = 0;
+                  //  c_S3a = allSplit1Counts[triosInt[i][2]]; c_S3b = allSplit2Counts[triosInt[i][2]];
+                  //  c_S2a = allSplit1Counts[triosInt[i][1]]; c_S2b = allSplit2Counts[triosInt[i][1]];
+                  //  c_S1a = allSplit1Counts[triosInt[i][0]]; c_S1b = allSplit2Counts[triosInt[i][0]];
+                    
+                    
                     
                     double p_S1a = 0; double p_S1b = 0; double p_S2a = 0; double p_S2b = 0; double p_S3a = 0; double p_S3b = 0;
                     
-                    if (c_S3a > 0 && c_S3b > 0) {
-                        p_S3a = allSplit1Ps[triosInt[i][2]]; p_S3b = allSplit2Ps[triosInt[i][2]];
-                    } else if (p_S3 == 1 || p_S3 == 0) {
-                        p_S3a = p_S3; p_S3b = p_S3;
-                    } else { assignSplits01FromAlleleFrequency(p_S3, p_S3a, p_S3b); }
+                    correctionP3 = allCorrectionFactors[triosInt[i][2]];
+                    
+                    p_S3a = allSplit1Ps[triosInt[i][2]]; p_S3b = allSplit2Ps[triosInt[i][2]];
+                    p_S2a = allSplit1Ps[triosInt[i][1]]; p_S2b = allSplit2Ps[triosInt[i][1]];
+                    p_S1a = allSplit1Ps[triosInt[i][0]]; p_S1b = allSplit2Ps[triosInt[i][0]];
+                    assert(p_S1a >= 0); assert(p_S1b >= 0);
+                    assert(p_S2a >= 0); assert(p_S2b >= 0);
+                    assert(p_S3a >= 0); assert(p_S3b >= 0);
+                    
+                    double thisFgDenom1 = fG_Denom_perVariant(p_S1,p_S3a,p_S3b,p_O);
+                    double thisFgDenom1_rev = fG_Denom_perVariant(p_S2,p_S3a,p_S3b,p_O);
+                    
                     trioInfos[i].F_G_denom1 += fG_Denom_perVariant(p_S1,p_S3a,p_S3b,p_O);
                     trioInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(p_S2,p_S3a,p_S3b,p_O);
-                    if (p_O != 0) {
-                        trioInfos[i].F_G_denom1 += fG_Denom_perVariant(1-p_S1,1-p_S3a,1-p_S3b,1-p_O);
-                        trioInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(1-p_S2,1-p_S3a,1-p_S3b,1-p_O);
-                    }
-                    
-                    if (c_S2a > 0 && c_S2b > 0) {
-                        p_S2a = allSplit1Ps[triosInt[i][1]]; p_S2b = allSplit2Ps[triosInt[i][1]];
-                    } else if (p_S2 == 1 || p_S2 == 0) {
-                        p_S2a = p_S2; p_S2b = p_S2;
-                    } else { assignSplits01FromAlleleFrequency(p_S2, p_S2a, p_S2b); }
                     trioInfos[i].F_G_denom2 += fG_Denom_perVariant(p_S1,p_S2a,p_S2b,p_O);
                     trioInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(p_S3,p_S2a,p_S2b,p_O);
-                    if (p_O != 0) {
-                        trioInfos[i].F_G_denom2 += fG_Denom_perVariant(1-p_S1,1-p_S2a,1-p_S2b,1-p_O);
-                        trioInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(1-p_S3,1-p_S2a,1-p_S2b,1-p_O);
-                    }
-                    
-                    if (c_S1a > 0 && c_S1b > 0) {
-                        p_S1a = allSplit1Ps[triosInt[i][0]]; p_S1b = allSplit2Ps[triosInt[i][0]];
-                    } else if (p_S1 == 1 || p_S1 == 0) {
-                        p_S1a = p_S1; p_S1b = p_S1;
-                    } else { assignSplits01FromAlleleFrequency(p_S1, p_S1a, p_S1b); }
-                    
                     trioInfos[i].F_G_denom3 += fG_Denom_perVariant(p_S3,p_S1a,p_S1b,p_O);
                     trioInfos[i].F_G_denom3_reversed += fG_Denom_perVariant(p_S2,p_S1a,p_S1b,p_O);
+                    
+                    
+                    
+                    
                     if (p_O != 0) {
+                        thisFgDenom1 += fG_Denom_perVariant(1-p_S1,1-p_S3a,1-p_S3b,1-p_O);
+                        thisFgDenom1_rev += fG_Denom_perVariant(1-p_S2,1-p_S3a,1-p_S3b,1-p_O);
+                        trioInfos[i].F_G_denom1 += fG_Denom_perVariant(1-p_S1,1-p_S3a,1-p_S3b,1-p_O);
+                        trioInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(1-p_S2,1-p_S3a,1-p_S3b,1-p_O);
+                        trioInfos[i].F_G_denom2 += fG_Denom_perVariant(1-p_S1,1-p_S2a,1-p_S2b,1-p_O);
+                        trioInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(1-p_S3,1-p_S2a,1-p_S2b,1-p_O);
                         trioInfos[i].F_G_denom3 += fG_Denom_perVariant(1-p_S3,1-p_S1a,1-p_S1b,1-p_O);
                         trioInfos[i].F_G_denom3_reversed += fG_Denom_perVariant(1-p_S2,1-p_S1a,1-p_S1b,1-p_O);
                     }
                     
+                    /* investigating rare cases of unexpected f4-ratio values
+                    if (thisFgDenom1 < 0) {
+                        errCount++;
+                        std::cerr << "thisFgDenom1: " << thisFgDenom1 << " ; thisFgDenom1_rev: " << thisFgDenom1_rev << std::endl;
+                        std::cerr << "ABBA: " << ABBA << " ; BABA: " << BABA << " ; ABBA-BABA: " << ABBA-BABA << std::endl;
+                        std::cerr << "p_S1: " << p_S1 << std::endl;
+                        std::cerr << "p_S2: " << p_S2 << std::endl;
+                        std::cerr << "p_S3: " << p_S3 << "; p_S3a: " << p_S3a << " ; p_S3b: " << p_S3b << std::endl;
+                        std::cerr << "correctionP3: " << correctionP3 << std::endl;
+                        print_vector(allPs, std::cerr);
+                        print_vector(allCorrectionFactors, std::cerr);
+                        std::cerr << "p_O: " << p_O << std::endl;
+                        std::cerr << std::endl;
+                        if (errCount > 10) {
+                            exit(1);
+                        }
+                    
+                    }
+                    */
+                    
+                    
+               /*
+                // Find which topology is in agreement with the counts of the BBAA, BABA, and ABBA patterns
+                                   if (BBAAtotal >= BABAtotal && BBAAtotal >= ABBAtotal) {
+                                       BBAAarrangement = P3isTrios2;
+                                   } else if (BABAtotal >= BBAAtotal && BABAtotal >= ABBAtotal) {
+                                       BBAAarrangement = P3isTrios1;
+                                   } else if (ABBAtotal >= BBAAtotal && ABBAtotal >= BABAtotal) {
+                                       BBAAarrangement = P3isTrios0;
+                                   }
+                if (totalVariantNumber % reportProgressEvery == 0) {
+                    std::cerr << trios[0][0] << "\t" << trios[0][1] << "\t" << trios[0][2] << "\n";
+                    std::cerr << "p_S1a: " << p_S1a << " ; p_S1b: " << p_S1b << std::endl;
+                    std::cerr << "p_S2a: " << p_S2a << " ; p_S2b: " << p_S2b << std::endl;
+                    std::cerr << "p_S3a: " << p_S3a << " ; p_S3b: " << p_S3b << std::endl;
+                    
+                    
+                    std::cerr << "ABBA-BABA: " << trioInfos[i].ABBAtotal-trioInfos[i].BABAtotal << "; ABBA - BBAA: " << trioInfos[i].ABBAtotal - trioInfos[i].BBAAtotal << "; ABBA - BBAA: " << trioInfos[i].BBAAtotal - trioInfos[i].BABAtotal << std::endl;
+                    std::cerr << "trioInfos[i].F_G_denom1: " << trioInfos[i].F_G_denom1 << "; trioInfos[i].F_G_denom2: " << trioInfos[i].F_G_denom2 << "; trioInfos[i].F_G_denom3: " << trioInfos[i].F_G_denom3 << std::endl;
+                    std::cerr << "trioInfos[i].F_G_denom1_reversed: " << trioInfos[i].F_G_denom1_reversed << "; trioInfos[i].F_G_denom2_reversed: " << trioInfos[i].F_G_denom2_reversed << "; trioInfos[i].F_G_denom3_reversed: " << trioInfos[i].F_G_denom3_reversed << std::endl;
+                    
+                    std::cerr << std::endl;
+                    } */
                 }
                 
                 // std::cerr << "trioInfos[i].localD1num" << trioInfos[i].localD1denom << std::endl;
@@ -448,7 +541,7 @@ int DminMain(int argc, char** argv) {
     }
     std::cerr << "Done processing VCF. Preparing output files..." << '\n';
     
-    string header = makeHeader(false, opt::fStats);
+    string header = makeHeader(false, opt::fStats, opt::KStest);
     *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
     if (opt::treeFile != "") *outFileTree << header << std::endl;
     
@@ -470,18 +563,18 @@ int DminMain(int argc, char** argv) {
         }
         
         // Find which topology is in agreement with the counts of BBAA, BABA, and ABBA
-        trioInfos[i].assignBBAAarrangement();
-        std::vector<string> BBAAoutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, trioInfos[i].BBAAarrangement);
+        trioInfos[i].assignBBAAarrangement(); if (opt::KStest) trioInfos[i].testIfStrongSitesUniformlyDistributed();
+        std::vector<string> BBAAoutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, opt::KStest, trioInfos[i].BBAAarrangement);
         print_vector(BBAAoutVec,*outFileBBAA);
         
         // Find Dmin:
         trioInfos[i].assignDminArrangement();
-        std::vector<string> DminOutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, trioInfos[i].DminArrangement);
+        std::vector<string> DminOutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, opt::KStest, trioInfos[i].DminArrangement);
         print_vector(DminOutVec,*outFileDmin);
         
         // Find which arrangement of trios is consistent with the input tree (if provided):
         if (opt::treeFile != "") {
-            std::vector<string> treeOutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, trioInfos[i].treeArrangement);
+            std::vector<string> treeOutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, opt::KStest, trioInfos[i].treeArrangement);
             print_vector(treeOutVec,*outFileTree);
         }
         
@@ -527,6 +620,7 @@ void parseDminOptions(int argc, char** argv) {
             case 'j': arg >> opt::jkWindowSize; break;
             case 'k': arg >> opt::jkNum; break;
             case OPT_NO_F4: opt::fStats = false; break;
+            case OPT_KS_TEST: opt::KStest = true; break;
             case 'c': opt::combine = false; break;
             case 'g': opt::useGenotypeProbabilities = true; break;
             case 'l': arg >> opt::providedNumLines; break;

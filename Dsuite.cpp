@@ -14,7 +14,7 @@
 #include "Dquartets.h"
 
 #define AUTHOR "Milan Malinsky"
-#define PACKAGE_VERSION "0.4 r43"
+#define PACKAGE_VERSION "0.5 r44"
 
 
 static const char *VERSION_MESSAGE =

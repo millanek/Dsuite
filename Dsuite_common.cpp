@@ -31,9 +31,11 @@ void process_SETS_file(std::ifstream* setsFile, const string fName, std::map<str
     }
 }
 
-string makeHeader(bool quartet, bool includeFstats) {
+string makeHeader(bool quartet, bool includeFstats, bool includeKSstats) {
     string header = "P1\tP2\tP3"; if (quartet) header += "\tP4";
-    header += "\tDstatistic\tZ-score\tp-value"; if (includeFstats) { header += "\t"; header += F4HEADER; }
+    header += "\tDstatistic\tZ-score\tp-value";
+    if (includeFstats) { header += "\t"; header += F4HEADER; }
+    if (includeKSstats) { header += "\t"; header += "KStest_clustering"; }
     header += "\tBBAA\tABBA\tBABA";
     return header;
 }
