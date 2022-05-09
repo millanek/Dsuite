@@ -91,7 +91,7 @@ $ python3 setup.py install --user --prefix=
 The above should work on both mac and linux. Note that there is no text (not even whitespace) after the `=` above. If you want to use your own virtual environments, you can alternatively not run setup.py and just install the dependencies with `pip` or `conda`.
 
 
-## Commands (v0.4 r43):
+## Commands (v0.5 r44):
 ### Dsuite Dtrios - Calculate the D (ABBA-BABA) and f4-ratio statistics for all possible trios of populations/species
 ```
 Usage: Dsuite Dtrios [OPTIONS] INPUT_FILE.vcf SETS.txt
@@ -122,6 +122,7 @@ The outgroup (can be multiple samples) should be specified by using the keywork 
                                               e.g MIN_DEPTH=5 may be reasonable; when there are fewer reads, the allele frequency is set to missing
       -c, --no-combine                        (optional) do not output the "_combine.txt" and "_combine_stderr.txt" files
                                               these are needed only for DtriosCombine
+      --KS-test-for-homoplasy                 (optional) Test whether strong ABBA-informative sites cluster along the genome
 ```
 #### Output:
 The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D statistics, Zscore, unadjusted p-values, the f4-ratios, and counts of the BBAA, BABA, and ABBA patterns. Please read the [manuscript](https://doi.org/10.1111/1755-0998.13265) for more details. 
@@ -371,6 +372,9 @@ optional arguments:
 
 ```
 Selected updates (full update history is accessible on gitHub):
+v0.5 r45:   Major update:   - code re-factoring, including proper subsampling for f4-ratio calculations
+                            - First implementation of the Kolgomorov-Sminov test for homoplasy (--KS-test-for-homoplasy) in Dtrios; still somewhat experimental and works only in the "_BBAA.txt" output
+                            - Very small p-values now don't get rounded to 0 but are bounded at 2.3e-16
 v0.4 r43:   First implementation of the pool-seq (-p) option in in Dtrios 
 v0.4 r28:   Merged DtriosParallel from https://github.com/feilchenfeldt and refreshed documentation
 v0.3 r27:   Added the -o (--out-prefix) option to allow more flexibility in naming output files

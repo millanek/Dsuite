@@ -419,6 +419,10 @@ public:
         int patternsI = 6; if (fStats) patternsI++; if(KS_test) patternsI++; // Where will the BBAA, ABBA, etc. counts be put
         
         
+        if (std::fabs(D1_p) < 2.3e-16) { D1_p = 2.3e-16; }
+        if (std::fabs(D2_p) < 2.3e-16) { D2_p = 2.3e-16; }
+        if (std::fabs(D3_p) < 2.3e-16) { D3_p = 2.3e-16; }
+        
         double f4ratio; double Dnum;
         
         switch (arrangement) {
