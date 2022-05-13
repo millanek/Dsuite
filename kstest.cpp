@@ -19,8 +19,9 @@
 /**************************************************************************/
 
 #include "kstest.h"
+#include "Dsuite_utils.h"
 #include <cmath>
-#include <cstdlib>
+
 
 
 /* KOLMOGOROV-SMIRNOV TEST OF HOMOGENEITY

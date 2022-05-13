@@ -21,7 +21,10 @@
 #ifndef kstest_h
 #define kstest_h
 #include <list>
-#include "Dsuite_utils.h"
+#include <cstdlib>
+#include <stdio.h>
+#include <sstream>
+#include <fstream>
 
 void mMultiply(double *A,double *B,double *C,int m);
 void mPower(double *A,int eA,double *V,int *eV,int m,int n);
