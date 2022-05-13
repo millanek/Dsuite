@@ -22,6 +22,7 @@
 #include <limits>
 #include <random>
 #include <list>
+#include <cstdint>
 #include "gzstream.h"
 #include "kstest.h"
 
