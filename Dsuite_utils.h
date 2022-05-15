@@ -364,12 +364,12 @@ public:
             if (loc2 < loc1) {
                 int m1 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc1);
                 int m2 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc3);
-                if (m1 < m2) { if (D2 >= 0) arrangement = P3isTrios1_Dpositive; else arrangement = P3isTrios1_Dnegative;}
-                else { if (D1 >= 0) arrangement = P3isTrios2_Dpositive; else arrangement = P3isTrios2_Dnegative; }
+                if (m1 < m2) { if (D2 >= 0) { arrangement = P3isTrios1_Dpositive; } else { arrangement = P3isTrios1_Dnegative;}}
+                else { if (D1 >= 0) { arrangement = P3isTrios2_Dpositive; } else { arrangement = P3isTrios2_Dnegative; } }
             } else {
                 int m1 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc1);
                 int m2 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc2);
-                if (m1 < m2) { if (D1 >= 0) arrangement = P3isTrios2_Dpositive; else arrangement = P3isTrios2_Dnegative; }
+                if (m1 < m2) { if (D1 >= 0) { arrangement = P3isTrios2_Dpositive; } else { arrangement = P3isTrios2_Dnegative; }}
                 else { if (D2 >= 0) arrangement = P3isTrios1_Dpositive; else arrangement = P3isTrios1_Dnegative;}
             }
         } else if (midLoc == loc2) {
@@ -377,11 +377,11 @@ public:
                 int m1 = *std::min_element(treeLevels.begin()+loc1, treeLevels.begin()+loc2);
                 int m2 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc3);
                 if (m1 < m2) { if (D3 >= 0) arrangement = P3isTrios0_Dpositive; else arrangement = P3isTrios0_Dnegative; }
-                else { if (D1 >= 0) arrangement = P3isTrios2_Dpositive; else arrangement = P3isTrios2_Dnegative; }
+                else { if (D1 >= 0) { arrangement = P3isTrios2_Dpositive; } else { arrangement = P3isTrios2_Dnegative; }}
             } else {
                 int m1 = *std::min_element(treeLevels.begin()+loc3, treeLevels.begin()+loc2);
                 int m2 = *std::min_element(treeLevels.begin()+loc2, treeLevels.begin()+loc1);
-                if (m1 < m2) { if (D1 >= 0) arrangement = P3isTrios2_Dpositive; else arrangement = P3isTrios2_Dnegative; }
+                if (m1 < m2) { if (D1 >= 0) { arrangement = P3isTrios2_Dpositive;} else {arrangement = P3isTrios2_Dnegative;} }
                 else { if (D3 >= 0) arrangement = P3isTrios0_Dpositive; else arrangement = P3isTrios0_Dnegative; }
             }
         } else if (midLoc == loc3) {
@@ -430,7 +430,7 @@ public:
                 
         case P3isTrios2_Dpositive:
             outVec[0] = trio[0]; outVec[1] = trio[1]; outVec[2] = trio[2];
-            outVec[3] = numToString(std::fabs(D1)); outVec[4] = numToString(D1_Z);
+            outVec[3] = numToString(D1); outVec[4] = numToString(D1_Z);
             outVec[5] = numToString(D1_p); outVec[patternsI] = numToString(BBAAtotal);
             outVec[patternsI+1] = numToString(ABBAtotal); outVec[patternsI+2] = numToString(BABAtotal);
             if (fStats) { Dnum = ABBAtotal-BABAtotal; f4ratio = Dnum/F_G_denom1; }
