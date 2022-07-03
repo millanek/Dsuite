@@ -504,6 +504,7 @@ void GeneralSetCounts::getBasicCounts(const std::vector<std::string>& genotypes,
 }
 
 void GeneralSetCountsWithSplits::getBasicCountsWithSplitsNew(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap) {
+    
     // Go through the genotypes - only biallelic markers are allowed
     for (std::vector<std::string>::size_type i = 0; i != genotypes.size(); i++) {
         bool speciesDefined = true;
@@ -512,22 +513,32 @@ void GeneralSetCountsWithSplits::getBasicCountsWithSplitsNew(const std::vector<s
         }
         
         if (speciesDefined) {
-            if (genotypes[i][0] == '0' && genotypes[i][2] == '0') {
-                setAlleleCounts[species] += 2; setIndividualAFs[species].push_back(0.0);
-                setGenotypes[species].push_back(0); setGenotypes[species].push_back(0);
-            } else if (genotypes[i][0] == '0' && genotypes[i][2] == '1') {
-                overall++; individualsWithVariant[i]++;
-                setAlleleCounts[species] += 2; setAltCounts[species]++; setIndividualAFs[species].push_back(0.5);
-                setGenotypes[species].push_back(0); setGenotypes[species].push_back(1);
-            } else if (genotypes[i][0] == '1' && genotypes[i][2] == '0') {
-                overall++; individualsWithVariant[i]++;
-                setAlleleCounts[species] += 2; setAltCounts[species]++; setIndividualAFs[species].push_back(0.5);
-                setGenotypes[species].push_back(1); setGenotypes[species].push_back(0);
-            } else if (genotypes[i][0] == '1' && genotypes[i][2] == '1') {
-                overall += 2; individualsWithVariant[i] = 2;
-                setAlleleCounts[species] += 2; setAltCounts[species] += 2; setIndividualAFs[species].push_back(1.0);
-                setGenotypes[species].push_back(1); setGenotypes[species].push_back(1);
+            string onlyGenotypeCalls = split(genotypes[i], ':')[0];   // The string with 0/0, 0/1, 1/0, 1/1, or e.g. 0/0/1/1 for a tetraploid
+            if (onlyGenotypeCalls[0] == '.') {
+                continue;   // Ignore missing data
             }
+            // Find ploidy
+            int l = (int)onlyGenotypeCalls.length();
+            int numGTs = (l/2)+1;
+            setAlleleCounts[species] += numGTs;
+            
+            // Go through the genotypes and fill in the data structure "GeneralSetCountsWithSplits"
+            for (std::vector<std::string>::size_type j = 0; j <= l; j = j+2) {
+               // std::cerr << "genotypes[i][j]: " << genotypes[i][j] << std::endl;
+                setGenotypes[species].push_back(genotypes[i][j] - '0');
+                if (genotypes[i][j] == '1') {
+                    overall++; individualsWithVariant[i]++;
+                    setAltCounts[species]++;
+                }
+            }
+            double individualAF = (double)individualsWithVariant[i]/numGTs;
+            
+            /* std::cerr << "onlyGenotypeCalls: " << onlyGenotypeCalls << std::endl;
+            std::cerr << "individualsWithVariant[i]: " << individualsWithVariant[i] << std::endl;
+            std::cerr << "numGTs: " << numGTs << std::endl;
+            std::cerr << "individualAF: " << individualAF << std::endl;
+            */
+            setIndividualAFs[species].push_back(individualAF);
         }
     }
 }
@@ -660,6 +671,8 @@ void GeneralSetCountsWithSplits::getSplitCountsNew(const std::vector<std::string
             numNonZeroCounts++;
             int nSplit1; int nSplit2;
             double thisAAF = (double)vector_sum(thisSetGenotypes)/thisSetGenotypes.size();
+           // print_vector(thisSetGenotypes, std::cerr);
+           // std::cerr << "thisAAF: " << thisAAF << std::endl;
             setAAFs[it->first] = thisAAF; totalAAF += thisAAF;
             nSplit1 = setAlleleCountsSplit1.at(it->first); nSplit2 = setAlleleCountsSplit2.at(it->first);
             
