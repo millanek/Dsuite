@@ -21,6 +21,7 @@
 #include "kstest.h"
 #include "Dsuite_utils.h"
 #include <cmath>
+#include <vector>
 
 
 
@@ -323,6 +324,147 @@ double ks_test (std::list<int64_t> sample1, std::list<int64_t> sample2,
     // for the particular values of sample1 and sample2
   int D, Dmin, Dmax, s;
     // used in computing this value d
+
+  std::list<int64_t>::iterator it1, it2;
+
+  // Determine sample sizes
+  n1 = sample1.size();
+  n2 = sample2.size();
+
+  // Calculate a conservative n approximation
+  n_approx = (unsigned) ceil(float(n1*n2)/(n1+n2));
+  if (printDebug) outfile << "n_approx=" << n_approx << std::endl;
+
+  // Sort samples
+  sample1.sort(); //outfile << "sorted sample1: " << sample1 << std::endl;
+  sample2.sort(); //outfile << "sorted sample2: " << sample2 << std::endl;
+
+  // We divide the range 0..1 into n1*n2 intervals of equal size 1/(n1*n2).
+  //
+  // Each item in sample1 makes the sample c.d.f of sample1
+  // jump by a step of n2 intervals.
+  // Each item in sample2 makes the sample c.d.f of sample2
+  // jump by a step of n1 intervals.
+  //
+  // For each item we compute D, related to the distance between the two
+  // sample c.d.f., s_cdf_1 - s_cdf_2, by:
+  //
+  //    D/(n1*n2) = s_cdf_1 - s_cdf_2
+  //
+  // We want to determine:
+  //
+  //    Dmin/(n1*n2) = min [s_cdf_1 - s_cdf_2] <= 0
+  //    Dmax/(n1*n2) = max [s_cdf_1 - s_cdf_2] >= 0
+  //
+  // And then the value of Kolmorogov's statistic D_n1n2 is just:
+  //
+  //    D_n1n2 = sup |s_cdf_1 - s_cdf_2|
+  //           = max [ |Dmin/(n1*n2)| ; |Dmax/(n1*n2)| ]
+
+  D = 0; Dmin = 0; Dmax = 0;
+  it1 = sample1.begin();
+  it2 = sample2.begin();
+
+  while ( (it1 != sample1.end()) && (it2 != sample2.end()) ) {
+
+    if (*it1 == *it2) {
+
+        if (printDebug) outfile << *it1 << " tie!";
+      // steps in both sample c.d.f., we need to perform all steps
+      // in this point before comparing D to Dmin and Dmax
+
+      s = *it1;
+      // perform all steps in s_cdf_1 first
+      do {
+    D += n2;
+    it1++;
+      }
+      while ( (*it1 == s) && (it1 != sample1.end()) );
+      // perform all steps in s_cdf_2 now
+      do {
+    D -= n1;
+    it2++;
+      }
+      while ( (*it2 == s) && (it2 != sample2.end()) );
+
+      // now adapt Dmin, Dmax if necessary
+      if (D > Dmax)
+    Dmax = D;
+      else if (D < Dmin)
+    Dmin = D;
+
+    }
+
+    else if (*it1 < *it2) {
+
+    if (printDebug) outfile << *it1;
+      // step in s_cdf_1, increase D by n2
+      D += n2;
+      it1++;
+
+      if (D > Dmax)
+    Dmax = D;
+
+    }
+
+    else {
+
+      if (printDebug) outfile << *it2;
+      // step in F2, decrease D by n1
+      D -= n1;
+      it2++;
+
+      if (D < Dmin)
+    Dmin = D;
+
+    }
+
+      if (printDebug) outfile << " D=" << D << " Dmin=" << Dmin << " Dmax=" << Dmax << std::endl;
+
+  }
+
+  // For two-sided test, take D = max (|Dmax|, |Dmin|) and compute
+  // the value d of Kolmogorov's statistic (two-sided only)
+
+  if (-Dmin > Dmax)
+    D = -Dmin;
+  else
+    D = Dmax;
+
+  // Hence the observed value of Kolmogorov's statistic:
+  d = float(D)/(n1*n2);
+
+  // Return p-value
+  return 1 - K(n_approx,d);
+
+}
+
+
+/*
+ D+ = max{(i/N)-Ri}, 1<=i<=N
+ D- = max{(Ri-((i-1)/N)}, 1<=i<=N
+
+ Step4: Compute calculated D:
+ D= max(D+, D-):
+ 
+ 
+ 
+ */
+
+double ks_test_of_uniformity (std::vector<int> sampleVect, std::ostream& outfile, bool printDebug) {
+
+    unsigned int N = sampleVect.size();
+    
+  float d;
+    // the value of Kolmogorov's statistic
+    // for the particular values of sample1 and sample2
+  int D, Dmin, Dmax, s;
+    // used in computing this value d
+    
+    std::vector Dplus();
+    for (int i = 0; i < sampleVect.size(); i++) {
+        <#statements#>
+    }
 
   std::list<int64_t>::iterator it1, it2;
 

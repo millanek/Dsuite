@@ -31,6 +31,7 @@ void mPower(double *A,int eA,double *V,int *eV,int m,int n);
 double K(int n,double d);
 
 double ks_test(std::list<int64_t> s1, std::list<int64_t> s2, std::ostream& output, bool printDebug);
+double ks_test_of_uniformity (std::vector<int> sample, std::ostream& outfile, bool printDebug);
 
 
 #endif /* kstest_h */

@@ -338,6 +338,7 @@ public:
     std::vector<std::vector<int>> linearStrongBABApos; // positions of strong (> 0.5) BABA for the three tree orientations
     
     double KSpvalForStrongSites;
+    double KSpvalForStrongSitesOneSample;
     
     
     
@@ -542,32 +543,39 @@ public:
       // std::cerr << "Here: .. treeArrangement: " << BBAAarrangement << std::endl;
         
         std::list<int64_t> linearStrongPosList;
+        std::vector<int> linearStrongPosVector;
         
-        int usedVarsThisArrangment;
+        int usedVarsThisArrangment = 0;
         switch (BBAAarrangement) {
             case P3isTrios2_Dpositive:
                 usedVarsThisArrangment = totalUsedVars[0];
                 linearStrongPosList.assign(linearStrongABBApos[0].begin(),linearStrongABBApos[0].end());
+                linearStrongPosVector.assign(linearStrongABBApos[0].begin(),linearStrongABBApos[0].end());
                 break;
             case P3isTrios2_Dnegative:
                 usedVarsThisArrangment = totalUsedVars[0];
                 linearStrongPosList.assign(linearStrongBABApos[0].begin(),linearStrongBABApos[0].end());
+                linearStrongPosVector.assign(linearStrongBABApos[0].begin(),linearStrongBABApos[0].end());
                 break;
             case P3isTrios1_Dpositive:
                 usedVarsThisArrangment = totalUsedVars[1];
                 linearStrongPosList.assign(linearStrongABBApos[1].begin(),linearStrongABBApos[1].end());
+                linearStrongPosVector.assign(linearStrongABBApos[1].begin(),linearStrongABBApos[1].end());
                 break;
             case P3isTrios1_Dnegative:
                 usedVarsThisArrangment = totalUsedVars[1];
                 linearStrongPosList.assign(linearStrongBABApos[1].begin(),linearStrongBABApos[1].end());
+                linearStrongPosVector.assign(linearStrongBABApos[1].begin(),linearStrongBABApos[1].end());
                 break;
             case P3isTrios0_Dpositive:
                 usedVarsThisArrangment = totalUsedVars[2];
                 linearStrongPosList.assign(linearStrongABBApos[2].begin(),linearStrongABBApos[2].end());
+                linearStrongPosVector.assign(linearStrongABBApos[2].begin(),linearStrongABBApos[2].end());
                 break;
             case P3isTrios0_Dnegative:
                 usedVarsThisArrangment = totalUsedVars[2];
                 linearStrongPosList.assign(linearStrongBABApos[2].begin(),linearStrongBABApos[2].end());
+                linearStrongPosVector.assign(linearStrongBABApos[2].begin(),linearStrongBABApos[2].end());
                 break;
         }
         
@@ -592,6 +600,7 @@ public:
             std::vector<int> linearStrongPosListVec(linearStrongPosList.begin(), linearStrongPosList.end());
             
             KSpvalForStrongSites = ks_test(uniABBAvals, linearStrongPosList, std::cerr, false);
+            KSpvalForStrongSitesOneSample = ks_test_of_uniformity(linearStrongPosVector, std::cerr, false);
             
             /*if (KSpvalForStrongSites < 0.00001) {
                 std::cerr << "KSpvalForStrongSites: " << KSpvalForStrongSites << std::endl;
