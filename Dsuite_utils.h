@@ -500,8 +500,8 @@ public:
             outVec[6] = numToString(f4ratio);
         }
         if (KS_test) {
-            if (fStats) outVec[7] = numToString(KSpvalForStrongSites);
-            else outVec[6] = numToString(KSpvalForStrongSites);
+            if (fStats) outVec[7] = numToString(KSpvalForStrongSitesOneSample);
+            else outVec[6] = numToString(KSpvalForStrongSitesOneSample);
         }
         
         return outVec;
@@ -581,11 +581,10 @@ public:
         
         if(usedVarsThisArrangment < 10 || linearStrongPosList.size() < 5) {
             KSpvalForStrongSites = 1;
+            KSpvalForStrongSitesOneSample = 1;
         } else {
         
             std::uniform_int_distribution<int> uniABBA(0,usedVarsThisArrangment); // guaranteed unbiased
-            
-            
             int numUniformSamples = (int)linearStrongPosList.size(); if (numUniformSamples < 10000) { numUniformSamples = usedVarsThisArrangment/4; }
             std::list<int64_t> uniABBAvals; std::vector<int64_t> uniABBAvalsVec; for (int i = 0; i < numUniformSamples; i++) { int64_t r = uniABBA(rng); uniABBAvals.push_back(r); uniABBAvalsVec.push_back(r); }
             
@@ -597,23 +596,39 @@ public:
             
            // std::cerr << "Here: .. linearStrongPosList.size(): " << linearStrongPosList.size() << std::endl;
             
-            std::vector<int> linearStrongPosListVec(linearStrongPosList.begin(), linearStrongPosList.end());
             
             KSpvalForStrongSites = ks_test(uniABBAvals, linearStrongPosList, std::cerr, false);
-            KSpvalForStrongSitesOneSample = ks_test_of_uniformity(linearStrongPosVector, std::cerr, false);
+        
             
-            /*if (KSpvalForStrongSites < 0.00001) {
+            std::vector<int> linearStrongPosListVec(linearStrongPosList.begin(), linearStrongPosList.end());
+            std::vector<double> linearStrongPosVector0to1(linearStrongPosVector.size(),0.0);
+            for (int i = 0; i < linearStrongPosVector0to1.size(); i++) {
+                linearStrongPosVector0to1[i] = (double)linearStrongPosVector[i]/(double)usedVarsThisArrangment;
+            }
+            
+            KSpvalForStrongSitesOneSample = ks_test_of_uniformity(linearStrongPosVector0to1, std::cerr, false);
+            
+          /*  std::cerr << "KSpvalForStrongSites: " << KSpvalForStrongSites << std::endl;
+            std::cerr << "KSpvalForStrongSitesOneSample: " << KSpvalForStrongSitesOneSample << std::endl;
+            std::cerr << std::endl;
+            
+            //if (KSpvalForStrongSites > 0.99 && KSpvalForStrongSitesOneSample < 0.00001) {
+            if(usedVarsThisArrangment < 10 || linearStrongPosList.size() < 5) {
                 std::cerr << "KSpvalForStrongSites: " << KSpvalForStrongSites << std::endl;
+                std::cerr << "KSpvalForStrongSitesOneSample: " << KSpvalForStrongSitesOneSample << std::endl;
                 std::cerr << "usedVarsThisArrangment: " << usedVarsThisArrangment << std::endl;
                 std::cerr << "uniABBAvals: " << std::endl;
                 print_vector(uniABBAvalsVec, std::cerr, ',');
                 std::cerr << "linearStrongPosListVec: " << std::endl;
                 print_vector(linearStrongPosListVec, std::cerr, ',');
-            } */
-            
+                std::cerr << "linearStrongPosVector0to1: " << std::endl;
+                print_vector(linearStrongPosVector0to1, std::cerr, ',');
+                exit(1);
+            }
+            */
            // std::cerr << "Here: .. KSpvalForStrongSites: " << KSpvalForStrongSites << std::endl;
             //double BABApval = ks_test(uniBABAvals, linearBABApos, std::cerr);
-        }
+       }
     }
     
     

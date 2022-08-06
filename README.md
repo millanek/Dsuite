@@ -372,6 +372,7 @@ optional arguments:
 
 ```
 Selected updates (full update history is accessible on gitHub):
+v0.5 r47:   --KS-test-for-homoplasy output now has more accurate p-values (one-sample KS-test for uniformity)
 v0.5 r46:   Support for arbitrary ploidy in Dtrios
 v0.5 r45:   BUG FIX for r44 where the trio orientation in the "_tree.txt" output files was wrong (P1 and P2 swapped). This is fixed now.
 v0.5 r44:   Major update:   - code re-factoring, including proper subsampling for f4-ratio calculations
