@@ -584,9 +584,9 @@ public:
             KSpvalForStrongSitesOneSample = 1;
         } else {
         
-            std::uniform_int_distribution<int> uniABBA(0,usedVarsThisArrangment); // guaranteed unbiased
-            int numUniformSamples = (int)linearStrongPosList.size(); if (numUniformSamples < 10000) { numUniformSamples = usedVarsThisArrangment/4; }
-            std::list<int64_t> uniABBAvals; std::vector<int64_t> uniABBAvalsVec; for (int i = 0; i < numUniformSamples; i++) { int64_t r = uniABBA(rng); uniABBAvals.push_back(r); uniABBAvalsVec.push_back(r); }
+         //   std::uniform_int_distribution<int> uniABBA(0,usedVarsThisArrangment); // guaranteed unbiased
+         //   int numUniformSamples = (int)linearStrongPosList.size(); if (numUniformSamples < 10000) { numUniformSamples = usedVarsThisArrangment/4; }
+         //   std::list<int64_t> uniABBAvals; std::vector<int64_t> uniABBAvalsVec; for (int i = 0; i < numUniformSamples; i++) { int64_t r = uniABBA(rng); uniABBAvals.push_back(r); uniABBAvalsVec.push_back(r); }
             
             //std::cerr << "Here: .. uniABBAvals.size(): " << uniABBAvals.size() << std::endl;
            // std::cerr << "Here: .. usedVarsThisArrangment: " << usedVarsThisArrangment << std::endl;
@@ -597,7 +597,7 @@ public:
            // std::cerr << "Here: .. linearStrongPosList.size(): " << linearStrongPosList.size() << std::endl;
             
             
-            KSpvalForStrongSites = ks_test(uniABBAvals, linearStrongPosList, std::cerr, false);
+          //  KSpvalForStrongSites = ks_test(uniABBAvals, linearStrongPosList, std::cerr, false);
         
             
             std::vector<int> linearStrongPosListVec(linearStrongPosList.begin(), linearStrongPosList.end());
