@@ -549,38 +549,38 @@ public:
         switch (BBAAarrangement) {
             case P3isTrios2_Dpositive:
                 usedVarsThisArrangment = totalUsedVars[0];
-                linearStrongPosList.assign(linearStrongABBApos[0].begin(),linearStrongABBApos[0].end());
+                //linearStrongPosList.assign(linearStrongABBApos[0].begin(),linearStrongABBApos[0].end());
                 linearStrongPosVector.assign(linearStrongABBApos[0].begin(),linearStrongABBApos[0].end());
                 break;
             case P3isTrios2_Dnegative:
                 usedVarsThisArrangment = totalUsedVars[0];
-                linearStrongPosList.assign(linearStrongBABApos[0].begin(),linearStrongBABApos[0].end());
+                //linearStrongPosList.assign(linearStrongBABApos[0].begin(),linearStrongBABApos[0].end());
                 linearStrongPosVector.assign(linearStrongBABApos[0].begin(),linearStrongBABApos[0].end());
                 break;
             case P3isTrios1_Dpositive:
                 usedVarsThisArrangment = totalUsedVars[1];
-                linearStrongPosList.assign(linearStrongABBApos[1].begin(),linearStrongABBApos[1].end());
+                //linearStrongPosList.assign(linearStrongABBApos[1].begin(),linearStrongABBApos[1].end());
                 linearStrongPosVector.assign(linearStrongABBApos[1].begin(),linearStrongABBApos[1].end());
                 break;
             case P3isTrios1_Dnegative:
                 usedVarsThisArrangment = totalUsedVars[1];
-                linearStrongPosList.assign(linearStrongBABApos[1].begin(),linearStrongBABApos[1].end());
+                //linearStrongPosList.assign(linearStrongBABApos[1].begin(),linearStrongBABApos[1].end());
                 linearStrongPosVector.assign(linearStrongBABApos[1].begin(),linearStrongBABApos[1].end());
                 break;
             case P3isTrios0_Dpositive:
                 usedVarsThisArrangment = totalUsedVars[2];
-                linearStrongPosList.assign(linearStrongABBApos[2].begin(),linearStrongABBApos[2].end());
+                //linearStrongPosList.assign(linearStrongABBApos[2].begin(),linearStrongABBApos[2].end());
                 linearStrongPosVector.assign(linearStrongABBApos[2].begin(),linearStrongABBApos[2].end());
                 break;
             case P3isTrios0_Dnegative:
                 usedVarsThisArrangment = totalUsedVars[2];
-                linearStrongPosList.assign(linearStrongBABApos[2].begin(),linearStrongBABApos[2].end());
+                //linearStrongPosList.assign(linearStrongBABApos[2].begin(),linearStrongBABApos[2].end());
                 linearStrongPosVector.assign(linearStrongBABApos[2].begin(),linearStrongBABApos[2].end());
                 break;
         }
         
-        if(usedVarsThisArrangment < 10 || linearStrongPosList.size() < 5) {
-            KSpvalForStrongSites = 1;
+        if(linearStrongPosVector.size() < 2) {
+           // KSpvalForStrongSites = 1;
             KSpvalForStrongSitesOneSample = 1;
         } else {
         
@@ -600,7 +600,7 @@ public:
           //  KSpvalForStrongSites = ks_test(uniABBAvals, linearStrongPosList, std::cerr, false);
         
             
-            std::vector<int> linearStrongPosListVec(linearStrongPosList.begin(), linearStrongPosList.end());
+           // std::vector<int> linearStrongPosListVec(linearStrongPosList.begin(), linearStrongPosList.end());
             std::vector<double> linearStrongPosVector0to1(linearStrongPosVector.size(),0.0);
             for (int i = 0; i < linearStrongPosVector0to1.size(); i++) {
                 linearStrongPosVector0to1[i] = (double)linearStrongPosVector[i]/(double)usedVarsThisArrangment;
