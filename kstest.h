@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <sstream>
 #include <fstream>
+#include <vector>
 
 void mMultiply(double *A,double *B,double *C,int m);
 void mPower(double *A,int eA,double *V,int *eV,int m,int n);
