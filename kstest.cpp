@@ -264,23 +264,44 @@ void mPower(double *A,int eA,double *V,int *eV,int m,int n)
 
 double K(int n,double d)
 {
-    int k,m,i,j,g,eH,eQ;
-    double h,s,*H,*Q;
-    //OMIT NEXT LINE IF YOU REQUIRE >7 DIGIT ACCURACY IN THE RIGHT TAIL
-    s=d*d*n; if(s>7.24||(s>3.76&&n>99)) return 1-2*exp(-(2.000071+.331/sqrt((double) n)+1.409/n)*s);
-    k=(int)(n*d)+1; m=2*k-1; h=k-n*d;
-    H=(double*)malloc((m*m)*sizeof(double));
-    Q=(double*)malloc((m*m)*sizeof(double));
-    for(i=0;i<m;i++) for(j=0;j<m;j++)
-    if(i-j+1<0) H[i*m+j]=0; else H[i*m+j]=1;
-    for(i=0;i<m;i++) {H[i*m]-=pow(h,i+1); H[(m-1)*m+i]-=pow(h,(m-i));}
+   int k,m,i,j,g,eH,eQ;
+   double h,s,*H,*Q;
+    /* OMIT NEXT TWO LINES IF YOU REQUIRE >7 DIGIT ACCURACY IN THE RIGHT TAIL*/
+s=d*d*n;
+if(s>7.24||(s>3.76&&n>99) || n > 15000) return 1-2*exp(-(2.000071+.331/sqrt(n)+1.409/n)*s);
+   k=(int)(n*d)+1;
+   m=2*k-1;
+   h=k-n*d;
+   H=(double*)malloc((m*m)*sizeof(double));
+   Q=(double*)malloc((m*m)*sizeof(double));
+       for(i=0;i<m;i++)
+         for(j=0;j<m;j++)
+           if(i-j+1<0) H[i*m+j]=0;
+          else     H[i*m+j]=1;
+    for(i=0;i<m;i++)
+    {
+    H[i*m]-=pow(h,i+1);
+    H[(m-1)*m+i]-=pow(h,(m-i));
+    }
     H[(m-1)*m]+=(2*h-1>0?pow(2*h-1,m):0);
-    for(i=0;i<m;i++) for(j=0;j<m;j++)
-    if(i-j+1>0) for(g=1;g<=i-j+1;g++) H[i*m+j]/=g;
-    eH=0; mPower(H,eH,Q,&eQ,m,n);
+    for(i=0;i<m;i++)
+    for(j=0;j<m;j++)
+    if(i-j+1>0)
+        for(g=1;g<=i-j+1;g++) H[i*m+j]/=g;
+    eH=0;
+    mPower(H,eH,Q,&eQ,m,n);
     s=Q[(k-1)*m+k-1];
-    for(i=1;i<=n;i++) {s=s*i/n; if(s<1e-140) {s*=1e140; eQ-=140;}}
-    s*=pow(10.,eQ); free(H); free(Q); return s;
+    for(i=1;i<=n;i++)
+    {
+    s=s*i/n;
+    if(s<1e-140){s*=1e140; eQ-=140;}
+    }
+    s*=pow(10.,eQ);
+    std::cerr << "s: " << s << std::endl;
+    
+    free(H);
+    free(Q);
+    return s;
 }
 
 
@@ -469,11 +490,21 @@ double ks_test_of_uniformity(std::vector<double> sampleVect0to1, std::ostream& o
     Dplusmax = *max_element(DplusVals.begin(), DplusVals.end());
     Dminusmax = *max_element(DminusVals.begin(), DminusVals.end());
     
+    
+  //  std::cerr << "Dplusmax: " << Dplusmax << std::endl;
+  //  std::cerr << "Dminusmax: " << Dminusmax << std::endl;
+    
+  //  print_vector(DplusVals, std::cerr, ',');
+  //  print_vector(DminusVals, std::cerr, ',');
+    
+    
     if (Dplusmax > Dminusmax) {
         d = Dplusmax;
     } else {
         d = Dminusmax;
     }
+    
+  //  std::cerr << "d: " << d << std::endl;
     
     // Return p-value
     return 1 - K(N,d);
