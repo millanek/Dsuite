@@ -17,3 +17,6 @@ $(BIN):
 
 # Dependencies
 $(BIN)/Dsuite: $(BIN)/Dsuite.o $(BIN)/Dsuite_utils.o $(BIN)/D.o $(BIN)/gzstream.o $(BIN)/Dmin.o $(BIN)/Dmin_combine.o $(BIN)/Dsuite_fBranch.o $(BIN)/Dquartets.o $(BIN)/Dsuite_common.o $(BIN)/kstest.o $(BIN)/KolmogorovSmirnovDist.o | $(BIN)
+
+clean:
+	rm $(BIN)/*.o $(BIN)/Dsuite
