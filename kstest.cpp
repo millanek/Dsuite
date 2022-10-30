@@ -19,6 +19,7 @@
 /**************************************************************************/
 
 #include "kstest.h"
+#include "KolmogorovSmirnovDist.hpp"
 #include "Dsuite_utils.h"
 #include <cmath>
 
@@ -507,6 +508,6 @@ double ks_test_of_uniformity(std::vector<double> sampleVect0to1, std::ostream& o
   //  std::cerr << "d: " << d << std::endl;
     
     // Return p-value
-    return 1 - K(N,d);
+    return 1 - KScdf(N,d);
 
 }
