@@ -11,6 +11,7 @@
 #define SUBPROGRAM "Dtrios"
 
 #define DEBUG 0
+#define MIN_SETS 3
 
 static const char *DMIN_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] INPUT_FILE.vcf SETS.txt\n"
@@ -115,39 +116,32 @@ int DminMain(int argc, char** argv) {
     } else {
         vcfFile = createReader(opt::vcfFile.c_str());
     }
-    std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
-    if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl; exit(1);}
-
-    std::ofstream* outFileBBAA = new std::ofstream(outFileRoot+"_BBAA.txt");
-    std::ofstream* outFileDmin = new std::ofstream(outFileRoot+"_Dmin.txt");
-    std::ofstream* outFileCombine; if (opt::combine) outFileCombine = new std::ofstream(outFileRoot+"_combine.txt");
-    std::ofstream* outFileCombineStdErr; if (opt::combine) outFileCombineStdErr = new std::ofstream(outFileRoot+"_combine_stderr.txt");
-
-    std::map<string, std::vector<string>> speciesToIDsMap; std::map<string, string> IDsToSpeciesMap;
-    std::map<string, std::vector<size_t>> speciesToPosMap; std::map<size_t, string> posToSpeciesMap;
     
     // Get the sample sets
-    process_SETS_file(setsFile, opt::setsFile, speciesToIDsMap, IDsToSpeciesMap, OutgroupRequired);
+    SetInformation setInfo(opt::setsFile, MIN_SETS, OutgroupRequired);
+
+    std::ofstream* outFileBBAA = new std::ofstream(outFileRoot+"_BBAA.txt"); assertFileOpen(*outFileBBAA, outFileRoot+"_BBAA.txt");
+    std::ofstream* outFileDmin = new std::ofstream(outFileRoot+"_Dmin.txt"); assertFileOpen(*outFileDmin, outFileRoot+"_Dmin.txt");
+    std::ofstream* outFileCombine; if (opt::combine) {
+        outFileCombine = new std::ofstream(outFileRoot+"_combine.txt");
+        assertFileOpen(*outFileCombine, outFileRoot+"_combine.txt");
+    }
+    std::ofstream* outFileCombineStdErr; if (opt::combine) {
+        outFileCombineStdErr = new std::ofstream(outFileRoot+"_combine_stderr.txt");
+        assertFileOpen(*outFileCombineStdErr, outFileRoot+"_combine_stderr.txt");
+    }
     
-    // Get a vector of set names (usually species)
-    std::vector<string> species;
-    for(std::map<string,std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {
-        if ((it->first) != "Outgroup" && it->first != "xxx") {
-            species.push_back(it->first);
-            // std::cerr << it->first << std::endl;
-        }
-    } std::cerr << "There are " << species.size() << " sets (excluding the Outgroup)" << std::endl;
-    int nCombinations = nChoosek((int)species.size(),3);
+    int nCombinations = nChoosek((int)setInfo.populations.size(),3);
     if (opt::fStats) std::cerr << "Going to calculate D and f4-ratio values for " << nCombinations << " trios" << std::endl;
     else std::cerr << "Going to calculate D values for " << nCombinations << " trios" << std::endl;
     
     if (opt::treeFile != "") { // Chack that the tree contains all the populations/species
-        for (int i = 0; i != species.size(); i++) {
+        for (int i = 0; i != setInfo.populations.size(); i++) {
             try {
-                treeTaxonNamesToLoc.at(species[i]);
+                treeTaxonNamesToLoc.at(setInfo.populations[i]);
             } catch (const std::out_of_range& oor) {
                 std::cerr << "Out of Range error: " << oor.what() << '\n';
-                std::cerr << "species[i]: " << species[i] << '\n';
+                std::cerr << "setInfo.populations[i]: " << setInfo.populations[i] << '\n';
                 std::cerr << CHECK_TREE_ERROR_MSG << '\n';
                 exit(1);
             }
@@ -157,11 +151,11 @@ int DminMain(int argc, char** argv) {
     // first, get all combinations of three sets (species):
     std::vector<std::vector<string>> trios; trios.resize(nCombinations);
     std::vector<std::vector<int>> triosInt; triosInt.resize(nCombinations);
-    std::vector<bool> v(species.size()); std::fill(v.begin(), v.begin() + 3, true); // prepare a selection vector
+    std::vector<bool> v(setInfo.populations.size()); std::fill(v.begin(), v.begin() + 3, true); // prepare a selection vector
     int pNum = 0;
     do {
         for (int i = 0; i < v.size(); ++i) {
-            if (v[i]) { trios[pNum].push_back(species[i]); triosInt[pNum].push_back(i); }
+            if (v[i]) { trios[pNum].push_back(setInfo.populations[i]); triosInt[pNum].push_back(i); }
         } pNum++;
     } while (std::prev_permutation(v.begin(), v.end())); // Getting all permutations of the selection vector - so it selects all combinations
     std::cerr << "Done permutations" << std::endl;
@@ -170,10 +164,10 @@ int DminMain(int argc, char** argv) {
     std::vector<TrioDinfo> trioInfos(nCombinations); for (int i = 0; i < nCombinations; i++) { TrioDinfo info; trioInfos[i] = info; }
     
     // And need to prepare the vectors to hold allele frequency values:
-    std::vector<double> allPs(species.size(),0.0);
-    std::vector<double> allSplit1Ps(species.size(),0.0); std::vector<int> allSplit1Counts(species.size(),0);
-    std::vector<double> allSplit2Ps(species.size(),0.0); std::vector<int> allSplit2Counts(species.size(),0);
-    std::vector<double> allCorrectionFactors(species.size(),0);
+    std::vector<double> allPs(setInfo.populations.size(),0.0);
+    std::vector<double> allSplit1Ps(setInfo.populations.size(),0.0); std::vector<int> allSplit1Counts(setInfo.populations.size(),0);
+    std::vector<double> allSplit2Ps(setInfo.populations.size(),0.0); std::vector<int> allSplit2Counts(setInfo.populations.size(),0);
+    std::vector<double> allCorrectionFactors(setInfo.populations.size(),0);
     
     int totalVariantNumber = 0;
     std::vector<string> sampleNames; std::vector<std::string> fields;
@@ -196,30 +190,8 @@ int DminMain(int argc, char** argv) {
             printInitialMessageTriosQuartets(opt::regionLength, VCFlineCount, JKblockSizeBasedOnNum, opt::jkWindowSize, opt::jkNum);
             fields = split(line, '\t');
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
-            // print_vector_stream(sampleNames, std::cerr);
-            for (std::vector<std::string>::size_type i = 0; i != sampleNames.size(); i++) {
-                try { posToSpeciesMap[i] = IDsToSpeciesMap.at(sampleNames[i]); } catch (const std::out_of_range& oor) {
-                    std::cerr << "WARNING: the sample " << sampleNames[i] << " is in the VCF but not assigned in the SETS.txt file" << std::endl;
-                }
-            }
-            // Iterate over all the keys in the map to find the samples in the VCF:
-            // Give an error if no sample is found for a species:
-            for(std::map<string, std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {
-                string sp =  it->first;
-                //std::cerr << "sp " << sp << std::endl;
-                std::vector<string> IDs = it->second;
-                std::vector<size_t> spPos = locateSet(sampleNames, IDs);
-                if (spPos.empty()) {
-                    std::cerr << "Did not find any samples in the VCF for \"" << sp << "\"" << std::endl;
-                    assert(!spPos.empty());
-                }
-                speciesToPosMap[sp] = spPos;
-            }
-            
-            
+            setInfo.linkSetsAndVCFpositions(sampleNames);
             start = clock();
-            //  std::cerr << " " << std::endl;
-            //  std::cerr << "Outgroup at pos: "; print_vector_stream(speciesToPosMap["Outgroup"], std::cerr);
         } else {
             totalVariantNumber++;
             if (opt::regionStart != -1) {
@@ -252,54 +224,54 @@ int DminMain(int argc, char** argv) {
             startGettingCounts = clock();
             double p_O;
             if (opt::fStats)  {
-                GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(speciesToPosMap, (int)genotypes.size());
-                c->getSplitCountsNew(genotypes, posToSpeciesMap);
+                GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(setInfo.popToPosMap, (int)genotypes.size());
+                c->getSplitCountsNew(genotypes, setInfo.posToPopMap);
                 
                 if (opt::useGenotypeProbabilities) {
                     int likelihoodsOrProbabilitiesTagPosition = c->checkForGenotypeLikelihoodsOrProbabilities(fields);
                     if (likelihoodsOrProbabilitiesTagPosition == LikelihoodsProbabilitiesAbsent) {
                         printMissingLikelihoodsWarning(fields[0], fields[1]);
                         opt::useGenotypeProbabilities = false;
-                    } else c->getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
+                    } else c->getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(genotypes,setInfo.posToPopMap,likelihoodsOrProbabilitiesTagPosition);
                 }
                 
                 if (opt::poolSeq) {
                     int ADtagPos = c->findADtagPosition(fields);
-                    c->getAFsFromADtagWithSplits(genotypes, speciesToPosMap, ADtagPos, opt::poolMinDepth);
+                    c->getAFsFromADtagWithSplits(genotypes, setInfo.popToPosMap, ADtagPos, opt::poolMinDepth);
                 }
                 
                 p_O = c->setDAFs.at("Outgroup"); if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
                 
                 if (opt::useGenotypeProbabilities) {
-                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                    for (std::vector<std::string>::size_type i = 0; i != setInfo.populations.size(); i++) {
                         try {
-                            allPs[i] = c->setDAFsFromLikelihoods.at(species[i]);
-                            allSplit1Ps[i] = c->setDAFsplit1fromLikelihoods.at(species[i]);
-                            allSplit2Ps[i] = c->setDAFsplit2fromLikelihoods.at(species[i]);
-                            allSplit1Counts[i] = c->setAlleleCountsSplit1fromLikelihoods.at(species[i]);
-                            allSplit2Counts[i] = c->setAlleleCountsSplit2fromLikelihoods.at(species[i]);
-                        } catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
+                            allPs[i] = c->setDAFsFromLikelihoods.at(setInfo.populations[i]);
+                            allSplit1Ps[i] = c->setDAFsplit1fromLikelihoods.at(setInfo.populations[i]);
+                            allSplit2Ps[i] = c->setDAFsplit2fromLikelihoods.at(setInfo.populations[i]);
+                            allSplit1Counts[i] = c->setAlleleCountsSplit1fromLikelihoods.at(setInfo.populations[i]);
+                            allSplit2Counts[i] = c->setAlleleCountsSplit2fromLikelihoods.at(setInfo.populations[i]);
+                        } catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << setInfo.populations[i] << std::endl; }
                     }
                    // print_vector(allPs, std::cerr);
                 } else if (opt::poolSeq) {
-                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                    for (std::vector<std::string>::size_type i = 0; i != setInfo.populations.size(); i++) {
                         try {
-                                allPs[i] = c->setPoolDAFs.at(species[i]);
-                                allSplit1Ps[i] = c->setPoolDAFsplit1.at(species[i]);
-                                allSplit2Ps[i] = c->setPoolDAFsplit2.at(species[i]);
+                                allPs[i] = c->setPoolDAFs.at(setInfo.populations[i]);
+                                allSplit1Ps[i] = c->setPoolDAFsplit1.at(setInfo.populations[i]);
+                                allSplit2Ps[i] = c->setPoolDAFsplit2.at(setInfo.populations[i]);
                                 allSplit1Counts[i] = 1; allSplit2Counts[i] = 1;
-                        } catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
+                        } catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << setInfo.populations[i] << std::endl; }
                     }
                 
                 } else {
-                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                    for (std::vector<std::string>::size_type i = 0; i != setInfo.populations.size(); i++) {
                         try {
-                                allPs[i] = c->setDAFs.at(species[i]);
-                                allSplit1Ps[i] = c->setDAFsplit1.at(species[i]);
-                                allSplit2Ps[i] = c->setDAFsplit2.at(species[i]);
-                                allSplit1Counts[i] = c->setAlleleCountsSplit1.at(species[i]);
-                                allSplit2Counts[i] = c->setAlleleCountsSplit2.at(species[i]);
-                                allCorrectionFactors[i] = c->setCorrectionFactors.at(species[i]);
+                                allPs[i] = c->setDAFs.at(setInfo.populations[i]);
+                                allSplit1Ps[i] = c->setDAFsplit1.at(setInfo.populations[i]);
+                                allSplit2Ps[i] = c->setDAFsplit2.at(setInfo.populations[i]);
+                                allSplit1Counts[i] = c->setAlleleCountsSplit1.at(setInfo.populations[i]);
+                                allSplit2Counts[i] = c->setAlleleCountsSplit2.at(setInfo.populations[i]);
+                                allCorrectionFactors[i] = c->setCorrectionFactors.at(setInfo.populations[i]);
                             
                             /*if (isnan(allPs[i])) {
                                                           std::cerr << "allPs[i]: " << allPs[i] << " ; Exiting ..." << std::endl;
@@ -311,43 +283,43 @@ int DminMain(int argc, char** argv) {
                                                         //  std::cerr << genotypes[speciesToPosMap.at(species[i])[0]] << std::endl;
                                                         //  exit(1);
                                                       } */
-                        } catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
+                        } catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << setInfo.populations[i] << std::endl; }
                     }
                     //print_vector(allPs, std::cerr);
                 }
                 delete c;
             } else {
-                GeneralSetCounts* c2 = (GeneralSetCountsWithSplits*) new GeneralSetCounts(speciesToPosMap, (int)genotypes.size());
-                c2->getSetVariantCounts(genotypes, posToSpeciesMap);
+                GeneralSetCounts* c2 = (GeneralSetCountsWithSplits*) new GeneralSetCounts(setInfo.popToPosMap, (int)genotypes.size());
+                c2->getSetVariantCounts(genotypes, setInfo.posToPopMap);
                 if (opt::useGenotypeProbabilities) {
                     int likelihoodsOrProbabilitiesTagPosition = c2->checkForGenotypeLikelihoodsOrProbabilities(fields);
                     if (likelihoodsOrProbabilitiesTagPosition == LikelihoodsProbabilitiesAbsent) {
                         printMissingLikelihoodsWarning(fields[0], fields[1]);
                         opt::useGenotypeProbabilities = false;
-                    } else c2->getAFsFromGenotypeLikelihoodsOrProbabilities(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
+                    } else c2->getAFsFromGenotypeLikelihoodsOrProbabilities(genotypes,setInfo.posToPopMap,likelihoodsOrProbabilitiesTagPosition);
                 }
                 
                 if (opt::poolSeq) {
                     int ADtagPos = c2->findADtagPosition(fields);
-                    c2->getAFsFromADtag(genotypes,speciesToPosMap,ADtagPos, opt::poolMinDepth);
+                    c2->getAFsFromADtag(genotypes,setInfo.popToPosMap,ADtagPos, opt::poolMinDepth);
                 }
                 
                 p_O = c2->setDAFs.at("Outgroup"); if (p_O == -1) { delete c2; continue; } // We need to make sure that the outgroup is defined
                 if (opt::useGenotypeProbabilities) {
-                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
-                        try { allPs[i] = c2->setDAFsFromLikelihoods.at(species[i]); }
-                        catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
+                    for (std::vector<std::string>::size_type i = 0; i != setInfo.populations.size(); i++) {
+                        try { allPs[i] = c2->setDAFsFromLikelihoods.at(setInfo.populations[i]); }
+                        catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << setInfo.populations[i] << std::endl; }
                     }
                  // print_vector(allPs, std::cerr);
                 } else if (opt::poolSeq) {
-                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
-                        try {allPs[i] = c2->setPoolDAFs.at(species[i]); }
-                        catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
+                    for (std::vector<std::string>::size_type i = 0; i != setInfo.populations.size(); i++) {
+                        try {allPs[i] = c2->setPoolDAFs.at(setInfo.populations[i]); }
+                        catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << setInfo.populations[i] << std::endl; }
                     }
                 } else {
-                    for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
-                        try {allPs[i] = c2->setDAFs.at(species[i]); }
-                        catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << species[i] << std::endl; }
+                    for (std::vector<std::string>::size_type i = 0; i != setInfo.populations.size(); i++) {
+                        try {allPs[i] = c2->setDAFs.at(setInfo.populations[i]); }
+                        catch (const std::out_of_range& oor) { std::cerr << "Counts are missing some info for " << setInfo.populations[i] << std::endl; }
                     }
                 //print_vector(allPs, std::cerr);
                 //exit(1);

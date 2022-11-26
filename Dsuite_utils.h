@@ -66,6 +66,8 @@ using std::string;
 // VCF format constant
 static const int NUM_NON_GENOTYPE_COLUMNS=9;  // 8 mendatory columns + 1 column with definition of the genotype columns
 
+void assertFileOpen(std::ifstream& fh, const std::string& fn);
+void assertFileOpen(std::ofstream& fh, const std::string& fn);
 double calculateOneDs(double ABBAtotal, double BABAtotal);
 double* calculateThreeDs(double ABBAtotal, double BABAtotal, double BBAAtotal);
 double Fd_Denom_perVariant(double p1, double p2, double p3, double pO);
@@ -77,7 +79,7 @@ std::string stripExtension(const std::string& filename);
 std::vector<std::string> split2(std::string s, string delim);
 std::vector<std::string> split(const std::string &s, char delim);
 std::vector<double> splitToDouble(const std::string &s, char delim);
-std::vector<size_t> locateSet(std::vector<std::string>& sample_names, const std::vector<std::string>& set);
+std::vector<size_t> locateSet(const std::vector<std::string>& sample_names, const std::vector<std::string>& set);
 std::istream* createReader(const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
 std::ostream* createWriter(const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
 bool file_exists(const std::string& name);

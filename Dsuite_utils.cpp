@@ -835,13 +835,12 @@ std::vector<std::string> split2(std::string s, string delim) {
 }
 
 
-std::vector<size_t> locateSet(std::vector<std::string>& sample_names, const std::vector<std::string>& set) {
+std::vector<size_t> locateSet(const std::vector<std::string>& sample_names, const std::vector<std::string>& set) {
     std::vector<size_t> setLocs;
     for (std::vector<std::string>::size_type i = 0; i != set.size(); i++) {
-        std::vector<std::string>::iterator it = std::find(sample_names.begin(), sample_names.end(), set[i]);
+        std::vector<std::string>::const_iterator it = std::find(sample_names.begin(), sample_names.end(), set[i]);
         if (it == sample_names.end()) {
             std::cerr << "Did not find the sample: \"" << set[i] << "\"" << std::endl;
-            std::cerr << "Did not find the sample: \"" << sample_names[43] << "\"" << std::endl;
             print_vector(sample_names, std::cerr,',');
         } else {
             size_t loc = std::distance(sample_names.begin(), it);
@@ -850,6 +849,7 @@ std::vector<size_t> locateSet(std::vector<std::string>& sample_names, const std:
     }
     return setLocs;
 }
+
 
 //
 std::string suffix(const std::string& seq, size_t len)
@@ -876,7 +876,7 @@ void assertFileOpen(std::ifstream& fh, const std::string& fn)
 {
     if(!fh.is_open())
     {
-        std::cerr << "Error: could not open " << fn << " for read\n";
+        std::cerr << "ERROR: Could not open " << fn << " for read\n";
         exit(EXIT_FAILURE);
     }
 }
@@ -885,7 +885,7 @@ void assertFileOpen(std::ofstream& fh, const std::string& fn)
 {
     if(!fh.is_open())
     {
-        std::cerr << "Error: could not open " << fn << " for write\n";
+        std::cerr << "ERROR: Could not open " << fn << " for write\n";
         exit(EXIT_FAILURE);
     }
 }
@@ -895,7 +895,7 @@ void assertGZOpen(gzstreambase& gh, const std::string& fn)
 {
     if(!gh.good())
     {
-        std::cerr << "Error: could not open " << fn << std::endl;
+        std::cerr << "ERROR: Could not open " << fn << std::endl;
         exit(EXIT_FAILURE);
     }
 }

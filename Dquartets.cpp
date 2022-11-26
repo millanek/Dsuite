@@ -11,6 +11,7 @@
 #define SUBPROGRAM "Dquartets"
 
 #define DEBUG 0
+#define MIN_SETS 4
 
 static const char *DQUARTS_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] INPUT_FILE.vcf SETS.txt\n"
@@ -95,37 +96,27 @@ int DquartetsMain(int argc, char** argv) {
     if (opt::vcfFile == "stdin") { vcfFile = &std::cin; }
     else { vcfFile = createReader(opt::vcfFile.c_str()); }
     
-    std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
-    if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl; exit(1);}
-    
-    std::ofstream* outFileBBAA = new std::ofstream(outFileRoot+"_BBAA.txt");
-    std::ofstream* outFileDmin = new std::ofstream(outFileRoot+"_Dmin.txt");
-    std::ofstream* outFileCombine = new std::ofstream(outFileRoot+"_combine.txt");
-    std::ofstream* outFileCombineStdErr = new std::ofstream(outFileRoot+"_combine_stderr.txt");
-
-    std::map<string, std::vector<string>> speciesToIDsMap; std::map<string, string> IDsToSpeciesMap;
-    std::map<string, std::vector<size_t>> speciesToPosMap; std::map<size_t, string> posToSpeciesMap;
-    
     // Get the sample sets
-    process_SETS_file(setsFile, opt::setsFile, speciesToIDsMap, IDsToSpeciesMap, OutgroupNotRequired);
-
-    // Get a vector of set names (usually species)
-    std::vector<string> species;
-    for(std::map<string,std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {
-        if (it->first != "xxx") { species.push_back(it->first); }
-    } std::cerr << "There are " << species.size() << " sets." << std::endl;
+    SetInformation setInfo(opt::setsFile, MIN_SETS, OutgroupRequired);
     
-    int nCombinations = nChoosek((int)species.size(),4);
+    std::ofstream* outFileBBAA = new std::ofstream(outFileRoot+"_BBAA.txt"); assertFileOpen(*outFileBBAA, outFileRoot+"_BBAA.txt");
+    std::ofstream* outFileDmin = new std::ofstream(outFileRoot+"_Dmin.txt"); assertFileOpen(*outFileDmin, outFileRoot+"_Dmin.txt");
+    std::ofstream* outFileCombine = new std::ofstream(outFileRoot+"_combine.txt"); assertFileOpen(*outFileCombine, outFileRoot+"_combine.txt");
+    std::ofstream* outFileCombineStdErr = new std::ofstream(outFileRoot+"_combine_stderr.txt");
+    assertFileOpen(*outFileCombineStdErr, outFileRoot+"_combine_stderr.txt");
+
+    
+    int nCombinations = nChoosek((int)setInfo.populations.size(),4);
     if (opt::fStats) std::cerr << "Going to calculate D and f4-ratio values for " << nCombinations << " quartets" << std::endl;
     else std::cerr << "Going to calculate D values for " << nCombinations << " quartets" << std::endl;
     
     
     if (opt::treeFile != "") { // Chack that the tree contains all the populations/species
-        for (int i = 0; i != species.size(); i++) {
-            try { treeTaxonNamesToLoc.at(species[i]);
+        for (int i = 0; i != setInfo.populations.size(); i++) {
+            try { treeTaxonNamesToLoc.at(setInfo.populations[i]);
             } catch (const std::out_of_range& oor) {
                 std::cerr << "Out of Range error: " << oor.what() << '\n';
-                std::cerr << "species[i]: " << species[i] << '\n';
+                std::cerr << "species[i]: " << setInfo.populations[i] << '\n';
                 std::cerr << CHECK_TREE_ERROR_MSG << '\n';
                 exit(1);
     }}}
@@ -133,11 +124,11 @@ int DquartetsMain(int argc, char** argv) {
     // first, get all combinations of four sets (species):
     std::vector<std::vector<string>> quartets; quartets.resize(nCombinations);
     std::vector<std::vector<int>> quartetsInt; quartetsInt.resize(nCombinations);
-    std::vector<bool> v(species.size()); std::fill(v.begin(), v.begin() + 4, true); // prepare a selection vector
+    std::vector<bool> v(setInfo.populations.size()); std::fill(v.begin(), v.begin() + 4, true); // prepare a selection vector
     int pNum = 0;
     do {
         for (int i = 0; i < v.size(); ++i) {
-            if (v[i]) { quartets[pNum].push_back(species[i]); quartetsInt[pNum].push_back(i); }
+            if (v[i]) { quartets[pNum].push_back(setInfo.populations[i]); quartetsInt[pNum].push_back(i); }
         } pNum++;
     } while (std::prev_permutation(v.begin(), v.end())); // Getting all permutations of the selection vector - so it selects all combinations
     std::cerr << "Done permutations" << std::endl;
@@ -159,9 +150,9 @@ int DquartetsMain(int argc, char** argv) {
     }
     
     // And need to prepare the vectors to hold allele frequency values:
-    std::vector<double> allPs(species.size(),0.0);
-    std::vector<double> allSplit1Ps(species.size(),0.0); std::vector<int> allSplit1Counts(species.size(),0);
-    std::vector<double> allSplit2Ps(species.size(),0.0); std::vector<int> allSplit2Counts(species.size(),0);
+    std::vector<double> allPs(setInfo.populations.size(),0.0);
+    std::vector<double> allSplit1Ps(setInfo.populations.size(),0.0); std::vector<int> allSplit1Counts(setInfo.populations.size(),0);
+    std::vector<double> allSplit2Ps(setInfo.populations.size(),0.0); std::vector<int> allSplit2Counts(setInfo.populations.size(),0);
     
     int totalVariantNumber = 0;
     std::vector<string> sampleNames; std::vector<std::string> fields;
@@ -182,27 +173,7 @@ int DquartetsMain(int argc, char** argv) {
             printInitialMessageTriosQuartets(opt::regionLength, VCFlineCount, JKblockSizeBasedOnNum, opt::jkWindowSize, opt::jkNum);
             fields = split(line, '\t');
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
-            // print_vector_stream(sampleNames, std::cerr);
-            for (std::vector<std::string>::size_type i = 0; i != sampleNames.size(); i++) {
-                try { posToSpeciesMap[i] = IDsToSpeciesMap.at(sampleNames[i]);
-                    //std::cerr << "posToSpeciesMap[i] = " << posToSpeciesMap[i] << " ;IDsToSpeciesMap.at(sampleNames[i])" << IDsToSpeciesMap.at(sampleNames[i]) << "\n";
-                } catch (const std::out_of_range& oor) {
-                    std::cerr << "WARNING: the sample " << sampleNames[i] << " is in the VCF but not assigned in the SETS.txt file" << std::endl;
-                }
-            }
-            // Iterate over all the keys in the map to find the samples in the VCF:
-            // Give an error if no sample is found for a species:
-            for(std::map<string, std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {
-                string sp =  it->first;
-                //std::cerr << "sp " << sp << std::endl;
-                std::vector<string> IDs = it->second;
-                std::vector<size_t> spPos = locateSet(sampleNames, IDs);
-                if (spPos.empty()) {
-                    std::cerr << "Did not find any samples in the VCF for \"" << sp << "\"" << std::endl;
-                    assert(!spPos.empty());
-                }
-                speciesToPosMap[sp] = spPos;
-            }
+            setInfo.linkSetsAndVCFpositions(sampleNames);
             start = clock();
             //  std::cerr << " " << std::endl;
             //  std::cerr << "Outgroup at pos: "; print_vector_stream(speciesToPosMap["Outgroup"], std::cerr);
@@ -237,26 +208,26 @@ int DquartetsMain(int argc, char** argv) {
             
             startGettingCounts = clock();
             if (opt::fStats)  {
-                GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(speciesToPosMap, (int)genotypes.size());
-                c->getSplitCounts(genotypes, posToSpeciesMap);
-                for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
+                GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(setInfo.popToPosMap, (int)genotypes.size());
+                c->getSplitCounts(genotypes, setInfo.posToPopMap);
+                for (std::vector<std::string>::size_type i = 0; i != setInfo.populations.size(); i++) {
                     try {
-                        allPs[i] = c->setAAFs.at(species[i]);
-                        allSplit1Ps[i] = c->setAAFsplit1.at(species[i]);
-                        allSplit2Ps[i] = c->setAAFsplit2.at(species[i]);
-                        allSplit1Counts[i] = c->setAlleleCountsSplit1.at(species[i]);
-                        allSplit2Counts[i] = c->setAlleleCountsSplit2.at(species[i]);
+                        allPs[i] = c->setAAFs.at(setInfo.populations[i]);
+                        allSplit1Ps[i] = c->setAAFsplit1.at(setInfo.populations[i]);
+                        allSplit2Ps[i] = c->setAAFsplit2.at(setInfo.populations[i]);
+                        allSplit1Counts[i] = c->setAlleleCountsSplit1.at(setInfo.populations[i]);
+                        allSplit2Counts[i] = c->setAlleleCountsSplit2.at(setInfo.populations[i]);
                        // std::cerr << "species[i] " << species[i] << "; allPs[i] " << allPs[i] << " ; c->setDAFs[species[i]] " << c->setDAFs[0] << std::endl;
                     } catch (const std::out_of_range& oor) {
-                        std::cerr << "Counts are missing some info for " << species[i] << std::endl;
+                        std::cerr << "Counts are missing some info for " << setInfo.populations[i] << std::endl;
                     }
                 }
                 delete c;
             } else {
-                GeneralSetCounts* c = (GeneralSetCountsWithSplits*) new GeneralSetCounts(speciesToPosMap, (int)genotypes.size());
-                c->getSetVariantCounts(genotypes, posToSpeciesMap);
-                for (std::vector<std::string>::size_type i = 0; i != species.size(); i++) {
-                    allPs[i] = c->setAAFs.at(species[i]);
+                GeneralSetCounts* c = (GeneralSetCountsWithSplits*) new GeneralSetCounts(setInfo.popToPosMap, (int)genotypes.size());
+                c->getSetVariantCounts(genotypes, setInfo.posToPopMap);
+                for (std::vector<std::string>::size_type i = 0; i != setInfo.populations.size(); i++) {
+                    allPs[i] = c->setAAFs.at(setInfo.populations[i]);
                  //   std::cerr << "species[i] " << species[i] << "; allPs[i] " << allPs[i] << std::endl;
                 }
                 delete c;

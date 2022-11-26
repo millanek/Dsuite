@@ -13,6 +13,7 @@
 #define SUBPROGRAM "Dinvestigate"
 
 #define DEBUG 1
+#define MIN_SETS 3
 
 static const char *ABBA_USAGE_MESSAGE =
 "Usage: " PROGRAM_BIN " " SUBPROGRAM " [OPTIONS] INPUT_FILE.vcf.gz SETS.txt test_trios.txt\n"
@@ -63,27 +64,11 @@ void doAbbaBaba() {
     string line; // for reading the input files
     
     std::istream* vcfFile = createReader(opt::vcfFile);
-    std::ifstream* setsFile = new std::ifstream(opt::setsFile.c_str());
-    if (!setsFile->good()) { std::cerr << "The file " << opt::setsFile << " could not be opened. Exiting..." << std::endl; exit(EXIT_FAILURE);}
     std::ifstream* testTriosFile = new std::ifstream(opt::testTriosFile.c_str());
     if (!testTriosFile->good()) { std::cerr << "The file " << opt::testTriosFile << " could not be opened. Exiting..." << std::endl; exit(EXIT_FAILURE);}
     
     // Get the sample sets
-    std::map<string, std::vector<string>> speciesToIDsMap; std::map<string, string> IDsToSpeciesMap;
-    std::map<string, std::vector<size_t>> speciesToPosMap; std::map<size_t, string> posToSpeciesMap;
-    
-    // Get the sample sets
-    process_SETS_file(setsFile, opt::setsFile, speciesToIDsMap, IDsToSpeciesMap, OutgroupRequired);
-    
-    // Get a vector of set names (usually species)
-    std::vector<string> species;
-    for(std::map<string,std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {
-        if (it->first != "Outgroup" && it->first != "xxx") {
-            species.push_back(it->first);
-            // std::cerr << it->first << std::endl;
-        }
-    } std::cerr << "There are " << species.size() << " sets (excluding the Outgroup)" << std::endl;
-    
+    SetInformation setInfo(opt::setsFile, MIN_SETS, OutgroupRequired);
     
     // Get the test trios
     std::vector<std::ofstream*> outFiles;
@@ -94,7 +79,7 @@ void doAbbaBaba() {
         // std::cerr << line << std::endl;
         std::vector<string> threePops = split(line, '\t'); assert(threePops.size() == 3);
         for (int i = 0; i != threePops.size(); i++) { // Check that the test trios are in the sets file
-            if (speciesToIDsMap.count(threePops[i]) == 0) {
+            if (setInfo.popToIDsMap.count(threePops[i]) == 0) {
                 std::cerr << threePops[i] << " is present in the " << opt::testTriosFile << " but missing from the " << opt::setsFile << std::endl;
             }
         }
@@ -122,25 +107,7 @@ void doAbbaBaba() {
         else if (line[0] == '#' && line[1] == 'C') {
             fields = split(line, '\t');
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
-            // print_vector_stream(sampleNames, std::cerr);
-            for (std::vector<std::string>::size_type i = 0; i != sampleNames.size(); i++) {
-                try { posToSpeciesMap[i] = IDsToSpeciesMap.at(sampleNames[i]); } catch (const std::out_of_range& oor) {
-                    std::cerr << "WARNING: the sample " << sampleNames[i] << " is in the VCF but not assigned in the SETS.txt file" << std::endl;
-                }
-            }
-            // Iterate over all the keys in the map to find the samples in the VCF:
-            // Give an error if no sample is found for a species:
-            for(std::map<string, std::vector<string>>::iterator it = speciesToIDsMap.begin(); it != speciesToIDsMap.end(); ++it) {
-                string sp =  it->first;
-               // std::cerr << "sp " << sp << std::endl;
-                std::vector<string> IDs = it->second;
-                std::vector<size_t> spPos = locateSet(sampleNames, IDs);
-                if (spPos.empty()) {
-                    std::cerr << "Did not find any samples in the VCF for \"" << sp << "\"" << std::endl;
-                    assert(!spPos.empty());
-                }
-                speciesToPosMap[sp] = spPos;
-            }
+            setInfo.linkSetsAndVCFpositions(sampleNames);
             start = clock();
         } else {
             totalVariantNumber++;
@@ -159,15 +126,15 @@ void doAbbaBaba() {
             }
             
             startGettingCounts = clock();
-            GeneralSetCounts* c = new GeneralSetCounts(speciesToPosMap, (int)genotypes.size());
-            try { c->getSetVariantCounts(genotypes, posToSpeciesMap); } catch (const std::out_of_range& oor) {
+            GeneralSetCounts* c = new GeneralSetCounts(setInfo.popToPosMap, (int)genotypes.size());
+            try { c->getSetVariantCounts(genotypes, setInfo.posToPopMap); } catch (const std::out_of_range& oor) {
                 std::cerr << "Problems getting splitCounts for " << chr << " " << coord << std::endl; }
             if (opt::useGenotypeProbabilities) {
                 int likelihoodsOrProbabilitiesTagPosition = c->checkForGenotypeLikelihoodsOrProbabilities(fields);
                 if (likelihoodsOrProbabilitiesTagPosition == LikelihoodsProbabilitiesAbsent) {
                     printMissingLikelihoodsWarning(fields[0], fields[1]);
                     opt::useGenotypeProbabilities = false;
-                } else c->getAFsFromGenotypeLikelihoodsOrProbabilities(genotypes,posToSpeciesMap,likelihoodsOrProbabilitiesTagPosition);
+                } else c->getAFsFromGenotypeLikelihoodsOrProbabilities(genotypes,setInfo.posToPopMap,likelihoodsOrProbabilitiesTagPosition);
             }
             genotypes.clear(); genotypes.shrink_to_fit();
             durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
