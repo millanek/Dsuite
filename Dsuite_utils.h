@@ -339,10 +339,6 @@ public:
     std::vector<std::vector<int>> linearStrongABBApos; // positions of strong (> 0.5) ABBA for the three tree orientations
     std::vector<std::vector<int>> linearStrongBABApos; // positions of strong (> 0.5) BABA for the three tree orientations
     
-    double KSpvalForStrongSites;
-    double KSpvalForStrongSitesOneSample;
-    
-    
     
     double localD1num; double localD2num; double localD3num;
     double localD1denom; double localD2denom; double localD3denom;
@@ -422,6 +418,11 @@ public:
         std::vector<string> outVec; outVec.resize(numCols);
         int patternsI = 6; if (fStats) patternsI++; if(KS_test) patternsI++; // Where will the BBAA, ABBA, etc. counts be put
         
+        double KSpval;
+        if (KS_test) {
+            KSpval = testIfStrongSitesUniformlyDistributed(arrangement);
+            if (KSpval < 2.3e-16) KSpval = 2.3e-16;
+        }
         
         if (std::fabs(D1_p) < 2.3e-16) { D1_p = 2.3e-16; }
         if (std::fabs(D2_p) < 2.3e-16) { D2_p = 2.3e-16; }
@@ -502,8 +503,8 @@ public:
             outVec[6] = numToString(f4ratio);
         }
         if (KS_test) {
-            if (fStats) outVec[7] = numToString(KSpvalForStrongSitesOneSample);
-            else outVec[6] = numToString(KSpvalForStrongSitesOneSample);
+            if (fStats) outVec[7] = numToString(KSpval);
+            else outVec[6] = numToString(KSpval);
         }
         
         return outVec;
@@ -538,99 +539,52 @@ public:
         D3_p = 2 * (1 - normalCDF(D3_Z));
     }
     
-    void testIfStrongSitesUniformlyDistributed() {
-        std::random_device rd;     // only used once to initialise (seed) engine
-        std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
-        
-      // std::cerr << "Here: .. treeArrangement: " << BBAAarrangement << std::endl;
-        
+    double testIfStrongSitesUniformlyDistributed(int arrangement) {
         std::list<int64_t> linearStrongPosList;
         std::vector<int> linearStrongPosVector;
         
         int usedVarsThisArrangment = 0;
-        switch (BBAAarrangement) {
+        switch (arrangement) {
             case P3isTrios2_Dpositive:
                 usedVarsThisArrangment = totalUsedVars[0];
-                //linearStrongPosList.assign(linearStrongABBApos[0].begin(),linearStrongABBApos[0].end());
                 linearStrongPosVector.assign(linearStrongABBApos[0].begin(),linearStrongABBApos[0].end());
                 break;
             case P3isTrios2_Dnegative:
                 usedVarsThisArrangment = totalUsedVars[0];
-                //linearStrongPosList.assign(linearStrongBABApos[0].begin(),linearStrongBABApos[0].end());
                 linearStrongPosVector.assign(linearStrongBABApos[0].begin(),linearStrongBABApos[0].end());
                 break;
             case P3isTrios1_Dpositive:
                 usedVarsThisArrangment = totalUsedVars[1];
-                //linearStrongPosList.assign(linearStrongABBApos[1].begin(),linearStrongABBApos[1].end());
                 linearStrongPosVector.assign(linearStrongABBApos[1].begin(),linearStrongABBApos[1].end());
                 break;
             case P3isTrios1_Dnegative:
                 usedVarsThisArrangment = totalUsedVars[1];
-                //linearStrongPosList.assign(linearStrongBABApos[1].begin(),linearStrongBABApos[1].end());
                 linearStrongPosVector.assign(linearStrongBABApos[1].begin(),linearStrongBABApos[1].end());
                 break;
             case P3isTrios0_Dpositive:
                 usedVarsThisArrangment = totalUsedVars[2];
-                //linearStrongPosList.assign(linearStrongABBApos[2].begin(),linearStrongABBApos[2].end());
                 linearStrongPosVector.assign(linearStrongABBApos[2].begin(),linearStrongABBApos[2].end());
                 break;
             case P3isTrios0_Dnegative:
                 usedVarsThisArrangment = totalUsedVars[2];
-                //linearStrongPosList.assign(linearStrongBABApos[2].begin(),linearStrongBABApos[2].end());
                 linearStrongPosVector.assign(linearStrongBABApos[2].begin(),linearStrongBABApos[2].end());
                 break;
         }
         
         if(linearStrongPosVector.size() < 2) {
            // KSpvalForStrongSites = 1;
-            KSpvalForStrongSitesOneSample = 1;
+            return 1.0;
         } else {
         
-         //   std::uniform_int_distribution<int> uniABBA(0,usedVarsThisArrangment); // guaranteed unbiased
-         //   int numUniformSamples = (int)linearStrongPosList.size(); if (numUniformSamples < 10000) { numUniformSamples = usedVarsThisArrangment/4; }
-         //   std::list<int64_t> uniABBAvals; std::vector<int64_t> uniABBAvalsVec; for (int i = 0; i < numUniformSamples; i++) { int64_t r = uniABBA(rng); uniABBAvals.push_back(r); uniABBAvalsVec.push_back(r); }
-            
-            //std::cerr << "Here: .. uniABBAvals.size(): " << uniABBAvals.size() << std::endl;
-           // std::cerr << "Here: .. usedVarsThisArrangment: " << usedVarsThisArrangment << std::endl;
-           // std::cerr << "Here: .. linearStrongPosList.size(): " << linearStrongPosList.size() << std::endl;
-            
-            
-            
-           // std::cerr << "Here: .. linearStrongPosList.size(): " << linearStrongPosList.size() << std::endl;
-            
-            
-          //  KSpvalForStrongSites = ks_test(uniABBAvals, linearStrongPosList, std::cerr, false);
-        
-            
-           // std::vector<int> linearStrongPosListVec(linearStrongPosList.begin(), linearStrongPosList.end());
             std::vector<double> linearStrongPosVector0to1(linearStrongPosVector.size(),0.0);
             for (int i = 0; i < linearStrongPosVector0to1.size(); i++) {
-                linearStrongPosVector0to1[i] = (double)linearStrongPosVector[i]/(double)usedVarsThisArrangment;
+                linearStrongPosVector0to1[i] = (double)linearStrongPosVector[i]/(double)linearStrongPosVector.back();
             }
+           // print_vector(linearStrongPosVector0to1, std::cout, ',');
             
-            
-            KSpvalForStrongSitesOneSample = ks_test_of_uniformity(linearStrongPosVector0to1, std::cerr, false);
-            
-          //  std::cerr << "KSpvalForStrongSites: " << KSpvalForStrongSites << std::endl;
-      //      std::cerr << "KSpvalForStrongSitesOneSample: " << KSpvalForStrongSitesOneSample << std::endl;
-        //    std::cerr << std::endl;
-            
-            //if (KSpvalForStrongSites > 0.99 && KSpvalForStrongSitesOneSample < 0.00001) {
-            //if(usedVarsThisArrangment < 10 || linearStrongPosList.size() < 5) {
-            //    std::cerr << "KSpvalForStrongSites: " << KSpvalForStrongSites << std::endl;
-           //     std::cerr << "KSpvalForStrongSitesOneSample: " << KSpvalForStrongSitesOneSample << std::endl;
-           //     std::cerr << "usedVarsThisArrangment: " << usedVarsThisArrangment << std::endl;
-          //      std::cerr << "uniABBAvals: " << std::endl;
-          //      print_vector(uniABBAvalsVec, std::cerr, ',');
-             //   std::cerr << "linearStrongPosVector: " << std::endl;
-             //   print_vector(linearStrongPosVector, std::cerr, ',');
-             //   std::cerr << "linearStrongPosVector0to1: " << std::endl;
-             //   print_vector(linearStrongPosVector0to1, std::cerr, ',');
-          //  }
-          //  */
-           // std::cerr << "Here: .. KSpvalForStrongSites: " << KSpvalForStrongSites << std::endl;
-            //double BABApval = ks_test(uniBABAvals, linearBABApos, std::cerr);
-       }
+            double KSpvalForStrongSitesOneSample = ks_test_of_uniformity(linearStrongPosVector0to1, std::cerr, false);
+            return KSpvalForStrongSitesOneSample;
+        }
     }
     
     

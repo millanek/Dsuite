@@ -98,8 +98,8 @@ void doAbbaBaba() {
 
    // int lastPrint = 0; int lastWindowVariant = 0;
     std::vector<string> sampleNames; std::vector<std::string> fields;
-    clock_t start; clock_t startGettingCounts; clock_t startCalculation;
-    double durationOverall; double durationGettingCounts; double durationCalculation;
+    clock_t start = clock(); // clock_t startGettingCounts; clock_t startCalculation;
+    //double durationGettingCounts; double durationCalculation;
     while (getline(*vcfFile, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
         if (line[0] == '#' && line[1] == '#')
@@ -108,14 +108,10 @@ void doAbbaBaba() {
             fields = split(line, '\t');
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
             setInfo.linkSetsAndVCFpositions(sampleNames);
-            start = clock();
         } else {
             totalVariantNumber++;
-            if (totalVariantNumber % reportProgressEvery == 0) {
-                durationOverall = ( clock() - start ) / (double) CLOCKS_PER_SEC;
-                std::cerr << "Processed " << totalVariantNumber << " variants in " << durationOverall << "secs" << std::endl;
-                //std::cerr << "GettingCounts " << durationGettingCounts << " calculation " << durationCalculation << "secs" << std::endl;
-            }
+            if (totalVariantNumber % reportProgressEvery == 0) reportProgessVCF(totalVariantNumber, start);
+        
             fields = split(line, '\t'); chr = fields[0]; coord = fields[1];
             std::vector<std::string> genotypes(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
             // Only consider biallelic SNPs
@@ -125,7 +121,7 @@ void doAbbaBaba() {
                 genotypes.clear(); genotypes.shrink_to_fit(); continue;
             }
             
-            startGettingCounts = clock();
+            // startGettingCounts = clock();
             GeneralSetCounts* c = new GeneralSetCounts(setInfo.popToPosMap, (int)genotypes.size());
             try { c->getSetVariantCounts(genotypes, setInfo.posToPopMap); } catch (const std::out_of_range& oor) {
                 std::cerr << "Problems getting splitCounts for " << chr << " " << coord << std::endl; }
@@ -137,9 +133,9 @@ void doAbbaBaba() {
                 } else c->getAFsFromGenotypeLikelihoodsOrProbabilities(genotypes,setInfo.posToPopMap,likelihoodsOrProbabilitiesTagPosition);
             }
             genotypes.clear(); genotypes.shrink_to_fit();
-            durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
+            // durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
             
-            startCalculation = clock();
+            // startCalculation = clock();
             double p_O; try { p_O = c->setDAFs.at("Outgroup"); } catch (const std::out_of_range& oor) {
                 std::cerr << "Counts don't contain derived allele frequency for the Outgroup" << std::endl; }
             if (p_O == -1) { delete c; continue; } // We need to make sure that the outgroup is defined
@@ -232,7 +228,7 @@ void doAbbaBaba() {
                     }
                 }
             }
-            durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
+           // durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
             delete c;
         }
     }

@@ -505,7 +505,7 @@ double ks_test_of_uniformity(std::vector<double> sampleVect0to1, std::ostream& o
         d = Dminusmax;
     }
     
-  //  std::cerr << "d: " << d << std::endl;
+   // std::cerr << "d: " << d << std::endl;
     
     // Return p-value
     return 1 - KScdf(N,d);

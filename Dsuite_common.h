@@ -94,4 +94,14 @@ void duplicateTreeValueError(const string& duplicate);
 void assignTreeLevelsAndLinkToTaxa(string& treeLine, std::map<string,std::vector<int>>& taxaToLoc, std::vector<int>& levels);
 int assignNumLinesToAnalyse(const int providedNumLinesOpt, const int regionLengthOpt,const string& vcfFileOpt);
 
+inline void reportProgessVCF(const int variantsProcessed, const std::clock_t startTime) {
+    double durationOverall = ( std::clock() - startTime ) / (double) CLOCKS_PER_SEC;
+    std::cout << "Processed " << variantsProcessed << " variants in " << durationOverall << "secs" << std::endl;
+}
+
+inline void reportProgessVCF(const int variantsProcessed, const int VCFlineCount, const std::clock_t startTime) {
+    double durationOverall = ( std::clock() - startTime ) / (double) CLOCKS_PER_SEC;
+    std::cerr << "Processed " << variantsProcessed << " variants (" << ((double)variantsProcessed/VCFlineCount)*100 << "%) in " << durationOverall << "secs" << std::endl;
+}
+
 #endif /* Dsuite_common_h */

@@ -175,11 +175,12 @@ int DminMain(int argc, char** argv) {
     int reportProgressEvery; if (nCombinations < 1000) reportProgressEvery = 100000;
     else if (nCombinations < 100000) reportProgressEvery = 10000;
     else reportProgressEvery = 1000;
-    clock_t start; clock_t startGettingCounts; clock_t startCalculation;
-    double durationOverall; double durationGettingCounts; double durationCalculation;
-    int JKblockSizeBasedOnNum = 0; int missingLikelihoodsCount = 0;
+    clock_t start = clock(); clock_t startGettingCounts; clock_t startCalculation;
+   // double durationGettingCounts; double durationCalculation;
+    int JKblockSizeBasedOnNum = 0;
     
-    int errCount = 0;
+    //int missingLikelihoodsCount = 0;
+    //int errCount = 0;
     
     while (getline(*vcfFile, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end()); // Deal with any left over \r from files prepared on Windows
@@ -191,7 +192,6 @@ int DminMain(int argc, char** argv) {
             fields = split(line, '\t');
             std::vector<std::string> sampleNames(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
             setInfo.linkSetsAndVCFpositions(sampleNames);
-            start = clock();
         } else {
             totalVariantNumber++;
             if (opt::regionStart != -1) {
@@ -206,11 +206,9 @@ int DminMain(int argc, char** argv) {
                     trioInfos[i].addRegionDs(P3isTrios2); trioInfos[i].addRegionDs(P3isTrios1); trioInfos[i].addRegionDs(P3isTrios0);
                 }
             }
-            if (totalVariantNumber % reportProgressEvery == 0) {
-                durationOverall = ( clock() - start ) / (double) CLOCKS_PER_SEC;
-                std::cerr << "Processed " << totalVariantNumber << " variants (" << ((double)totalVariantNumber/VCFlineCount)*100 << "%) in " << durationOverall << "secs" << std::endl;
-                //std::cerr << "GettingCounts " << durationGettingCounts << " calculation " << durationCalculation << "secs" << std::endl;
-            }
+            
+            if (totalVariantNumber % reportProgressEvery == 0) reportProgessVCF(totalVariantNumber, VCFlineCount, start);
+            
             fields = split(line, '\t');
             std::vector<std::string> genotypes(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
 
@@ -327,7 +325,7 @@ int DminMain(int argc, char** argv) {
                 delete c2;
             }
             genotypes.clear(); genotypes.shrink_to_fit();
-            durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
+           // durationGettingCounts = ( clock() - startGettingCounts ) / (double) CLOCKS_PER_SEC;
             
             startCalculation = clock();
             // Now calculate the D stats:
@@ -385,16 +383,22 @@ int DminMain(int argc, char** argv) {
                 
                 if (opt::KStest) {
                     if (ABBA > 0.5) {
-                        trioInfos[i].linearStrongABBApos[0].push_back(trioInfos[i].totalUsedVars[0]);
-                        trioInfos[i].linearStrongABBApos[1].push_back(trioInfos[i].totalUsedVars[1]);
+                       // trioInfos[i].linearStrongABBApos[0].push_back(trioInfos[i].totalUsedVars[0]);
+                       // trioInfos[i].linearStrongABBApos[1].push_back(trioInfos[i].totalUsedVars[1]);
+                        trioInfos[i].linearStrongABBApos[0].push_back(totalVariantNumber);
+                        trioInfos[i].linearStrongABBApos[1].push_back(totalVariantNumber);
                     }
                     if (BABA > 0.5) {
-                        trioInfos[i].linearStrongBABApos[0].push_back(trioInfos[i].totalUsedVars[0]);
-                        trioInfos[i].linearStrongBABApos[2].push_back(trioInfos[i].totalUsedVars[2]);
+                        //trioInfos[i].linearStrongBABApos[0].push_back(trioInfos[i].totalUsedVars[0]);
+                        //trioInfos[i].linearStrongBABApos[2].push_back(trioInfos[i].totalUsedVars[2]);
+                        trioInfos[i].linearStrongBABApos[0].push_back(totalVariantNumber);
+                        trioInfos[i].linearStrongBABApos[2].push_back(totalVariantNumber);
                     }
                     if (BBAA > 0.5) {
-                        trioInfos[i].linearStrongABBApos[2].push_back(trioInfos[i].totalUsedVars[2]);
-                        trioInfos[i].linearStrongBABApos[1].push_back(trioInfos[i].totalUsedVars[1]);
+                        //trioInfos[i].linearStrongABBApos[2].push_back(trioInfos[i].totalUsedVars[2]);
+                        //trioInfos[i].linearStrongBABApos[1].push_back(trioInfos[i].totalUsedVars[1]);
+                        trioInfos[i].linearStrongABBApos[2].push_back(totalVariantNumber);
+                        trioInfos[i].linearStrongBABApos[1].push_back(totalVariantNumber);
                     }
                 }
                 
@@ -498,7 +502,7 @@ int DminMain(int argc, char** argv) {
                 }
                 // } */
             }
-            durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
+           // durationCalculation = ( clock() - startCalculation ) / (double) CLOCKS_PER_SEC;
         }
     }
     std::cerr << "Done processing VCF. Preparing output files..." << '\n';
@@ -525,7 +529,7 @@ int DminMain(int argc, char** argv) {
         }
         
         // Find which topology is in agreement with the counts of BBAA, BABA, and ABBA
-        trioInfos[i].assignBBAAarrangement(); if (opt::KStest) trioInfos[i].testIfStrongSitesUniformlyDistributed();
+        trioInfos[i].assignBBAAarrangement();
         std::vector<string> BBAAoutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, opt::KStest, trioInfos[i].BBAAarrangement);
         print_vector(BBAAoutVec,*outFileBBAA);
         
