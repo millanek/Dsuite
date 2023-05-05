@@ -319,9 +319,12 @@ public:
         BABAtotal = 0;
         BBAAtotal = 0;
         treeArrangement = 0; BBAAarrangement = 0; DminArrangement = 0;
-        regionDs.resize(3); usedVars.resize(3); totalUsedVars.resize(3);
+        regionDs.resize(3); usedVars.resize(3); totalUsedVars.resize(3); numStrongVars.resize(3);
         linearStrongABBApos.resize(3);  linearStrongBABApos.resize(3);
+        linearStrongABBAposStrongSitesOnly.resize(3); linearStrongBABAposStrongSitesOnly.resize(3);
         usedVars[0] = 0; usedVars[1] = 0; usedVars[2] = 0;
+        totalUsedVars[0] = 0; totalUsedVars[1] = 0; totalUsedVars[2] = 0;
+        numStrongVars[0] = 0; numStrongVars[1] = 0; numStrongVars[2] = 0;
         localD1num = 0; localD2num = 0; localD3num = 0;
         localD1denom = 0; localD2denom = 0; localD3denom = 0;
         F_d_denom1 = 0; F_d_denom1_reversed = 0; F_dM_denom1 = 0; F_dM_denom1_reversed = 0; F_G_denom1 = 0; F_G_denom1_reversed = 0;
@@ -339,11 +342,14 @@ public:
     std::vector<std::vector<int>> linearStrongABBApos; // positions of strong (> 0.5) ABBA for the three tree orientations
     std::vector<std::vector<int>> linearStrongBABApos; // positions of strong (> 0.5) BABA for the three tree orientations
     
+    std::vector<std::vector<int>> linearStrongABBAposStrongSitesOnly; // positions of strong (> 0.5) ABBA in a vector of only ABBA and BABA sites
+    std::vector<std::vector<int>> linearStrongBABAposStrongSitesOnly; // positions of strong (> 0.5) BABA in a vector of only ABBA and BABA sites
     
     double localD1num; double localD2num; double localD3num;
     double localD1denom; double localD2denom; double localD3denom;
     std::vector<std::vector<double>> regionDs; // vector with three empty (double) vectors
     std::vector<int> usedVars; // Used vars for local windows
+    std::vector<int> numStrongVars;
     std::vector<int> totalUsedVars; // Used vars for local windows
     
     
@@ -414,14 +420,16 @@ public:
     
     std::vector<string> makeOutVec(const std::vector<string>& trio, const bool fStats, const bool KS_test, const int arrangement) {
         
-        int numCols = 9; if (fStats) numCols++; if(KS_test) numCols++;
+        int numCols = 9; if (fStats) numCols++; if(KS_test) numCols = numCols + 2;
         std::vector<string> outVec; outVec.resize(numCols);
-        int patternsI = 6; if (fStats) patternsI++; if(KS_test) patternsI++; // Where will the BBAA, ABBA, etc. counts be put
+        int patternsI = 6; if (fStats) patternsI++; if(KS_test) patternsI = patternsI + 2; // Where will the BBAA, ABBA, etc. counts be put
         
-        double KSpval;
+        double KSpval; double KSpvalStrongSitesOnly;
         if (KS_test) {
             KSpval = testIfStrongSitesUniformlyDistributed(arrangement);
             if (KSpval < 2.3e-16) KSpval = 2.3e-16;
+            KSpvalStrongSitesOnly = testIfStrongSitesUniformlyDistributed(arrangement, "strongSitesOnly");
+            if (KSpvalStrongSitesOnly < 2.3e-16) KSpvalStrongSitesOnly = 2.3e-16;
         }
         
         if (std::fabs(D1_p) < 2.3e-16) { D1_p = 2.3e-16; }
@@ -503,8 +511,8 @@ public:
             outVec[6] = numToString(f4ratio);
         }
         if (KS_test) {
-            if (fStats) outVec[7] = numToString(KSpval);
-            else outVec[6] = numToString(KSpval);
+            if (fStats) { outVec[7] = numToString(KSpval); outVec[8] = numToString(KSpvalStrongSitesOnly); }
+            else  { outVec[6] = numToString(KSpval); outVec[7] = numToString(KSpvalStrongSitesOnly); }
         }
         
         return outVec;
@@ -539,35 +547,51 @@ public:
         D3_p = 2 * (1 - normalCDF(D3_Z));
     }
     
-    double testIfStrongSitesUniformlyDistributed(int arrangement) {
-        std::list<int64_t> linearStrongPosList;
+    double testIfStrongSitesUniformlyDistributed(int arrangement, string type = "allSites") {
         std::vector<int> linearStrongPosVector;
         
-        int usedVarsThisArrangment = 0;
         switch (arrangement) {
             case P3isTrios2_Dpositive:
-                usedVarsThisArrangment = totalUsedVars[0];
-                linearStrongPosVector.assign(linearStrongABBApos[0].begin(),linearStrongABBApos[0].end());
+                if (type == "allSites") {
+                    linearStrongPosVector.assign(linearStrongABBApos[0].begin(),linearStrongABBApos[0].end());
+                } else if (type == "strongSitesOnly") {
+                    linearStrongPosVector.assign(linearStrongABBAposStrongSitesOnly[0].begin(),linearStrongABBAposStrongSitesOnly[0].end());
+                }
                 break;
             case P3isTrios2_Dnegative:
-                usedVarsThisArrangment = totalUsedVars[0];
-                linearStrongPosVector.assign(linearStrongBABApos[0].begin(),linearStrongBABApos[0].end());
+                if (type == "allSites") {
+                    linearStrongPosVector.assign(linearStrongBABApos[0].begin(),linearStrongBABApos[0].end());
+                } else if (type == "strongSitesOnly") {
+                    linearStrongPosVector.assign(linearStrongBABAposStrongSitesOnly[0].begin(),linearStrongBABAposStrongSitesOnly[0].end());
+                }
                 break;
             case P3isTrios1_Dpositive:
-                usedVarsThisArrangment = totalUsedVars[1];
-                linearStrongPosVector.assign(linearStrongABBApos[1].begin(),linearStrongABBApos[1].end());
+                if (type == "allSites") {
+                    linearStrongPosVector.assign(linearStrongABBApos[1].begin(),linearStrongABBApos[1].end());
+                } else if (type == "strongSitesOnly") {
+                    linearStrongPosVector.assign(linearStrongABBAposStrongSitesOnly[1].begin(),linearStrongABBAposStrongSitesOnly[1].end());
+                }
                 break;
             case P3isTrios1_Dnegative:
-                usedVarsThisArrangment = totalUsedVars[1];
-                linearStrongPosVector.assign(linearStrongBABApos[1].begin(),linearStrongBABApos[1].end());
+                if (type == "allSites") {
+                    linearStrongPosVector.assign(linearStrongBABApos[1].begin(),linearStrongBABApos[1].end());
+                } else if (type == "strongSitesOnly") {
+                    linearStrongPosVector.assign(linearStrongBABAposStrongSitesOnly[1].begin(),linearStrongBABAposStrongSitesOnly[1].end());
+                }
                 break;
             case P3isTrios0_Dpositive:
-                usedVarsThisArrangment = totalUsedVars[2];
-                linearStrongPosVector.assign(linearStrongABBApos[2].begin(),linearStrongABBApos[2].end());
+                if (type == "allSites") {
+                    linearStrongPosVector.assign(linearStrongABBApos[2].begin(),linearStrongABBApos[2].end());
+                } else if (type == "strongSitesOnly") {
+                    linearStrongPosVector.assign(linearStrongABBAposStrongSitesOnly[2].begin(),linearStrongABBAposStrongSitesOnly[2].end());
+                }
                 break;
             case P3isTrios0_Dnegative:
-                usedVarsThisArrangment = totalUsedVars[2];
-                linearStrongPosVector.assign(linearStrongBABApos[2].begin(),linearStrongBABApos[2].end());
+                if (type == "allSites") {
+                    linearStrongPosVector.assign(linearStrongBABApos[2].begin(),linearStrongBABApos[2].end());
+                } else if (type == "strongSitesOnly") {
+                    linearStrongPosVector.assign(linearStrongBABAposStrongSitesOnly[2].begin(),linearStrongBABAposStrongSitesOnly[2].end());
+                }
                 break;
         }
         

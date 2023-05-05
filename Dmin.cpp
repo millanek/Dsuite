@@ -47,6 +47,9 @@ static const char *DMIN_USAGE_MESSAGE =
 "                                               e.g MIN_DEPTH=5 may be reasonable; when there are fewer reads, the allele frequency is set to missing\n"
 "       -c, --no-combine                        (optional) do not output the \"_combine.txt\" and \"_combine_stderr.txt\" files\n"
 "       --KS-test-for-homoplasy                 (optional) Test whether strong ABBA-informative sites cluster along the genome\n"
+//"                                               TYPE can be: 1 - clustering within a vector of all segregating sites\n"
+//"                                                            2 - clustering within a vector of strong ABBA and BABA sites\n"
+// "                                               TYPE=2 is less sensitive, but is robust to mutation rate variation\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
@@ -66,7 +69,7 @@ static const struct option longopts[] = {
     { "no-f4-ratio",   no_argument, NULL, OPT_NO_F4 },
     { "use-genotype-probabilities", no_argument, NULL, 'g'},
     { "pool-seq", required_argument, NULL, 'p'},
-    { "KS-test-for-homoplasy", no_argument, NULL, OPT_KS_TEST},
+    { "KS-test-for-homoplasy", no_argument , NULL, OPT_KS_TEST},
     { NULL, 0, NULL, 0 }
 };
 
@@ -368,10 +371,9 @@ int DminMain(int argc, char** argv) {
                 trioInfos[i].ABBAtotal += ABBA; trioInfos[i].BABAtotal += BABA; trioInfos[i].BBAAtotal += BBAA;
                 
                 if (ABBA > 0.5 && (ABBA + BABA) == 0) {
-                
-                std::cerr << "ABBA : " << ABBA << std::endl;
-                std::cerr << "BABA : " << BABA << std::endl;
-                std::cerr << "(ABBA + BABA): " << (ABBA + BABA) << std::endl;
+                    std::cerr << "ABBA : " << ABBA << std::endl;
+                    std::cerr << "BABA : " << BABA << std::endl;
+                    std::cerr << "(ABBA + BABA): " << (ABBA + BABA) << std::endl;
                 }
                 if ((ABBA + BABA) != 0) { trioInfos[i].usedVars[0]++; trioInfos[i].totalUsedVars[0]++;
                     trioInfos[i].localD1num += ABBA - BABA; trioInfos[i].localD1denom += ABBA + BABA; }
@@ -385,23 +387,31 @@ int DminMain(int argc, char** argv) {
                     if (ABBA > 0.5) {
                        // trioInfos[i].linearStrongABBApos[0].push_back(trioInfos[i].totalUsedVars[0]);
                        // trioInfos[i].linearStrongABBApos[1].push_back(trioInfos[i].totalUsedVars[1]);
+                        trioInfos[i].numStrongVars[0]++; trioInfos[i].numStrongVars[1]++;
                         trioInfos[i].linearStrongABBApos[0].push_back(totalVariantNumber);
+                        trioInfos[i].linearStrongABBAposStrongSitesOnly[0].push_back(trioInfos[i].numStrongVars[0]);
                         trioInfos[i].linearStrongABBApos[1].push_back(totalVariantNumber);
+                        trioInfos[i].linearStrongABBAposStrongSitesOnly[1].push_back(trioInfos[i].numStrongVars[1]);
                     }
                     if (BABA > 0.5) {
                         //trioInfos[i].linearStrongBABApos[0].push_back(trioInfos[i].totalUsedVars[0]);
                         //trioInfos[i].linearStrongBABApos[2].push_back(trioInfos[i].totalUsedVars[2]);
+                        trioInfos[i].numStrongVars[0]++; trioInfos[i].numStrongVars[2]++;
                         trioInfos[i].linearStrongBABApos[0].push_back(totalVariantNumber);
+                        trioInfos[i].linearStrongBABAposStrongSitesOnly[0].push_back(trioInfos[i].numStrongVars[0]);
                         trioInfos[i].linearStrongBABApos[2].push_back(totalVariantNumber);
+                        trioInfos[i].linearStrongBABAposStrongSitesOnly[2].push_back(trioInfos[i].numStrongVars[2]);
                     }
                     if (BBAA > 0.5) {
                         //trioInfos[i].linearStrongABBApos[2].push_back(trioInfos[i].totalUsedVars[2]);
                         //trioInfos[i].linearStrongBABApos[1].push_back(trioInfos[i].totalUsedVars[1]);
+                        trioInfos[i].numStrongVars[1]++; trioInfos[i].numStrongVars[2]++;
                         trioInfos[i].linearStrongABBApos[2].push_back(totalVariantNumber);
+                        trioInfos[i].linearStrongABBAposStrongSitesOnly[2].push_back(trioInfos[i].numStrongVars[2]);
                         trioInfos[i].linearStrongBABApos[1].push_back(totalVariantNumber);
+                        trioInfos[i].linearStrongBABAposStrongSitesOnly[1].push_back(trioInfos[i].numStrongVars[1]);
                     }
                 }
-                
                 
                 
                 if (opt::fStats) {
@@ -617,7 +627,7 @@ void parseDminOptions(int argc, char** argv) {
     int maxNumArgs = 2; int minNumArgs = 2; // if (opt::poolSeq) { minNumArgs = 1; }
     
     if (opt::poolSeq && opt::useGenotypeProbabilities) {
-        std::cerr << "The -p and -g options are not compatible. Please check your command line. Exiting ....\n";
+        std::cerr << "Error: The -p and -g options are not compatible. Please check your command line. Exiting ....\n";
         die = true;
     }
     

@@ -97,7 +97,7 @@ int DquartetsMain(int argc, char** argv) {
     else { vcfFile = createReader(opt::vcfFile.c_str()); }
     
     // Get the sample sets
-    SetInformation setInfo(opt::setsFile, MIN_SETS, OutgroupRequired);
+    SetInformation setInfo(opt::setsFile, MIN_SETS, OutgroupNotRequired);
     
     std::ofstream* outFileBBAA = new std::ofstream(outFileRoot+"_BBAA.txt"); assertFileOpen(*outFileBBAA, outFileRoot+"_BBAA.txt");
     std::ofstream* outFileDmin = new std::ofstream(outFileRoot+"_Dmin.txt"); assertFileOpen(*outFileDmin, outFileRoot+"_Dmin.txt");
