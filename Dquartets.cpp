@@ -19,22 +19,14 @@ static const char *DQUARTS_USAGE_MESSAGE =
 "The results are as definded in Patterson et al. 2012\n"
 "The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID\n"
 "\n"
-"Use 'stdin' for the VCF file when piping from another program into Dsuite via standard input\n"
-"in this case it is necessary to provide the number of lines in the filtered VCF via the -l option\n"
-"For example, to filter the VCF for overall mimimum depth of at least 1000 across all samples:\n"
-"NUMLINES=$(bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf | wc -l)  # to get NUMLINES\n"
-"bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf | Dsuite Dtrios -l $NUMLINES stdin SETS.txt\n"
-"\n"
+stdInInfo
 "       -h, --help                              display this help and exit\n"
 "       -k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset\n"
 "       -j, --JKwindow                          (default=NA) Jackknife block size in number of informative SNPs (as used in v0.2)\n"
 "                                               when specified, this is used in place of the --JKnum option\n"
-"       -r, --region=start,length               (optional) only process a subset of the VCF file\n"
-"       -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species\n"
-"                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix\n"
-"       -o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written\n"
-"                                               output will be put in OUT_FILE_PREFIX_BBAA.txt, OUT_FILE_PREFIX_Dmin.txt, OUT_FILE_PREFIX_tree.txt etc.\n"
-"                                               by default, the prefix is taken from the name of the SETS.txt file\n"
+regionOption    // -r
+treeOption      // -t
+outOption       // -o
 "       -n, --run-name                          (optional; default=quartets) run-name will be included in the output file name after the PREFIX\n"
 "       --no-f4-ratio                           (optional) don't calculate the f4-ratio\n"
 "       -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe\n"
@@ -209,7 +201,7 @@ int DquartetsMain(int argc, char** argv) {
             startGettingCounts = clock();
             if (opt::fStats)  {
                 GeneralSetCountsWithSplits* c = new GeneralSetCountsWithSplits(setInfo.popToPosMap, (int)genotypes.size());
-                c->getSplitCounts(genotypes, setInfo.posToPopMap);
+                c->getSplitCountsNew(genotypes, setInfo.posToPopMap);
                 for (std::vector<std::string>::size_type i = 0; i != setInfo.populations.size(); i++) {
                     try {
                         allPs[i] = c->setAAFs.at(setInfo.populations[i]);

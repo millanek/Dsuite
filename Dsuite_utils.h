@@ -212,6 +212,7 @@ public:
             setHWEpriorsFromDAFfromGT[it->first].assign(3, -1.0);
             std::vector<int> thisSetGenotypes; setGenotypes[it->first] = thisSetGenotypes;
             std::vector<double> thisSetIndividualAFs; setIndividualAFs[it->first] = thisSetIndividualAFs;
+            std::vector<double> thisSetIndividualExpGenotypes; setIndividualExpectedGenotypes[it->first] = thisSetIndividualExpGenotypes;
         }
         individualsWithVariant.assign(nSamples, 0);
         individualPoolAAFs.assign(nSamples, -1.0);
@@ -229,6 +230,7 @@ public:
     int overall; int AAint;
     std::map<string,std::vector<int>> setGenotypes;
     std::map<string,std::vector<double>> setIndividualAFs;
+    std::map<string,std::vector<double>> setIndividualExpectedGenotypes;
     std::map<string,int> setAltCounts;
     std::map<string,int> setAlleleCounts; // The number of non-missing alleles for this set
     std::map<string,int> setAlleleProbCounts; // The number of non-missing alleles for this set in terms of likelihoods/probabilities
@@ -301,15 +303,15 @@ public:
     
     
     
-    void getSplitCounts(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
     void getSplitCountsNew(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
     
     void getAFsFromADtagWithSplits(const std::vector<std::string>& genotypeFields, const std::map<string, std::vector<size_t>>& setsToPosMap, const int ADTagPosition, const int minDepth);
-    void getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(const std::vector<std::string>& genotypeFields, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition);
+    void getAFsFromGenotypeLikelihoodsOrProbabilitiesWithSplits(const std::vector<std::string>& genotypeFields, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition, const int pos);
+    
 
 private:
-    void getBasicCountsWithSplits(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
     void getBasicCountsWithSplitsNew(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap);
+    void getBasicCountsFromLikelihoodsOrProbabilities(const std::vector<std::string>& genotypes, const std::map<size_t, string>& posToSpeciesMap, const int likelihoodsOrProbabilitiesTagPosition);
 };
 
 class TrioDinfo {

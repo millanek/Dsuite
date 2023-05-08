@@ -8,6 +8,23 @@
 #ifndef Dsuite_common_h
 #define Dsuite_common_h
 
+#define stdInInfo   "Use 'stdin' for the VCF file when piping from another program into Dsuite via standard input\n" \
+                    "in this case it is necessary to provide the number of lines in the filtered VCF via the -l option\n" \
+                    "For example, to filter the VCF for overall mimimum depth of at least 1000 across all samples:\n" \
+                    "NUMLINES=$(bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf | wc -l)  # to get NUMLINES\n" \
+                    "bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf | Dsuite Dtrios -l $NUMLINES stdin SETS.txt\n" \
+                    "\n"
+
+#define regionOption    "       -r, --region=start,length               (optional) only process a subset of the VCF file; both \"start\" and \"length\" indicate variant numbers\n" \
+                        "                                               e.g. --region=20001,10000 will process variants from 20001 to 30000\n"
+
+#define treeOption      "       -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species\n" \
+                        "                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix\n"
+
+#define outOption       "       -o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written\n" \
+                        "                                               output will be put in OUT_FILE_PREFIX_BBAA.txt, OUT_FILE_PREFIX_Dmin.txt, OUT_FILE_PREFIX_tree.txt etc.\n" \
+                        "                                               by default, the prefix is taken from the name of the SETS.txt file\n"
+
 #include "Dsuite_utils.h"
 
 inline void notEnoughPopulationsError(const int minPopulations) {
