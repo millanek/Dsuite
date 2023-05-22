@@ -3,8 +3,8 @@ Publication:
 Malinsky, M., Matschiner, M. and Svardal, H. (2021) Dsuite ‐ fast D‐statistics and related admixture evidence from VCF files. Molecular Ecology Resources 21, 584–595. doi: [https://doi.org/10.1111/1755-0998.13265](https://doi.org/10.1111/1755-0998.13265)  
 Free to view author [link](https://onlinelibrary.wiley.com/share/author/QNEE6JI7DGUSBA4Y8ZGU?target=10.1111/1755-0998.13265)  
 Malawi cichlid data used in the manuscript:
-[VCF file](http://cichlid.gurdon.cam.ac.uk/Malinsky_et_al_2018_LakeMalawiCichlids_scaffold_0.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/sets.txt)<br>
-Simulated 20-species data used in the manuscript: [VCF file](http://cichlid.gurdon.cam.ac.uk/sim_dsuite_20species_5gene-flowF_all.vcf.gz); [SETS.txt file](http://cichlid.gurdon.cam.ac.uk/s20_sets.txt); [TREE_FILE.nwk](http://cichlid.gurdon.cam.ac.uk/sim_input_tree_raw_dsuite_20species_5gene-flow_1.newick) (input tree)
+[VCF file](https://github.com/millanek/tutorials/blob/master/DsuiteData/Malinsky_et_al_2018_LakeMalawiCichlids_scaffold_0.vcf.gz); [SETS.txt file](https://github.com/millanek/tutorials/blob/master/DsuiteData/sets.txt)<br>
+Simulated 20-species data used in the manuscript: [VCF file](https://github.com/millanek/tutorials/blob/master/DsuiteData/with_geneflow.vcf.gz); [SETS.txt file](https://github.com/millanek/tutorials/blob/master/DsuiteData/species_sets.txt); [TREE_FILE.nwk](https://github.com/millanek/tutorials/blob/master/DsuiteData/simulated_tree_with_geneflow.nwk) (input tree)
 
 There is also a very detailed [tutorial](https://github.com/millanek/tutorials/tree/master/analysis_of_introgression_with_snp_data) that I prepared with input from [@mmatschiner](https://github.com/mmatschiner).
 
