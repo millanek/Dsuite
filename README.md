@@ -292,7 +292,7 @@ optional arguments:
                         False)
 ```
 
-Running `dtools.py` yields a .png and an .svg file of the f-branch statistic along the input tree. You can edit the .svg file in a vector graphics editor (e.g., [inkscape](https://inkscape.org/) to your liking). See [Malinsky et al. 2018](https://www.nature.com/articles/s41559-018-0717-x) Fig. 3 and the Dsuite [paper](https://doi.org/10.1111/1755-0998.13265) for examples and interpretation of f-branch plots.
+Running `dtools.py` yields a .png and an .svg file of the f-branch statistic along the input tree. You can edit the .svg file in a vector graphics editor (e.g., [inkscape](https://inkscape.org/)) to your liking. See [Malinsky et al. 2018](https://www.nature.com/articles/s41559-018-0717-x) Fig. 3 and the Dsuite [paper](https://doi.org/10.1111/1755-0998.13265) for examples and interpretation of f-branch plots.
 
 ### (experimental) Dsuite Dquartets - Calculate the D (ABBA-BABA) and f4-ratio statistics for all possible quartets of populations/species (no outgroup)
 ```
