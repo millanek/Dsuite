@@ -38,6 +38,7 @@ outOption       // -o
 "                                               e.g MIN_DEPTH=5 may be reasonable; when there are fewer reads, the allele frequency is set to missing\n"
 "       -c, --no-combine                        (optional) do not output the \"_combine.txt\" and \"_combine_stderr.txt\" files\n"
 "       --KS-test-for-homoplasy                 (optional) Test whether strong ABBA-informative sites cluster along the genome\n"
+"                                               use p-values output in a column called \"clustering_KS_p-val1\"\n"
 //"                                               TYPE can be: 1 - clustering within a vector of all segregating sites\n"
 //"                                                            2 - clustering within a vector of strong ABBA and BABA sites\n"
 // "                                               TYPE=2 is less sensitive, but is robust to mutation rate variation\n"
