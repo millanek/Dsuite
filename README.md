@@ -94,7 +94,7 @@ $ python3 setup.py install --user --prefix=
 The above should work on both mac and linux. Note that there is no text (not even whitespace) after the `=` above. If you want to use your own virtual environments, you can alternatively not run setup.py and just install the dependencies with `pip` or `conda`.
 
 
-## Commands (v0.5 r44):
+## Commands (v0.5 r52):
 ### Dsuite Dtrios - Calculate the D (ABBA-BABA) and f4-ratio statistics for all possible trios of populations/species
 ```
 Usage: Dsuite Dtrios [OPTIONS] INPUT_FILE.vcf SETS.txt
@@ -103,34 +103,47 @@ The results are as definded in Patterson et al. 2012 (equivalent to Durand et al
 The SETS.txt should have two columns: SAMPLE_ID    SPECIES_ID
 The outgroup (can be multiple samples) should be specified by using the keywork Outgroup in place of the SPECIES_ID
 
+Use 'stdin' for the VCF file when piping from another program into Dsuite via standard input
+in this case it is necessary to provide the number of lines in the filtered VCF via the -l option
+For example, to filter the VCF for overall mimimum depth of at least 1000 across all samples:
+NUMLINES=$(bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf | wc -l)  # to get NUMLINES
+bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf | Dsuite Dtrios -l $NUMLINES stdin SETS.txt
 
-      -h, --help                              display this help and exit
-      -k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset
-      -j, --JKwindow                          (default=NA) Jackknife block size in number of informative SNPs (as used in v0.2)
-                                              when specified, this is used in place of the --JKnum option
-      -r, --region=start,length               (optional) only process a subset of the VCF file; both "start" and "length" indicate variant numbers
-                                              e.g. --region=20001,10000 will process variants from 20001 to 30000
-      -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species
-                                              D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix
-      -o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written
-                                              output will be put in OUT_FILE_PREFIX_BBAA.txt, OUT_FILE_PREFIX_Dmin.txt, OUT_FILE_PREFIX_tree.txt etc.
-                                              by default, the prefix is taken from the name of the SETS.txt file
-      -n, --run-name                          (optional) run-name will be included in the output file name after the PREFIX
-      --no-f4-ratio                           (optional) don't calculate the f4-ratio
-      -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe
-      -g, --use-genotype-probabilities        (optional) use probabilities (GP tag) or calculate them from likelihoods (GL or PL tags) using a Hardy-Weinberg prior
-                                              the probabilities are used to estimate allele frequencies in each population/species
-      -p, --pool-seq=MIN_DEPTH                (optional) VCF contains pool-seq data; i.e., each 'individual' is a population
-                                              allele frequencies are then estimated from the AD (Allelic Depth) field, as long as there are MIN_DEPTH reads
-                                              e.g MIN_DEPTH=5 may be reasonable; when there are fewer reads, the allele frequency is set to missing
-      -c, --no-combine                        (optional) do not output the "_combine.txt" and "_combine_stderr.txt" files
-                                              these are needed only for DtriosCombine
-      --KS-test-for-homoplasy                 (optional) Test whether strong ABBA-informative sites cluster along the genome
+       -h, --help                              display this help and exit
+       -k, --JKnum                             (default=20) the number of Jackknife blocks to divide the dataset into; should be at least 20 for the whole dataset
+       -j, --JKwindow                          (default=NA) Jackknife block size in number of informative SNPs (as used in v0.2)
+                                               when specified, this is used in place of the --JKnum option
+       -r, --region=start,length               (optional) only process a subset of the VCF file; both "start" and "length" indicate variant numbers
+                                               e.g. --region=20001,10000 will process variants from 20001 to 30000
+       -t, --tree=TREE_FILE.nwk                (optional) a file with a tree in the newick format specifying the relationships between populations/species
+                                               D and f4-ratio values for trios arranged according to the tree will be output in a file with _tree.txt suffix
+       -o, --out-prefix=OUT_FILE_PREFIX        (optional) the prefix for the files where the results should be written
+                                               output will be put in OUT_FILE_PREFIX_BBAA.txt, OUT_FILE_PREFIX_Dmin.txt, OUT_FILE_PREFIX_tree.txt etc.
+                                               by default, the prefix is taken from the name of the SETS.txt file
+       -n, --run-name                          (optional) run-name will be included in the output file name after the PREFIX
+       --no-f4-ratio                           (optional) don't calculate the f4-ratio
+       -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe
+       -g, --use-genotype-probabilities        (optional) use probabilities (GP tag) or calculate them from likelihoods (GL or PL tags) using a Hardy-Weinberg prior
+                                               the probabilities are used to estimate allele frequencies in each population/species
+       -p, --pool-seq=MIN_DEPTH                (optional) VCF contains pool-seq data; i.e., each 'individual' is a population
+                                               allele frequencies are then estimated from the AD (Allelic Depth) field, as long as there are MIN_DEPTH reads
+                                               e.g MIN_DEPTH=5 may be reasonable; when there are fewer reads, the allele frequency is set to missing
+       -c, --no-combine                        (optional) do not output the "_combine.txt" and "_combine_stderr.txt" files
+       --KS-test-for-homoplasy                 (optional) Test whether strong ABBA-informative sites cluster along the genome
+                                               !!!! use p-values output in a column called "clustering_KS_p-val1" !!!
 ```
 #### Output:
 The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D statistics, Zscore, unadjusted p-values, the f4-ratios, and counts of the BBAA, BABA, and ABBA patterns. Please read the [manuscript](https://doi.org/10.1111/1755-0998.13265) for more details. 
 
 The output files with suffixes  `combine.txt` and  `combine_stderr.txt` are used as input to DtriosCombine. If you don't need to use DtriosCombine, you can safely delete these files.
+
+#### Homoplasy test:
+When testing for introgression among highly divergent species and/or in cases where introgression happened a long time ago (rule of thumb - millions of generations), there is a risk that the Dstatistic could show a false signal of introgression due to substitution rate variation among different branches on the phylogeny. Such substitution rate variation can lead to homoplasies appearing as ABBA sites.    
+
+Importantly, ABBA sites introduced by introgression would substantially cluster along the genome, while homoplasies would appear one by one. To test this, I have added the `--KS-test-for-homoplasy` option. The more significant clustering of ABBA sited (i.e. the lower the `clustering_KS_p-val1` value) the more confidence you can have that a gene-flow event is real and not a false positive caused by homoplasies. The `clustering_KS_p-val2` value is experimental; it may be more robust but has much lower power; I suggest you ignore it for now.      
+
+The test is described in detail in: \
+Koppetsch, T., Malinsky, M. and Matschiner, M. (2023) Among-species rate variation produces false signals of introgression. bioRxiv 2023.05.21.541635. doi: [https://doi.org/10.1101/2023.05.21.541635](https://doi.org/10.1101/2023.05.21.541635)  
 
 ### DtriosParallel
 
