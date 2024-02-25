@@ -94,7 +94,7 @@ $ python3 setup.py install --user --prefix=
 The above should work on both mac and linux. Note that there is no text (not even whitespace) after the `=` above. If you want to use your own virtual environments, you can alternatively not run setup.py and just install the dependencies with `pip` or `conda`.
 
 
-## Commands (v0.5 r52):
+## Commands (v0.5 r53):
 ### Dsuite Dtrios - Calculate the D (ABBA-BABA) and f4-ratio statistics for all possible trios of populations/species
 ```
 Usage: Dsuite Dtrios [OPTIONS] INPUT_FILE.vcf SETS.txt
@@ -129,21 +129,20 @@ bcftools view -i 'INFO/DP>1000' INPUT_FILE.vcf | Dsuite Dtrios -l $NUMLINES stdi
                                                allele frequencies are then estimated from the AD (Allelic Depth) field, as long as there are MIN_DEPTH reads
                                                e.g MIN_DEPTH=5 may be reasonable; when there are fewer reads, the allele frequency is set to missing
        -c, --no-combine                        (optional) do not output the "_combine.txt" and "_combine_stderr.txt" files
-       --KS-test-for-homoplasy                 (optional) Test whether strong ABBA-informative sites cluster along the genome
-                                               !!!! use p-values output in a column called "clustering_KS_p-val1" !!!
+       --ABBAclustering                        (optional) Test whether strong ABBA-informative sites cluster along the genome
 ```
 #### Output:
 The output files with suffixes  `BBAA.txt`, `Dmin.txt`, and optionally `tree.txt` (if the `-t` option was used) contain the results: the D statistics, Zscore, unadjusted p-values, the f4-ratios, and counts of the BBAA, BABA, and ABBA patterns. Please read the [manuscript](https://doi.org/10.1111/1755-0998.13265) for more details. 
 
 The output files with suffixes  `combine.txt` and  `combine_stderr.txt` are used as input to DtriosCombine. If you don't need to use DtriosCombine, you can safely delete these files.
 
-#### Homoplasy test:
+#### ABBA-clustering test:
 When testing for introgression among highly divergent species and/or in cases where introgression happened a long time ago (rule of thumb - millions of generations), there is a risk that the Dstatistic could show a false signal of introgression due to substitution rate variation among different branches on the phylogeny. Such substitution rate variation can lead to homoplasies appearing as ABBA sites.    
 
-Importantly, ABBA sites introduced by introgression would substantially cluster along the genome, while homoplasies would appear one by one. To test this, I have added the `--KS-test-for-homoplasy` option. The more significant clustering of ABBA sited (i.e. the lower the `clustering_KS_p-val1` value) the more confidence you can have that a gene-flow event is real and not a false positive caused by homoplasies. The `clustering_KS_p-val2` value is experimental; it may be more robust but has much lower power; I suggest you ignore it for now.      
+Importantly, ABBA sites introduced by introgression would substantially cluster along the genome, while homoplasies would appear one by one. To test this, I have added the `--ABBAclustering` option. The more significant clustering of ABBA sites the more confidence you can have that a gene-flow event is real and not a false positive caused by homoplasies. Two p-values are produced by this test: the `clustering_sensitive` value and the `clustering_robust-val1` value. As the names suggest, the "sensitive" test has greater power but can produce some false positives due to mutation rate variation along the genome. The "robust" test has lower statistical power, but it is robust to mutation rate variation along the genome.      
 
-The test is described in detail in: \
-Koppetsch, T., Malinsky, M. and Matschiner, M. (2023) Among-species rate variation produces false signals of introgression. bioRxiv 2023.05.21.541635. doi: [https://doi.org/10.1101/2023.05.21.541635](https://doi.org/10.1101/2023.05.21.541635)  
+For additional details please see: \
+Koppetsch, T., Malinsky, M. and Matschiner, M. (2024) Among-species rate variation produces false signals of introgression. bioRxiv 2023.05.21.541635. doi: [https://doi.org/10.1101/2023.05.21.541635](https://doi.org/10.1101/2023.05.21.541635)  
 
 ### DtriosParallel
 
@@ -388,6 +387,7 @@ optional arguments:
 
 ```
 Selected updates (full update history is accessible on gitHub):
+v0.5 r53:   Changed --ABBAclustering and provide propoer documentation for this test  
 v0.5 r48:   --KS-test-for-homoplasy now works accurately for sample sizes >= 16,000  
 v0.5 r47:   --KS-test-for-homoplasy output now has more accurate p-values (one-sample KS-test for uniformity)
 v0.5 r46:   Support for arbitrary ploidy in Dtrios

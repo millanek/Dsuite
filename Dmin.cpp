@@ -37,8 +37,7 @@ outOption       // -o
 "                                               allele frequencies are then estimated from the AD (Allelic Depth) field, as long as there are MIN_DEPTH reads\n"
 "                                               e.g MIN_DEPTH=5 may be reasonable; when there are fewer reads, the allele frequency is set to missing\n"
 "       -c, --no-combine                        (optional) do not output the \"_combine.txt\" and \"_combine_stderr.txt\" files\n"
-"       --KS-test-for-homoplasy                 (optional) Test whether strong ABBA-informative sites cluster along the genome\n"
-"                                               use p-values output in a column called \"clustering_KS_p-val1\"\n"
+"       --ABBAclustering                        (optional) Test whether strong ABBA-informative sites cluster along the genome\n"
 //"                                               TYPE can be: 1 - clustering within a vector of all segregating sites\n"
 //"                                                            2 - clustering within a vector of strong ABBA and BABA sites\n"
 // "                                               TYPE=2 is less sensitive, but is robust to mutation rate variation\n"
@@ -62,6 +61,7 @@ static const struct option longopts[] = {
     { "use-genotype-probabilities", no_argument, NULL, 'g'},
     { "pool-seq", required_argument, NULL, 'p'},
     { "KS-test-for-homoplasy", no_argument , NULL, OPT_KS_TEST},
+    { "ABBAclustering", no_argument , NULL, OPT_KS_TEST},
     { NULL, 0, NULL, 0 }
 };
 

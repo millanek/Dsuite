@@ -36,7 +36,7 @@ string makeHeader(bool quartet, bool includeFstats, bool includeKSstats) {
     string header = "P1\tP2\tP3"; if (quartet) header += "\tP4";
     header += "\tDstatistic\tZ-score\tp-value";
     if (includeFstats) { header += "\t"; header += F4HEADER; }
-    if (includeKSstats) { header += "\t"; header += "clustering_KS_p-val1"; header += "\t"; header += "clustering_KS_p-val2";}
+    if (includeKSstats) { header += "\t"; header += "clustering_sensitive"; header += "\t"; header += "clustering_robust";}
     header += "\tBBAA\tABBA\tBABA";
     return header;
 }
