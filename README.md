@@ -8,7 +8,7 @@ Simulated 20-species data used in the manuscript: [VCF file](https://github.com/
 
 There is also a very detailed [tutorial](https://github.com/millanek/tutorials/tree/master/analysis_of_introgression_with_snp_data) that I prepared with input from [@mmatschiner](https://github.com/mmatschiner).
 
-A pre-print describing the `--KS-test-for-homoplasy` option for analyses of gene-flow among divergent species:  
+A pre-print describing the `--ABBAclustering` option for analyses of gene-flow among divergent species:  
 Koppetsch, T., Malinsky, M. and Matschiner, M. (2023) Among-species rate variation produces false signals of introgression. bioRxiv 2023.05.21.541635; doi: [https://doi.org/10.1101/2023.05.21.541635](https://doi.org/10.1101/2023.05.21.541635) 
 
 ## Quickstart:
