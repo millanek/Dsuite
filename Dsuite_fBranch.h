@@ -64,8 +64,8 @@ public:
         std::vector<string> tmpBranchEndNodeId;
         std::vector<string> tmpBranchStartNodeId;
         int numberOfInternalNodes = 0;
-        std::regex sistersRegEx("\\(([a-zA-Z0-9[:s:]_-]+),([a-zA-Z0-9[:s:]_-]+)\\)");
-        std::regex sistersRegExNoGroups("\\([a-zA-Z0-9[:s:]_-]+,[a-zA-Z0-9[:s:]_-]+\\)");
+        std::regex sistersRegEx("\\(([a-zA-Z0-9.[:s:]_-]+),([a-zA-Z0-9.[:s:]_-]+)\\)");
+        std::regex sistersRegExNoGroups("\\([a-zA-Z0-9.[:s:]_-]+,[a-zA-Z0-9.[:s:]_-]+\\)");
         std::regex comma(",");
         std::smatch match;
         string workingTreeCopy = treeNoBranchLengths;
