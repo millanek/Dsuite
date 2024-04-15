@@ -98,7 +98,7 @@ public:
     std::map<size_t, string> posToPopMap;
 
     void linkSetsAndVCFpositions(const std::vector<std::string>& sampleNames);
-
+    void checkIfTreeNamesMatch(std::map<string,std::vector<int>>& treeTaxonNamesToLoc);
 };
 
 

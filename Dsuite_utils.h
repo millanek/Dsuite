@@ -644,26 +644,47 @@ public:
         int firstThreeArranged = assignTreeArrangement(treeLevels, loc1, loc2, loc3);
         int withFourthArranged = 0; int overallTreeArrangment = 0;
         switch (firstThreeArranged) {
-            case P3isTrios2:
+            case P3isTrios2_Dpositive:
+            case P3isTrios2_Dnegative:
                 withFourthArranged = assignTreeArrangement(treeLevels, loc1, loc2, loc4);
                 switch (withFourthArranged) {
-                    case P3isTrios2: overallTreeArrangment = P3isTrios2; break;
-                    case P3isTrios1: overallTreeArrangment = P3isTrios0; break;
-                    case P3isTrios0: overallTreeArrangment = P3isTrios1; break;
+                    case P3isTrios2_Dpositive:
+                    case P3isTrios2_Dnegative:
+                        overallTreeArrangment = P3isTrios2; break;
+                    case P3isTrios1_Dpositive:
+                    case P3isTrios1_Dnegative:
+                        overallTreeArrangment = P3isTrios0; break;
+                    case P3isTrios0_Dpositive:
+                    case P3isTrios0_Dnegative:
+                        overallTreeArrangment = P3isTrios1; break;
                 } break;
-            case P3isTrios1:
+            case P3isTrios1_Dpositive:
+            case P3isTrios1_Dnegative:
                 withFourthArranged = assignTreeArrangement(treeLevels, loc1, loc3, loc4);
                 switch (withFourthArranged) {
-                    case P3isTrios2: overallTreeArrangment = P3isTrios1; break;
-                    case P3isTrios1: overallTreeArrangment = P3isTrios0; break;
-                    case P3isTrios0: overallTreeArrangment = P3isTrios2; break;
+                    case P3isTrios2_Dpositive:
+                    case P3isTrios2_Dnegative:
+                        overallTreeArrangment = P3isTrios1; break;
+                    case P3isTrios1_Dpositive:
+                    case P3isTrios1_Dnegative:
+                        overallTreeArrangment = P3isTrios0; break;
+                    case P3isTrios0_Dpositive:
+                    case P3isTrios0_Dnegative:
+                        overallTreeArrangment = P3isTrios2; break;
                 } break;
-            case P3isTrios0:
+            case P3isTrios0_Dpositive:
+            case P3isTrios0_Dnegative:
             withFourthArranged = assignTreeArrangement(treeLevels, loc2, loc3, loc4);
             switch (withFourthArranged) {
-                case P3isTrios2: overallTreeArrangment = P3isTrios0; break;
-                case P3isTrios1: overallTreeArrangment = P3isTrios1; break;
-                case P3isTrios0: overallTreeArrangment = P3isTrios2; break;
+                case P3isTrios2_Dpositive:
+                case P3isTrios2_Dnegative:
+                    overallTreeArrangment = P3isTrios0; break;
+                case P3isTrios1_Dpositive:
+                case P3isTrios1_Dnegative:
+                    overallTreeArrangment = P3isTrios1; break;
+                case P3isTrios0_Dpositive:
+                case P3isTrios0_Dnegative:
+                    overallTreeArrangment = P3isTrios2; break;
             } break;
         }
         return overallTreeArrangment;
@@ -678,6 +699,8 @@ public:
         switch (arrangement) {
                 
         case P3isTrios2:
+        case P3isTrios2_Dpositive:
+        case P3isTrios2_Dnegative:
             outVec[2] = quartet[2]; outVec[3] = quartet[3];
             outVec[4] = numToString(std::fabs(D1)); outVec[5] = numToString(D1_Z);
             outVec[6] = numToString(D1_p); outVec[patternsI] = numToString(BBAAtotal);
@@ -699,6 +722,8 @@ public:
             } break;
                 
         case P3isTrios1:
+        case P3isTrios1_Dpositive:
+        case P3isTrios1_Dnegative:
             outVec[2] = quartet[1]; outVec[3] = quartet[3];
             outVec[4] = numToString(std::fabs(D2)); outVec[5] = numToString(D2_Z);
             outVec[6] = numToString(D2_p); outVec[patternsI] = numToString(BABAtotal);
@@ -719,6 +744,8 @@ public:
             } break;
                 
         case P3isTrios0:
+        case P3isTrios0_Dpositive:
+        case P3isTrios0_Dnegative:
             outVec[2] = quartet[0]; outVec[3] = quartet[3];
             outVec[4] = numToString(std::fabs(D3)); outVec[5] = numToString(D3_Z);
             outVec[6] = numToString(D3_p); outVec[patternsI] = numToString(ABBAtotal);

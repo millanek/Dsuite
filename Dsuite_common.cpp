@@ -31,6 +31,17 @@ void SetInformation::linkSetsAndVCFpositions(const std::vector<std::string>& sam
     }
 }
 
+void SetInformation::checkIfTreeNamesMatch(std::map<string,std::vector<int>>& treeTaxonNamesToLoc) {
+        for (int i = 0; i != populations.size(); i++) {
+            try { treeTaxonNamesToLoc.at(populations[i]);
+            } catch (const std::out_of_range& oor) {
+                std::cerr << "Out of Range error: " << oor.what() << '\n';
+                std::cerr << "species[i]: " << populations[i] << '\n';
+                std::cerr << CHECK_TREE_ERROR_MSG << '\n';
+                exit(1);
+    }}
+}
+
 
 string makeHeader(bool quartet, bool includeFstats, bool includeKSstats) {
     string header = "P1\tP2\tP3"; if (quartet) header += "\tP4";

@@ -102,16 +102,9 @@ int DquartetsMain(int argc, char** argv) {
     if (opt::fStats) std::cerr << "Going to calculate D and f4-ratio values for " << nCombinations << " quartets" << std::endl;
     else std::cerr << "Going to calculate D values for " << nCombinations << " quartets" << std::endl;
     
-    
-    if (opt::treeFile != "") { // Chack that the tree contains all the populations/species
-        for (int i = 0; i != setInfo.populations.size(); i++) {
-            try { treeTaxonNamesToLoc.at(setInfo.populations[i]);
-            } catch (const std::out_of_range& oor) {
-                std::cerr << "Out of Range error: " << oor.what() << '\n';
-                std::cerr << "species[i]: " << setInfo.populations[i] << '\n';
-                std::cerr << CHECK_TREE_ERROR_MSG << '\n';
-                exit(1);
-    }}}
+    if (opt::treeFile != "") { // Check that the tree contains all the populations/species
+        setInfo.checkIfTreeNamesMatch(treeTaxonNamesToLoc);
+    }
     
     // first, get all combinations of four sets (species):
     std::vector<std::vector<string>> quartets; quartets.resize(nCombinations);
@@ -362,6 +355,7 @@ int DquartetsMain(int argc, char** argv) {
         // Find which topology is in agreement with the counts of BBAA, BABA, and ABBA
         quartetInfos[i].assignBBAAarrangement();
         std::vector<string> BBAAoutVec = quartetInfos[i].makeOutVec(quartets[i], opt::fStats, quartetInfos[i].BBAAarrangement);
+        std::cerr << "quartetInfos[i].BBAAarrangement: " << quartetInfos[i].BBAAarrangement << std::endl;
         print_vector(BBAAoutVec,*outFileBBAA);
         
         // Find Dmin:

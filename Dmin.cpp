@@ -131,16 +131,7 @@ int DminMain(int argc, char** argv) {
     else std::cerr << "Going to calculate D values for " << nCombinations << " trios" << std::endl;
     
     if (opt::treeFile != "") { // Check that the tree contains all the populations/species
-        for (int i = 0; i != setInfo.populations.size(); i++) {
-            try {
-                treeTaxonNamesToLoc.at(setInfo.populations[i]);
-            } catch (const std::out_of_range& oor) {
-                std::cerr << "Out of Range error: " << oor.what() << '\n';
-                std::cerr << "setInfo.populations[i]: " << setInfo.populations[i] << '\n';
-                std::cerr << CHECK_TREE_ERROR_MSG << '\n';
-                exit(1);
-            }
-        }
+        setInfo.checkIfTreeNamesMatch(treeTaxonNamesToLoc);
     }
     
     // first, get all combinations of three sets (species):
