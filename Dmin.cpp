@@ -195,7 +195,7 @@ int DminMain(int argc, char** argv) {
             
             if (totalVariantNumber % reportProgressEvery == 0) reportProgessVCF(totalVariantNumber, VCFlineCount, start);
             
-            fields = split(line, '\t');
+            fields = split(line, '\t'); checkGenotypesExist(fields, totalVariantNumber);
             std::vector<std::string> genotypes(fields.begin()+NUM_NON_GENOTYPE_COLUMNS,fields.end());
 
             // Only consider biallelic SNPs

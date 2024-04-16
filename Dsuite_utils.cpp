@@ -770,6 +770,14 @@ void assertGZOpen(gzstreambase& gh, const std::string& fn)
     }
 }
 
+void checkGenotypesExist(const std::vector<std::string>& fields, const int variantNum) {
+    if (fields.size() <= NUM_NON_GENOTYPE_COLUMNS) {
+        std::cerr << "ERROR: Variant " << variantNum << " in the VCF appears to be truncated."  << std::endl;
+        print_vector(fields, std::cerr);
+        std::cerr << "Exiting..." << std::endl; exit(1);
+    }
+}
+
 // Open a file that may or may not be gzipped for reading
 // The caller is responsible for freeing the handle
 std::istream* createReader(const std::string& filename, std::ios_base::openmode mode)

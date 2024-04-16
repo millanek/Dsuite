@@ -68,6 +68,7 @@ static const int NUM_NON_GENOTYPE_COLUMNS=9;  // 8 mendatory columns + 1 column 
 
 void assertFileOpen(std::ifstream& fh, const std::string& fn);
 void assertFileOpen(std::ofstream& fh, const std::string& fn);
+void checkGenotypesExist(const std::vector<std::string>& fields, const int variantNum);
 double calculateOneDs(double ABBAtotal, double BABAtotal);
 double* calculateThreeDs(double ABBAtotal, double BABAtotal, double BBAAtotal);
 double Fd_Denom_perVariant(double p1, double p2, double p3, double pO);
