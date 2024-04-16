@@ -546,15 +546,10 @@ int DminMain(int argc, char** argv) {
         
         // Find which arrangement of trios is consistent with the input tree (if provided):
         if (opt::treeFile != "") {
-            // Check the tree arrangement for each trio...
-            if (opt::treeFile != "") {
-                for (int i = 0; i != trios.size(); i++) {
-                    int loc1 = treeTaxonNamesToLoc[trios[i][0]][0];
-                    int loc2 = treeTaxonNamesToLoc[trios[i][1]][0];
-                    int loc3 = treeTaxonNamesToLoc[trios[i][2]][0];
-                    trioInfos[i].treeArrangement = trioInfos[i].assignTreeArrangement(treeLevels, loc1, loc2, loc3);
-                }
-            }
+            int loc1 = treeTaxonNamesToLoc[trios[i][0]][0];
+            int loc2 = treeTaxonNamesToLoc[trios[i][1]][0];
+            int loc3 = treeTaxonNamesToLoc[trios[i][2]][0];
+            trioInfos[i].treeArrangement = trioInfos[i].assignTreeArrangement(treeLevels, loc1, loc2, loc3);
             std::vector<string> treeOutVec = trioInfos[i].makeOutVec(trios[i], opt::fStats, opt::KStest, trioInfos[i].treeArrangement);
             print_vector(treeOutVec,*outFileTree);
         }
