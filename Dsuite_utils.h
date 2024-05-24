@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <time.h>
 #include <regex>
+#include <iterator>
 #include <algorithm>
 #include <limits>
 #include <random>
