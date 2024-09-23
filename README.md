@@ -8,8 +8,8 @@ Simulated 20-species data used in the manuscript: [VCF file](https://github.com/
 
 There is also a very detailed [tutorial](https://github.com/millanek/tutorials/tree/master/analysis_of_introgression_with_snp_data) that I prepared with input from [@mmatschiner](https://github.com/mmatschiner).
 
-A pre-print describing the `--ABBAclustering` option for analyses of gene-flow among divergent species:  
-Koppetsch, T., Malinsky, M. and Matschiner, M. (2024) Towards reliable detection of introgression in the presence of among-species rate variation. bioRxiv 2023.05.21.541635; doi: [https://doi.org/10.1101/2023.05.21.541635](https://doi.org/10.1101/2023.05.21.541635) 
+A manuscript describing the `--ABBAclustering` option for analyses of gene-flow among divergent species:  
+Koppetsch, T., Malinsky, M. & Matschiner, M. (2024) Towards Reliable Detection of Introgression in the Presence of Among-Species Rate Variation. Systematic Biology, syae028; doi: [https://doi.org/10.1093/sysbio/syae028](https://doi.org/10.1093/sysbio/syae028) 
 
 ## Quickstart:
 ```
@@ -142,7 +142,7 @@ When testing for introgression among highly divergent species and/or in cases wh
 Importantly, ABBA sites introduced by introgression would substantially cluster along the genome, while homoplasies would appear one by one. To test this, I have added the `--ABBAclustering` option. The more significant clustering of ABBA sites the more confidence you can have that a gene-flow event is real and not a false positive caused by homoplasies. Two p-values are produced by this test: the `clustering_sensitive` value and the `clustering_robust-val1` value. As the names suggest, the "sensitive" test has greater power but can produce some false positives due to mutation rate variation along the genome. The "robust" test has lower statistical power, but it is robust to mutation rate variation along the genome.      
 
 For additional details please see: \
-Koppetsch, T., Malinsky, M. and Matschiner, M. (2024) Among-species rate variation produces false signals of introgression. bioRxiv 2023.05.21.541635. doi: [https://doi.org/10.1101/2023.05.21.541635](https://doi.org/10.1101/2023.05.21.541635)  
+Koppetsch, T., Malinsky, M. & Matschiner, M. (2024) Towards Reliable Detection of Introgression in the Presence of Among-Species Rate Variation. Systematic Biology, syae028; doi: [https://doi.org/10.1093/sysbio/syae028](https://doi.org/10.1093/sysbio/syae028)
 
 ### DtriosParallel
 
