@@ -71,6 +71,7 @@ void assertFileOpen(std::ofstream& fh, const std::string& fn);
 void checkGenotypesExist(const std::vector<std::string>& fields, const int variantNum);
 double calculateOneDs(double ABBAtotal, double BABAtotal);
 double* calculateThreeDs(double ABBAtotal, double BABAtotal, double BBAAtotal);
+double f4_perVariant(double p1, double p2, double p3, double p4);
 double Fd_Denom_perVariant(double p1, double p2, double p3, double pO);
 double fG_Denom_perVariant(double p1, double p3a, double p3b, double pO);
 double FdM_Denom_perVariant(double p1, double p2, double p3, double pO);
@@ -641,6 +642,13 @@ public:
 class QuartetDinfo: public TrioDinfo {
 public:
     
+    QuartetDinfo() {
+        TrioDinfo();
+        F_G_denoms.resize(24);
+    }
+    
+    std::vector<double> F_G_denoms;
+    
     int assignQuartetTreeArrangement(const std::vector<int>& treeLevels, const int loc1, const int loc2, const int loc3, const int loc4) {
         int firstThreeArranged = assignTreeArrangement(treeLevels, loc1, loc2, loc3);
         int withFourthArranged = 0; int overallTreeArrangment = 0;
@@ -692,14 +700,16 @@ public:
     }
     
     
-    std::vector<string> makeOutVec(const std::vector<string>& quartet, const bool fStats, const int arrangement) {
+    std::vector<string> makeOutVec(const std::vector<string>& quartet, const bool fStats, const int arrangement, bool allF4 = false) {
         
-        std::vector<string> outVec; if (fStats) outVec.resize(11); else outVec.resize(10);
-        int patternsI; if (fStats) patternsI = 8; else patternsI = 7; // Where will be put the BBAA, ABBA, etc. counts
+        int vecSize = 10; if (fStats) vecSize++; if (allF4) vecSize += 4;
+        std::vector<string> outVec; outVec.resize(vecSize);
+        int patternsI = 7; if (fStats) patternsI++; // Where will be put the BBAA, ABBA, etc. counts
+        int allF4Pos = patternsI + 3;
         
         switch (arrangement) {
-                
-        case P3isTrios2:
+            
+        case P3isTrios2: // Orientation 1
         case P3isTrios2_Dpositive:
         case P3isTrios2_Dnegative:
             outVec[2] = quartet[2]; outVec[3] = quartet[3];
@@ -713,6 +723,10 @@ public:
                     outVec[7] = numToString(Dnum/F_G_denom1);
                    
                 }
+                if (allF4) {
+                    outVec[allF4Pos] = numToString(F_G_denoms[0]); outVec[allF4Pos+1] = numToString(F_G_denoms[1]);
+                    outVec[allF4Pos+2] = numToString(F_G_denoms[2]); outVec[allF4Pos+3] = numToString(F_G_denoms[3]);
+                }
             } else {
                 outVec[0] = quartet[1]; outVec[1] = quartet[0];
                 outVec[patternsI+1] = numToString(BABAtotal); outVec[patternsI+2] = numToString(ABBAtotal);
@@ -720,9 +734,14 @@ public:
                     double Dnum = BABAtotal-ABBAtotal;
                     outVec[7] = numToString(Dnum/F_G_denom1_reversed);
                 }
-            } break;
+                if (allF4) {
+                    outVec[allF4Pos] = numToString(F_G_denoms[4]); outVec[allF4Pos+1] = numToString(F_G_denoms[5]);
+                    outVec[allF4Pos+2] = numToString(F_G_denoms[6]); outVec[allF4Pos+3] = numToString(F_G_denoms[7]);
+                }
+            }
+        break;
                 
-        case P3isTrios1:
+        case P3isTrios1: // Orientation 2
         case P3isTrios1_Dpositive:
         case P3isTrios1_Dnegative:
             outVec[2] = quartet[1]; outVec[3] = quartet[3];
@@ -735,6 +754,10 @@ public:
                     double Dnum = ABBAtotal - BBAAtotal;
                     outVec[7] = numToString(Dnum/F_G_denom2);
                 }
+                if (allF4) {
+                    outVec[allF4Pos] = numToString(F_G_denoms[8]); outVec[allF4Pos+1] = numToString(F_G_denoms[9]);
+                    outVec[allF4Pos+2] = numToString(F_G_denoms[10]); outVec[allF4Pos+3] = numToString(F_G_denoms[11]);
+                }
             } else {
                 outVec[0] = quartet[2]; outVec[1] = quartet[0];
                 outVec[patternsI+1] = numToString(BBAAtotal); outVec[patternsI+2] = numToString(ABBAtotal);
@@ -742,9 +765,14 @@ public:
                     double Dnum = BBAAtotal - ABBAtotal;
                     outVec[7] = numToString(Dnum/F_G_denom2_reversed);
                 }
-            } break;
+                if (allF4) {
+                    outVec[allF4Pos] = numToString(F_G_denoms[12]); outVec[allF4Pos+1] = numToString(F_G_denoms[13]);
+                    outVec[allF4Pos+2] = numToString(F_G_denoms[14]); outVec[allF4Pos+3] = numToString(F_G_denoms[15]);
+                }
+            }
+        break;
                 
-        case P3isTrios0:
+        case P3isTrios0: // Orientation 3
         case P3isTrios0_Dpositive:
         case P3isTrios0_Dnegative:
             outVec[2] = quartet[0]; outVec[3] = quartet[3];
@@ -757,6 +785,10 @@ public:
                     double Dnum = BBAAtotal - BABAtotal;
                     outVec[7] = numToString(Dnum/F_G_denom3);
                 }
+                if (allF4) {
+                    outVec[allF4Pos] = numToString(F_G_denoms[16]); outVec[allF4Pos+1] = numToString(F_G_denoms[17]);
+                    outVec[allF4Pos+2] = numToString(F_G_denoms[18]); outVec[allF4Pos+3] = numToString(F_G_denoms[19]);
+                }
             } else {
                 outVec[0] = quartet[1]; outVec[1] = quartet[2];
                 outVec[patternsI+1] = numToString(BABAtotal); outVec[patternsI+2] = numToString(BBAAtotal);
@@ -764,8 +796,12 @@ public:
                     double Dnum = BABAtotal - BBAAtotal;
                     outVec[7] = numToString(Dnum/F_G_denom3_reversed);
                 }
-            } break;
-                
+            }
+            if (allF4) {
+                outVec[allF4Pos] = numToString(F_G_denoms[20]); outVec[allF4Pos+1] = numToString(F_G_denoms[21]);
+                outVec[allF4Pos+2] = numToString(F_G_denoms[22]); outVec[allF4Pos+3] = numToString(F_G_denoms[23]);
+            }
+        break;
         }
         return outVec;
     }

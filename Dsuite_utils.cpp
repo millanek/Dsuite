@@ -24,6 +24,12 @@ double fG_Denom_perVariant(double p1, double p3a, double p3b, double pO) {
     return fG_Denom;
 }
 
+// As per Patterson et al. (2012)
+double f4_perVariant(double p1, double p2, double p3, double p4) {
+    double f4 = (p2-p1)*(p3-p4);
+    return f4;
+}
+
 double FdM_Denom_perVariant(double p1, double p2, double p3, double pO) {
     double FdM_Denom = 0;
     if (p1 <= p2) {
@@ -539,26 +545,25 @@ void GeneralSetCountsWithSplits::getSplitCountsNew(const std::vector<std::string
         
         if (thisSetGenotypes.size() > 0) {
             numNonZeroCounts++;
-            int nSplit1; int nSplit2;
             double thisAAF = (double)vector_sum(thisSetGenotypes)/thisSetGenotypes.size();
            // print_vector(thisSetGenotypes, std::cerr);
            // std::cerr << "thisAAF: " << thisAAF << std::endl;
             setAAFs[it->first] = thisAAF; totalAAF += thisAAF;
-            nSplit1 = setAlleleCountsSplit1.at(it->first); nSplit2 = setAlleleCountsSplit2.at(it->first);
             
             // Take care of the splits by random sampling with replacement:
             std::random_device rd;     // only used once to initialise (seed) engine
             std::mt19937 rng(rd());    // random-number engine used (Mersenne-Twister in this case)
-            std::uniform_int_distribution<int> uni(0,(thisSetGenotypes.size() - 1)); // guaranteed unbiased
-            std::uniform_int_distribution<int> uniAFs(0,(thisSetIndividualAFs.size() - 1)); // guaranteed unbiased
+            std::uniform_int_distribution<int> uni(0,((int)thisSetGenotypes.size() - 1)); // guaranteed unbiased
+            std::uniform_int_distribution<int> uniAFs(0,((int)thisSetIndividualAFs.size() - 1)); // guaranteed unbiased
             
-            std::vector<int> thisSetGenotypesSampledSplit1; std::vector<int> thisSetGenotypesSampledSplit2;
+         /*   std::vector<int> thisSetGenotypesSampledSplit1; std::vector<int> thisSetGenotypesSampledSplit2;
             for (int i = 0; i < thisSetGenotypes.size(); i++) {
                 int random_pos_s1 = uni(rng);
                 int random_pos_s2 = uni(rng);
                 thisSetGenotypesSampledSplit1.push_back(thisSetGenotypes[random_pos_s1]);
                 thisSetGenotypesSampledSplit2.push_back(thisSetGenotypes[random_pos_s2]);
             }
+          */
             
             std::vector<double> thisSetIndividualAFsSampledSplit1; std::vector<double> thisSetIndividualAFsSampledSplit2;
             for (int i = 0; i < thisSetIndividualAFs.size(); i++) {
@@ -575,14 +580,14 @@ void GeneralSetCountsWithSplits::getSplitCountsNew(const std::vector<std::string
             setAAFsplit1[it->first] = thisAAFsplit1; setAAFsplit2[it->first] = thisAAFsplit2;
             
             // Count correction as in admixtools
-            double ya = vector_sum(thisSetGenotypes); double yb = thisSetGenotypes.size() - vector_sum(thisSetGenotypes);
-            double yt = (double)thisSetGenotypes.size();
-            double h = ya * yb / (yt * (yt - 1.0));
+         //   double ya = vector_sum(thisSetGenotypes); double yb = thisSetGenotypes.size() - vector_sum(thisSetGenotypes);
+         //   double yt = (double)thisSetGenotypes.size();
+         //   double h = ya * yb / (yt * (yt - 1.0));
             //std::cerr << "it->first: " << it->first << std::endl;
             //std::cerr << "ya: " << ya << " ; yb: " << yb << " ; yt: " << yt << std::endl;
             //std::cerr << "h: " << h << " ; h / yt: " << h / yt << std::endl;
             
-            setCorrectionFactors[it->first] = h / yt;
+          //  setCorrectionFactors[it->first] = h / yt;
             
            // std::cerr << "it->first " << it->first << std::endl;
             try {

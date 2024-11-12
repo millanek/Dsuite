@@ -30,11 +30,12 @@ outOption       // -o
 "       -n, --run-name                          (optional; default=quartets) run-name will be included in the output file name after the PREFIX\n"
 "       --no-f4-ratio                           (optional) don't calculate the f4-ratio\n"
 "       -l NUMLINES                             (optional) the number of lines in the VCF input - required if reading the VCF via a unix pipe\n"
+"       -a, --allF4-ratios                      (optional) output F4 ratios for all posible arrangements\n"
 "\n"
 "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 enum { OPT_NO_F4 };
-static const char* shortopts = "hr:n:t:j:fpk:l:o:";
+static const char* shortopts = "hr:n:t:j:fpk:l:o:a";
 
 static const struct option longopts[] = {
     { "run-name",   required_argument, NULL, 'n' },
@@ -45,6 +46,7 @@ static const struct option longopts[] = {
     { "JKnum",   required_argument, NULL, 'k' },
     { "help",   no_argument, NULL, 'h' },
     { "no-f4-ratio",   no_argument, NULL, OPT_NO_F4 },
+    { "allF4-ratios",   no_argument, NULL, 'a' },
     { NULL, 0, NULL, 0 }
 };
 
@@ -61,6 +63,7 @@ namespace opt
     static int regionLength = -1;
     static int providedNumLines = -1;
     static bool fStats = true;
+    static bool allF4 = false;
 }
 
 
@@ -266,51 +269,85 @@ int DquartetsMain(int argc, char** argv) {
                 
                 if (opt::fStats) {
                     
-                    // f_G
-                    int c_S1a = 0; int c_S1b = 0; int c_S2a = 0; int c_S2b = 0;int c_S3a = 0; int c_S3b = 0;
-                    c_S3a = allSplit1Counts[quartetsInt[i][2]]; c_S3b = allSplit2Counts[quartetsInt[i][2]];
-                    c_S2a = allSplit1Counts[quartetsInt[i][1]]; c_S2b = allSplit2Counts[quartetsInt[i][1]];
-                    c_S1a = allSplit1Counts[quartetsInt[i][0]]; c_S1b = allSplit2Counts[quartetsInt[i][0]];
+                    double p_S1a = allSplit1Ps[quartetsInt[i][0]]; double p_S1b = allSplit2Ps[quartetsInt[i][0]];
+                    double p_S2a = allSplit1Ps[quartetsInt[i][1]]; double p_S2b = allSplit2Ps[quartetsInt[i][1]];
+                    double p_S3a = allSplit1Ps[quartetsInt[i][2]]; double p_S3b = allSplit2Ps[quartetsInt[i][2]];
+                    double p_S4a = allSplit1Ps[quartetsInt[i][3]]; double p_S4b = allSplit2Ps[quartetsInt[i][3]];
                     
-                    double p_S1a = 0; double p_S1b = 0; double p_S2a = 0; double p_S2b = 0; double p_S3a = 0; double p_S3b = 0;
+                    /* Orientation 1: F4(P1, P2; P3, P4)
+                     ----------------------------------
+                     These are the different denominators with 'a' and 'b' being the subsamples
+                     1) F4(P1, P3a; P3b, P4) ----- F_G_denom1 --- (p_S1,p_S3a,p_S3b,p_S4)
+                     2) F4(P1, P2a; P2b, P4) ----- F_G_denom2 --- (p_S1,p_S2a,p_S2b,p_S4)
+                     3) F4(P1a, P2; P3, P1b)
+                     4) F4(P4a, P2; P3, P4b) */
+                    quartetInfos[i].F_G_denoms[0] += f4_perVariant(p_S1,p_S3a,p_S3b,p_S4);
+                    quartetInfos[i].F_G_denoms[1] += f4_perVariant(p_S1,p_S2a,p_S2b,p_S4);
+                    quartetInfos[i].F_G_denoms[2] += f4_perVariant(p_S1a,p_S2,p_S3,p_S1b);
+                    quartetInfos[i].F_G_denoms[3] += f4_perVariant(p_S4a,p_S2,p_S3,p_S4b);
                     
-                    if (c_S3a > 0 && c_S3b > 0) {
-                        p_S3a = allSplit1Ps[quartetsInt[i][2]]; p_S3b = allSplit2Ps[quartetsInt[i][2]];
-                    } else if (p_S3 == 1 || p_S3 == 0) {
-                        p_S3a = p_S3; p_S3b = p_S3;
-                    } else { assignSplits01FromAlleleFrequency(p_S3, p_S3a, p_S3b); }
-                    quartetInfos[i].F_G_denom1 += fG_Denom_perVariant(p_S1,p_S3a,p_S3b,p_S4);
-                    quartetInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(p_S2,p_S3a,p_S3b,p_S4);
-                    if (p_S4 != 0) {
-                        quartetInfos[i].F_G_denom1 += fG_Denom_perVariant(1-p_S1,1-p_S3a,1-p_S3b,1-p_S4);
-                        quartetInfos[i].F_G_denom1_reversed += fG_Denom_perVariant(1-p_S2,1-p_S3a,1-p_S3b,1-p_S4);
-                    }
+                    /* Orientation 1b: F4(P2, P1; P3, P4)
+                    ----------------------------------   Same as Orientation 3
+                    5) F4(P2, P1a; P1b, P4)
+                    6) F4(P2, P3a; P3b, P4)
+                    7) F4(P2a, P1; P3, P2b)
+                    8) F4(P4a, P1; P3, P4b) */
+                    quartetInfos[i].F_G_denoms[4] += f4_perVariant(p_S2,p_S1a,p_S1b,p_S4);
+                    quartetInfos[i].F_G_denoms[5] += f4_perVariant(p_S2,p_S3a,p_S3b,p_S4);
+                    quartetInfos[i].F_G_denoms[6] += f4_perVariant(p_S2a,p_S1,p_S3,p_S2b);
+                    quartetInfos[i].F_G_denoms[7] += f4_perVariant(p_S4a,p_S1,p_S3,p_S4b);
                     
-                    if (c_S2a > 0 && c_S2b > 0) {
-                        p_S2a = allSplit1Ps[quartetsInt[i][1]]; p_S2b = allSplit2Ps[quartetsInt[i][1]];
-                    } else if (p_S2 == 1 || p_S2 == 0) {
-                        p_S2a = p_S2; p_S2b = p_S2;
-                    } else { assignSplits01FromAlleleFrequency(p_S2, p_S2a, p_S2b); }
-                    quartetInfos[i].F_G_denom2 += fG_Denom_perVariant(p_S1,p_S2a,p_S2b,p_S4);
-                    quartetInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(p_S3,p_S2a,p_S2b,p_S4);
-                    if (p_S4 != 0) {
-                        quartetInfos[i].F_G_denom2 += fG_Denom_perVariant(1-p_S1,1-p_S2a,1-p_S2b,1-p_S4);
-                        quartetInfos[i].F_G_denom2_reversed += fG_Denom_perVariant(1-p_S3,1-p_S2a,1-p_S2b,1-p_S4);
-                    }
+                    /* Orientation 2: F4(P1, P3; P2, P4)
+                     ----------------------------------
+                     9) F4(P1, P3a; P3b, P4) - a duplicate of 1)
+                     10) F4(P1, P2a; P2b, P4) - a duplicate of 2)
+                     11) F4(P1a, P3; P2, P1b)
+                     12) F4(P4a, P3; P2, P4b) */
+                    quartetInfos[i].F_G_denoms[8] += f4_perVariant(p_S1,p_S3a,p_S3b,p_S4);
+                    quartetInfos[i].F_G_denoms[9] += f4_perVariant(p_S1,p_S2a,p_S2b,p_S4);
+                    quartetInfos[i].F_G_denoms[10] += f4_perVariant(p_S1a,p_S3,p_S2,p_S1b);
+                    quartetInfos[i].F_G_denoms[11] += f4_perVariant(p_S4a,p_S3,p_S2,p_S4b);
                     
-                    if (c_S1a > 0 && c_S1b > 0) {
-                        p_S1a = allSplit1Ps[quartetsInt[i][0]]; p_S1b = allSplit2Ps[quartetsInt[i][0]];
-                    } else if (p_S1 == 1 || p_S1 == 0) {
-                        p_S1a = p_S1; p_S1b = p_S1;
-                    } else { assignSplits01FromAlleleFrequency(p_S1, p_S1a, p_S1b); }
+                    /* Orientation 2b: F4(P3, P1; P2, P4)
+                     ----------------------------------
+                     13) F4(P3, P1a; P1b, P4) ---- F_G_denom3 ---   (p_S3,p_S1a,p_S1b,p_S4)
+                     14) F4(P3, P2a; P2b, P4) ---- F_G_denom2_reversed --- (p_S3,p_S2a,p_S2b,p_S4)
+                     15) F4(P3a, P1; P2, P3b) ----
+                     16) F4(P4a, P1; P2, P4b) ---- */
+                    quartetInfos[i].F_G_denoms[12] += f4_perVariant(p_S3,p_S1a,p_S1b,p_S4);
+                    quartetInfos[i].F_G_denoms[13] += f4_perVariant(p_S3,p_S2a,p_S2b,p_S4);
+                    quartetInfos[i].F_G_denoms[14] += f4_perVariant(p_S3a,p_S1,p_S2,p_S3b);
+                    quartetInfos[i].F_G_denoms[15] += f4_perVariant(p_S4a,p_S1,p_S2,p_S4b);
                     
-                    quartetInfos[i].F_G_denom3 += fG_Denom_perVariant(p_S3,p_S1a,p_S1b,p_S4);
-                    quartetInfos[i].F_G_denom3_reversed += fG_Denom_perVariant(p_S2,p_S1a,p_S1b,p_S4);
-                    if (p_S4 != 0) {
-                        quartetInfos[i].F_G_denom3 += fG_Denom_perVariant(1-p_S3,1-p_S1a,1-p_S1b,1-p_S4);
-                        quartetInfos[i].F_G_denom3_reversed += fG_Denom_perVariant(1-p_S2,1-p_S1a,1-p_S1b,1-p_S4);
-                    }
+                    /* Orientation 3: F4(P1, P4; P2, P3)
+                     ---------------------------------- Same as Orientation 1b
+                     17) F4(P1, P4a; P4b, P3) - a duplicate of 8)
+                     18) F4(P1a, P4; P2, P1b) - a duplicate of 5) ---- F_G_denom3_reversed --- (p_S2,p_S1a,p_S1b,p_S4)
+                     19) F4(P1, P2a; P2b, P3) - a duplicate of 7)
+                     20) F4(P3a, P4; P2, P3b) - a duplicate of 6) ---- F_G_denom1_reversed --- (p_S2,p_S3a,p_S3b,p_S4) */
+                    quartetInfos[i].F_G_denoms[16] += f4_perVariant(p_S1,p_S4a,p_S4b,p_S3);
+                    quartetInfos[i].F_G_denoms[17] += f4_perVariant(p_S1a,p_S4,p_S2,p_S1b);
+                    quartetInfos[i].F_G_denoms[18] += f4_perVariant(p_S1,p_S2a,p_S2b,p_S3);
+                    quartetInfos[i].F_G_denoms[19] += f4_perVariant(p_S3a,p_S4,p_S2,p_S3b);
                     
+                    /* Orientation 3b: F4(P4, P1; P2, P3)
+                     ----------------------------------
+                     21) F4(P4, P1a; P1b, P3) - a duplicate of 13)
+                     22) F4(P4, P2a; P2b, P3) - a duplicate of 14)
+                     23) F4(P3a, P1; P2, P3b) - a duplicate of 15)
+                     24) F4(P4a, P1; P2, P4b) - a duplicate of 16) */
+                    quartetInfos[i].F_G_denoms[20] += f4_perVariant(p_S4,p_S1a,p_S1b,p_S3);
+                    quartetInfos[i].F_G_denoms[21] += f4_perVariant(p_S4,p_S2a,p_S2b,p_S3);
+                    quartetInfos[i].F_G_denoms[22] += f4_perVariant(p_S3a,p_S1,p_S2,p_S3b);
+                    quartetInfos[i].F_G_denoms[23] += f4_perVariant(p_S4a,p_S1,p_S2,p_S4b);
+                    
+                   // Original version
+                    quartetInfos[i].F_G_denom1 += f4_perVariant(p_S1,p_S3a,p_S3b,p_S4);
+                    quartetInfos[i].F_G_denom1_reversed += f4_perVariant(p_S2,p_S3a,p_S3b,p_S4);
+                    quartetInfos[i].F_G_denom2 += f4_perVariant(p_S1,p_S2a,p_S2b,p_S4);
+                    quartetInfos[i].F_G_denom2_reversed += f4_perVariant(p_S3,p_S2a,p_S2b,p_S4);
+                    quartetInfos[i].F_G_denom3 += f4_perVariant(p_S3,p_S1a,p_S1b,p_S4);
+                    quartetInfos[i].F_G_denom3_reversed += f4_perVariant(p_S2,p_S1a,p_S1b,p_S4);
                 }
                 
                 // std::cerr << "trioInfos[i].localD1num" << trioInfos[i].localD1denom << std::endl;
@@ -327,8 +364,12 @@ int DquartetsMain(int argc, char** argv) {
     std::cerr << "Done processing VCF. Preparing output files..." << '\n';
     
     string header = makeHeader(true, opt::fStats,false);
-    *outFileBBAA << header << std::endl; *outFileDmin << header << std::endl;
+    *outFileDmin << header << std::endl;
+    if(opt::allF4) {
+        header += "\tF_G_denom1\tF_G_denom2\tF_G_denom3\tF_G_denom4";
+    }
     if (opt::treeFile != "") *outFileTree << header << std::endl;
+    *outFileBBAA << header << std::endl;
     
     int exceptionCount = 0;
     for (int i = 0; i != quartets.size(); i++) { //
@@ -354,8 +395,8 @@ int DquartetsMain(int argc, char** argv) {
         
         // Find which topology is in agreement with the counts of BBAA, BABA, and ABBA
         quartetInfos[i].assignBBAAarrangement();
-        std::vector<string> BBAAoutVec = quartetInfos[i].makeOutVec(quartets[i], opt::fStats, quartetInfos[i].BBAAarrangement);
-        std::cerr << "quartetInfos[i].BBAAarrangement: " << quartetInfos[i].BBAAarrangement << std::endl;
+        std::vector<string> BBAAoutVec = quartetInfos[i].makeOutVec(quartets[i], opt::fStats, quartetInfos[i].BBAAarrangement, opt::allF4);
+       // std::cerr << "quartetInfos[i].BBAAarrangement: " << quartetInfos[i].BBAAarrangement << std::endl;
         print_vector(BBAAoutVec,*outFileBBAA);
         
         // Find Dmin:
@@ -367,7 +408,7 @@ int DquartetsMain(int argc, char** argv) {
         // Find which arrangement of trios is consistent with the input tree (if provided):
         if (opt::treeFile != "") {
        //     std::cerr << "quartetInfos[i].treeArrangement " << quartetInfos[i].treeArrangement << '\n';
-            std::vector<string> treeOutVec = quartetInfos[i].makeOutVec(quartets[i], opt::fStats, quartetInfos[i].treeArrangement);
+            std::vector<string> treeOutVec = quartetInfos[i].makeOutVec(quartets[i], opt::fStats, quartetInfos[i].treeArrangement, opt::allF4);
             print_vector(treeOutVec,*outFileTree);
         }
         
@@ -413,6 +454,7 @@ void parseDquartetsOptions(int argc, char** argv) {
             case 'o': arg >> opt::providedOutPrefix; break;
             case OPT_NO_F4: opt::fStats = false; break;
             case 'l': arg >> opt::providedNumLines; break;
+            case 'a': opt::allF4 = true; break;
             case 'r': arg >> regionArgString; regionArgs = split(regionArgString, ',');
                 opt::regionStart = (int)stringToDouble(regionArgs[0]); opt::regionLength = (int)stringToDouble(regionArgs[1]);  break;
             case 'h':
