@@ -23,6 +23,7 @@
 #include <random>
 #include <list>
 #include <cstdint>
+#include <iterator>
 #include "gzstream.h"
 #include "kstest.h"
 
